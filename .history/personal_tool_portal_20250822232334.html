@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Harry工具庫</title>
+  <style>
+:root{
+  --bg: #ECFDF5;           /* page background (updated) */
+  --primary: #272343;      /* dark navy */
+  --banner: #272343;       /* banner color (attachment) */
+  --muted: #2d334a;        /* paragraph */
+  --accent: #ffd600;       /* accent (kept) */
+  --teal: #bae8e8;         /* tag / light green-blue */
+  --title-blue: #dceeff;   /* light-blue for title badge */
+  --card-bg: #ffffff;
+  --section-bg: #eaf9f9;   /* 新增：淡藍色區塊背景 */
+  --card-border: rgba(39,35,67,0.06);
+  --card-dark: #2C2C54;    /* 卡片深色 */
+}
+
+/* base */
+html,body { height:100%; }
+body {
+  font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+  background-color: var(--bg);
+  color: var(--primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* top white banner */
+header {
+  background: var(--banner);              /* 改為附件深色 */
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06); /* 調整邊線為淺白 */
+  box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* left: logo + title */
+.header-left {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.header-logo {
+  width:40px;
+  height:40px;
+  border-radius:8px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--teal) 100%);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--banner); /* 讓 logo 內字與 banner 保持對比 */
+  font-weight:700;
+  font-size:18px;
+  border:1px solid rgba(255,255,255,0.08); /* 淺白邊框 */
+  box-shadow:0 6px 16px rgba(0,0,0,0.16);
+}
+.header-title {
+  font-size:1.6rem; /* 保留放大 */
+  color:#ffffff;
+  font-weight:700;
+  letter-spacing:0.2px;
+}
+
+/* header actions (right) - white text, subtle white borders */
+.header-actions { display:flex; gap:10px; align-items:center; }
+
+.header-actions button, .header-actions a {
+  background: transparent;
+  color: #ffffff; /* 白字 */
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight:600;
+  text-decoration:none;
+  cursor:pointer;
+}
+.header-actions button:hover, .header-actions a:hover {
+  background: rgba(255,255,255,0.04);
+  transform: translateY(-1px);
+}
+
+/* layout */
+main {
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+/* section container */
+.section {
+  background: var(--section-bg); /* 使用淡藍色，與附件一致 */
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(39,35,67,0.04);
+  border: 1px solid var(--card-border);
+}
+.section h2 {
+  margin: 0 0 12px 0;
+  font-size: 15px;              /* 區塊標題 14~16px */
+  color: var(--primary);
+  font-weight: 700;             /* 粗體 */
+  padding: 8px 12px;
+  display: inline-block;
+  background: rgba(255,255,255,0.0);
+  border-radius: 8px;
+}
+
+/* responsive tweaks for section titles */
+@media (max-width:760px){
+  .section h2 { font-size: 14px; }
+  .modal-content { width: 92%; }
+  main { padding: 18px; }
+  header { padding: 12px 16px; }
+}
+
+/* grid & cards */
+.grid {
+  display: grid;
+  /* 減小每張卡片的最小寬度，讓卡片看起來更窄一些 */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* card: deep style */
+.card {
+  background: var(--card-dark);
+  color: #ffffff;
+  border: 1px solid transparent;          /* 預設無邊框，hover 顯示微亮邊框 */
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(44,44,84,0.14);
+  min-height: 140px;
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+
+/* hover: 微亮邊框與互動感 */
+.card:hover {
+  box-shadow: 0 12px 32px rgba(44,44,84,0.24);
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.10); /* 微亮邊框 */
+}
+
+.card-head {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+/* title as light-blue badge (button-like) */
+.card h3 {
+  margin: 0;
+  display: inline-block;
+  background: var(--title-blue);
+  color: var(--primary);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 17px;              /* 工具名稱 16~18px */
+  font-weight: 600;             /* 半粗體 */
+  line-height: 1;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02);
+}
+
+/* description */
+.card p {
+  font-size: 13px;              /* 說明文字 12~14px */
+  color: #E5E5E5;               /* 淡一些的文字顏色 */
+  margin: 8px 0 12px 0;
+  flex-grow: 1;
+}
+
+/* actions area layout */
+.card-actions { margin-top: 8px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+
+/* visit link: 亮藍色 #3B82F6，白字 */
+.visit-btn {
+  display: inline-block;
+  background: #3B82F6; /* 亮藍 */
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 4px 10px rgba(59,130,246,0.12);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.visit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59,130,246,0.16);
+  filter: brightness(0.98);
+}
+
+/* edit/delete: 中灰 #374151，白字 */
+.card-actions .right button {
+  background-color: #374151; /* 中灰 */
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 120ms ease, transform 120ms ease;
+}
+.card-actions .right button:hover {
+  background-color: #4b5563; /* 稍微亮一點的灰，hover 效果 */
+  transform: translateY(-2px);
+}
+
+/* modal */
+.modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.45); display:none; justify-content:center; align-items:center; z-index:1000; }
+.modal-content { background: var(--card-bg); padding:16px; border-radius:8px; width:420px; box-shadow: 0 6px 20px rgba(39,35,67,0.12); border:1px solid rgba(39,35,67,0.06); }
+.modal-content h2 { font-size:1rem; margin:0 0 8px 0; color:var(--primary); }
+.modal-content label { font-size:0.78rem; display:block; margin-top:8px; color:var(--muted); }
+.modal-content input[type="text"], .modal-content textarea { width:100%; padding:8px; font-size:0.92rem; margin-top:6px; border:1px solid rgba(39,35,67,0.10); border-radius:6px; color:var(--muted); background: #fff; }
+
+/* categories */
+.categories { display:flex; gap:10px; margin-top:8px; align-items:center; color:var(--muted); }
+.categories input[type="checkbox"] { width:16px; height:16px; accent-color: var(--teal); }
+
+/* small text */
+.small-muted { font-size:0.82rem; color:var(--muted); }
+
+/* responsive tweaks */
+@media (max-width:760px){
+  .modal-content { width: 92%; }
+  main { padding: 18px; }
+  header { padding: 12px 16px; }
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="header-logo" aria-hidden="true">H</div>
+      <div class="header-title">Harry工具庫</div>
+    </div>
+
+    <div class="header-actions">
+      <button id="exportBtn" title="匯出資料">匯出</button>
+      <button id="importBtn" title="匯入資料">匯入</button>
+      <button id="addBtn" title="新增工具">新增工具</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" aria-labelledby="webTitle">
+      <h2 id="webTitle">自製網頁程式</h2>
+      <div id="webContainer" class="grid"></div>
+    </section>
+
+    <section class="section" aria-labelledby="gptTitle">
+      <h2 id="gptTitle">GPT 工具</h2>
+      <div id="gptContainer" class="grid"></div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal" id="toolModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <h2 id="modalTitle">新增工具</h2>
+      <label>工具名稱</label>
+      <input type="text" id="toolName" />
+      <label>簡介</label>
+      <textarea id="toolDesc" rows="3"></textarea>
+      <label>連結 (可使用相對路徑，例如 AIAROKR.html 或 ./subfolder/tool.html)</label>
+      <input type="text" id="toolLink" placeholder="例：AIAROKR.html 或 ./subfolder/tool.html">
+
+      <label class="small-muted" style="margin-top:.5rem">類別（勾選後會出現在對應區域，可同時勾選多個）</label>
+      <div class="categories">
+        <label><input type="checkbox" id="catWeb" /> 自製網頁程式</label>
+        <label><input type="checkbox" id="catGpt" /> GPT 工具</label>
+      </div>
+
+      <div class="modal-actions" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="cancelBtn">取消</button>
+        <button type="button" id="saveBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const STORAGE_KEY = 'personal_tools_v1';
+
+  let tools = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    tools = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(tools)) tools = [];
+  } catch (e) {
+    console.warn('localStorage parse error, resetting tools', e);
+    tools = [];
+  }
+
+  // normalize existing items (backward compatibility) — ensure categories default to ['web']
+  tools = tools.map(t => {
+    if (!t || typeof t !== 'object') {
+      return { name: '', desc: '', link: '', categories: ['web'] };
+    }
+
+    const cats = t.categories;
+
+    if (!cats) {
+      t.categories = ['web'];
+    } else if (typeof cats === 'string') {
+      const normalized = cats.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+        .map(s => (s === 'gpt' || s.includes('gpt')) ? 'gpt' : 'web');
+      t.categories = normalized.length ? normalized : ['web'];
+    } else if (Array.isArray(cats)) {
+      const normalized = cats.map(s => (typeof s === 'string' ? s.trim().toLowerCase() : ''))
+        .filter(Boolean)
+        .map(s => (s === 'gpt' || s.includes('gpt')) ? 'gpt' : 'web');
+      t.categories = normalized.length ? normalized : ['web'];
+    } else {
+      t.categories = ['web'];
+    }
+
+    return t;
+  });
+
+  let editIndex = null;
+  const webContainer = document.getElementById('webContainer');
+  const gptContainer = document.getElementById('gptContainer');
+  const modal = document.getElementById('toolModal');
+  const nameInput = document.getElementById('toolName');
+  const descInput = document.getElementById('toolDesc');
+  const linkInput = document.getElementById('toolLink');
+  const modalTitle = document.getElementById('modalTitle');
+  const catWeb = document.getElementById('catWeb');
+  const catGpt = document.getElementById('catGpt');
+  let lastFocusedElement = null;
+
+  function createCard(tool, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    const h3 = document.createElement('h3');
+    h3.textContent = tool.name || '';
+    head.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.textContent = tool.desc || '';
+
+    // visit link (simple white text)
+    const visit = document.createElement('a');
+    const href = (tool.link || '').trim() || '#';
+    visit.className = 'visit-btn';
+    visit.href = href;
+    visit.target = '_blank';
+    visit.rel = 'noopener noreferrer';
+    visit.textContent = '使用';
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const left = document.createElement('div');
+    left.appendChild(visit);
+
+    const right = document.createElement('div');
+    right.className = 'right';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '編輯';
+    editBtn.addEventListener('click', () => editTool(index));
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '刪除';
+    delBtn.addEventListener('click', () => deleteTool(index));
+
+    right.appendChild(editBtn);
+    right.appendChild(delBtn);
+
+    actions.appendChild(left);
+    actions.appendChild(right);
+
+    card.appendChild(head);
+    card.appendChild(p);
+    card.appendChild(actions);
+
+    return card;
+  }
+
+  function renderTools() {
+    webContainer.innerHTML = '';
+    gptContainer.innerHTML = '';
+
+    tools.forEach((tool, index) => {
+      const cats = Array.isArray(tool.categories) ? tool.categories : ['web'];
+
+      if (cats.includes('web')) {
+        webContainer.appendChild(createCard(tool, index));
+      }
+      if (cats.includes('gpt')) {
+        gptContainer.appendChild(createCard(tool, index));
+      }
+    });
+
+    if (!webContainer.children.length) {
+      const hint = document.createElement('div');
+      hint.className = 'small-muted';
+      hint.textContent = '尚未新增自製網頁程式';
+      webContainer.appendChild(hint);
+    }
+    if (!gptContainer.children.length) {
+      const hint = document.createElement('div');
+      hint.className = 'small-muted';
+      hint.textContent = '尚未新增 GPT 工具';
+      gptContainer.appendChild(hint);
+    }
+  }
+
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-hidden', 'true');
+
+  function openModal(editIdx = null) {
+    lastFocusedElement = document.activeElement;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    editIndex = editIdx;
+    if (editIndex !== null) {
+      modalTitle.textContent = '編輯工具';
+      const t = tools[editIndex];
+      nameInput.value = t.name || '';
+      descInput.value = t.desc || '';
+      linkInput.value = t.link || '';
+      catWeb.checked = Array.isArray(t.categories) && t.categories.includes('web');
+      catGpt.checked = Array.isArray(t.categories) && t.categories.includes('gpt');
+    } else {
+      modalTitle.textContent = '新增工具';
+      nameInput.value = '';
+      descInput.value = '';
+      linkInput.value = '';
+      catWeb.checked = true;
+      catGpt.checked = false;
+    }
+    nameInput.focus();
+    document.addEventListener('focus', enforceFocus, true);
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('focus', enforceFocus, true);
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    }
+  }
+
+  function enforceFocus(e) {
+    if (!modal.contains(e.target)) {
+      e.stopPropagation();
+      modal.focus();
+    }
+  }
+
+  function validateLink(raw) {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    return s;
+  }
+
+  function saveTool() {
+    const categories = [];
+    if (catWeb.checked) categories.push('web');
+    if (catGpt.checked) categories.push('gpt');
+    if (!categories.length) {
+      alert('請至少勾選一個類別');
+      return;
+    }
+
+    const newTool = {
+      name: nameInput.value.trim(),
+      desc: descInput.value.trim(),
+      link: validateLink(linkInput.value),
+      categories
+    };
+    if (!newTool.name) {
+      alert('請輸入工具名稱');
+      nameInput.focus();
+      return;
+    }
+    if (editIndex !== null) {
+      tools[editIndex] = newTool;
+    } else {
+      tools.push(newTool);
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    } catch (e) {
+      console.warn('localStorage write failed', e);
+    }
+    renderTools();
+    closeModal();
+  }
+
+  function editTool(index) {
+    openModal(index);
+  }
+
+  function deleteTool(index) {
+    if (confirm('確定刪除這個工具嗎？')) {
+      tools.splice(index, 1);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+      } catch (e) { console.warn(e); }
+      renderTools();
+    }
+  }
+
+  function exportData() {
+    try {
+      const payload = JSON.stringify(tools, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'personal_tools.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('匯出失敗', e);
+      alert('匯出失敗');
+    }
+  }
+
+  function importDataFile() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json,application/json';
+    inp.addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed)) throw new Error('格式錯誤：不是陣列');
+          tools = parsed.map(t => {
+            if (!t || typeof t !== 'object') return { name: '', desc: '', link: '', categories: ['web'] };
+            if (!Array.isArray(t.categories)) {
+              t.categories = t.categories ? (Array.isArray(t.categories) ? t.categories : [t.categories]) : ['web'];
+            }
+            return t;
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+          renderTools();
+          alert('匯入完成');
+        } catch (err) {
+          console.error('匯入失敗', err);
+          alert('匯入失敗：檔案格式不正確');
+        }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+    inp.click();
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => openModal(null));
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  document.getElementById('saveBtn').addEventListener('click', saveTool);
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', importDataFile);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  renderTools();
+  </script>
+</body>
+</html>

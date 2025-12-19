@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人工具入口</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #ffffff;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1rem;
+      margin: 0;
+      color: #444;
+    }
+
+    button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #4a90e2;
+      color: #fff;
+      transition: background 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #357abd;
+    }
+
+    main {
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.95rem;
+      color: #222;
+    }
+
+    .card p {
+      font-size: 0.8rem;
+      color: #666;
+      flex-grow: 1;
+    }
+
+    .card a {
+      font-size: 0.8rem;
+      text-decoration: none;
+      color: #4a90e2;
+      word-break: break-all;
+    }
+
+    .card-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 6px;
+      width: 320px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h2 {
+      font-size: 1rem;
+      margin-top: 0;
+    }
+
+    .modal-content label {
+      font-size: 0.75rem;
+      display: block;
+      margin-top: 0.5rem;
+      color: #333;
+    }
+
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 0.4rem;
+      font-size: 0.8rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .modal-actions {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>我的工具入口</h1>
+    <div style="display:flex; gap:8px;">
+      <button id="exportBtn">匯出資料</button>
+      <button id="importBtn">匯入資料</button>
+      <button onclick="openModal()">新增工具</button>
+    </div>
+  </header>
+
+  <main id="toolContainer"></main>
+
+  <!-- Modal -->
+  <div class="modal" id="toolModal">
+    <div class="modal-content">
+      <h2 id="modalTitle">新增工具</h2>
+      <label>工具名稱</label>
+      <input type="text" id="toolName">
+      <label>簡介</label>
+      <textarea id="toolDesc" rows="3"></textarea>
+      <label>連結 (可使用相對路徑，例如 AIAROKR.html 或 ./subfolder/tool.html)</label>
+      <input type="text" id="toolLink" placeholder="例：AIAROKR.html 或 ./subfolder/tool.html">
+
+      <div class="modal-actions">
+        <button onclick="closeModal()">取消</button>
+        <button onclick="saveTool()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const STORAGE_KEY = 'personal_tools_v1';
+
+  // 安全讀取 localStorage
+  let tools = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    tools = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(tools)) tools = [];
+  } catch (e) {
+    console.warn('localStorage parse error, resetting tools', e);
+    tools = [];
+  }
+
+  let editIndex = null;
+  const container = document.getElementById('toolContainer');
+  const modal = document.getElementById('toolModal');
+  const nameInput = document.getElementById('toolName');
+  const descInput = document.getElementById('toolDesc');
+  const linkInput = document.getElementById('toolLink');
+  const modalTitle = document.getElementById('modalTitle');
+  let lastFocusedElement = null;
+
+  // 改用安全的 DOM 操作，避免 innerHTML XSS
+  function renderTools() {
+    container.innerHTML = '';
+    tools.forEach((tool, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = tool.name || '';
+
+      const p = document.createElement('p');
+      p.textContent = tool.desc || '';
+
+      const a = document.createElement('a');
+      const href = (tool.link || '').trim() || '#';
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = '前往工具';
+
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.textContent = '編輯';
+      editBtn.addEventListener('click', () => editTool(index));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.textContent = '刪除';
+      delBtn.addEventListener('click', () => deleteTool(index));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
+      card.appendChild(h3);
+      card.appendChild(p);
+      card.appendChild(a);
+      card.appendChild(actions);
+
+      container.appendChild(card);
+    });
+  }
+
+  // Modal accessibility: add ARIA attributes in DOM (ensure modal element in HTML has id="toolModal")
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-hidden', 'true');
+
+  function openModal(editIdx = null) {
+    lastFocusedElement = document.activeElement;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    editIndex = editIdx;
+    if (editIndex !== null) {
+      modalTitle.textContent = '編輯工具';
+      nameInput.value = tools[editIndex].name || '';
+      descInput.value = tools[editIndex].desc || '';
+      linkInput.value = tools[editIndex].link || '';
+    } else {
+      modalTitle.textContent = '新增工具';
+      nameInput.value = '';
+      descInput.value = '';
+      linkInput.value = '';
+    }
+    // focus first input
+    nameInput.focus();
+    // simple focus trap: listen for Tab and keep within modal
+    document.addEventListener('focus', enforceFocus, true);
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('focus', enforceFocus, true);
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    }
+  }
+
+  function enforceFocus(e) {
+    if (!modal.contains(e.target)) {
+      e.stopPropagation();
+      modal.focus();
+    }
+  }
+
+  function validateLink(raw) {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    // allow relative and absolute URLs; simple validation
+    return s;
+  }
+
+  function saveTool() {
+    const newTool = {
+      name: nameInput.value.trim(),
+      desc: descInput.value.trim(),
+      link: validateLink(linkInput.value)
+    };
+    if (!newTool.name) {
+      alert('請輸入工具名稱'); // 簡單驗證
+      nameInput.focus();
+      return;
+    }
+    if (editIndex !== null) {
+      tools[editIndex] = newTool;
+    } else {
+      tools.push(newTool);
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    } catch (e) {
+      console.warn('localStorage write failed', e);
+    }
+    renderTools();
+    closeModal();
+  }
+
+  function editTool(index) {
+    openModal(index);
+  }
+
+  function deleteTool(index) {
+    if (confirm('確定刪除這個工具嗎？')) {
+      tools.splice(index, 1);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+      } catch (e) { console.warn(e); }
+      renderTools();
+    }
+  }
+
+  // 下載 JSON 檔匯出
+  function exportData() {
+    try {
+      const payload = JSON.stringify(tools, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'personal_tools.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('匯出失敗', e);
+      alert('匯出失敗');
+    }
+  }
+
+  // 建立隱藏 input 讀取檔案並匯入
+  function importDataFile() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json,application/json';
+    inp.addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed)) throw new Error('格式錯誤：不是陣列');
+          // 可加更嚴謹的 schema 檢查
+          tools = parsed;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+          renderTools();
+          alert('匯入完成');
+        } catch (err) {
+          console.error('匯入失敗', err);
+          alert('匯入失敗：檔案格式不正確');
+        }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+    inp.click();
+  }
+
+  // wire up header button and modal buttons (remove inline onclick dependency)
+  document.querySelector('header button').addEventListener('click', () => openModal(null));
+  document.querySelector('.modal-actions button:nth-child(1)').addEventListener('click', closeModal);
+  document.querySelector('.modal-actions button:nth-child(2)').addEventListener('click', saveTool);
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', importDataFile);
+
+  // keyboard: Esc to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+  });
+
+  // close when clicking backdrop
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // initial render
+  renderTools();
+  </script>
+</body>
+</html>

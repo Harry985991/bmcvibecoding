@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pomodoro Focus • Wallpaper</title>
+  <style>
+    :root{
+      --glass: rgba(255,255,255,.10);
+      --glass-strong: rgba(255,255,255,.18);
+      --text: #fff;
+      --muted: rgba(255,255,255,.75);
+      --bg-overlay-1: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.2) 35%, rgba(0,0,0,.55));
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --ring: rgba(255,255,255,.28);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang TC", "Noto Sans TC", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: #000;
+      overflow: hidden;
+    }
+    .bg { position: fixed; inset: 0; background-size: cover; background-position: center; filter: saturate(1.05) contrast(1.02); transition: background-image .6s ease; }
+    .overlay { position: fixed; inset: 0; background: var(--bg-overlay-1); pointer-events: none; }
+
+    header, footer { position: relative; z-index: 3; }
+    header { display:flex; align-items:center; justify-content:space-between; padding: 16px 24px; }
+    header .brand { display:flex; align-items:center; gap:12px; font-weight:600; letter-spacing:.3px; }
+    header .badges { display:flex; align-items:center; gap:8px; }
+    .badge { padding: 6px 10px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(8px); font-size: 12px; }
+    .ghost-btn { border: 1px solid rgba(255,255,255,.28); background: var(--glass); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; backdrop-filter: blur(8px); }
+    .ghost-btn:hover { background: var(--glass-strong); }
+
+    main { position: relative; z-index: 3; padding: 16px 24px 8px; height: calc(100% - 120px); display:flex; justify-content:center; align-items:flex-start; gap: 16px; }
+    @media (min-width: 1200px) {
+      main { justify-content:center; }
+    }
+
+    .card { background: var(--glass); border: 1px solid rgba(255,255,255,.2); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); backdrop-filter: blur(12px); height: 100%; overflow: hidden; }
+  .card { max-width: 820px; margin: 0 auto; }
+    .section-title { display:flex; align-items:center; gap:10px; font-weight:600; margin-bottom: 10px; }
+
+    .timer-wrap { display:flex; flex-direction:column; align-items:center; gap: 16px; }
+    .ring { position: relative; width: 260px; height: 260px; }
+    .ring svg { display:block; width: 100%; height: 100%; }
+    .ring .time { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .ring .time .big { font-size: 56px; font-weight: 700; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,.35); letter-spacing: .5px; }
+    .ring .time .sub { margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+    .controls { display:flex; gap:8px; flex-wrap: wrap; justify-content:center; }
+    button { cursor: pointer; }
+
+    .outline { background: transparent; border: 1px solid rgba(255,255,255,.35); color: var(--text); padding: 10px 14px; border-radius: 10px; }
+    .solid { background: rgba(255,255,255,.92); color: #111; padding: 10px 16px; border-radius: 10px; border:0; font-weight:600; }
+    .solid.secondary { background: rgba(255,255,255,.22); color: #fff; border: 1px solid rgba(255,255,255,.32); }
+
+    .sliders { margin-top: 18px; display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .slider { display:flex; flex-direction:column; gap:6px; }
+    .slider label { font-size: 13px; color: var(--muted); display:flex; justify-content:space-between; }
+    input[type="range"] { width: 100%; accent-color: #fff; }
+
+    .row { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-top: 16px; }
+    .row .switch { display:flex; align-items:center; gap: 8px; font-size: 14px; }
+    .row input[type="checkbox"] { transform: scale(1.1); }
+
+    .preview { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.25); }
+    .preview .box { aspect-ratio: 16/9; background: rgba(0,0,0,.25); background-size: cover; background-position: center; }
+
+    .gallery-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (min-width: 900px){ .gallery-grid { grid-template-columns: repeat(4, 1fr);} }
+    .thumb { position:relative; border-radius: 12px; overflow:hidden; border: 1px solid rgba(255,255,255,.2); }
+    .thumb img { width: 100%; height: 100%; display:block; object-fit: cover; aspect-ratio: 4/3; }
+  /* Ensure thumbnails are visible even if grid cell collapses */
+  .gallery-grid { padding: 8px 0; }
+  .thumb { min-height: 120px; background: rgba(255,255,255,0.02); }
+  .thumb img { min-height: 120px; }
+  .gallery-grid .small { padding: 12px 6px; }
+    .thumb .actions { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:8px; opacity:0; transition:.2s; background: rgba(0,0,0,.45); }
+    .thumb:hover .actions { opacity:1; }
+    .credit { font-size: 11px; color: var(--muted); margin-top: 4px; display:block; text-align:left; }
+
+    .modal { position: fixed; inset: 0; display:none; place-items:center; z-index: 5; }
+    .modal.open { display:grid; }
+    .modal .backdrop { position: absolute; inset:0; background: rgba(0,0,0,.6); }
+    .modal .dialog { position: relative; background: rgba(20,20,20,.9); border: 1px solid rgba(255,255,255,.2); border-radius: 18px; width:min(100% - 28px, 1100px); max-height: 85vh; box-shadow: var(--shadow); display:flex; flex-direction:column; }
+    .modal header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.15); }
+    .modal .body { padding: 16px; overflow:auto; }
+
+    footer { padding: 10px 16px 16px; display:flex; align-items:center; justify-content:space-between; font-size: 12px; color: var(--muted); }
+
+    .small { font-size: 12px; color: var(--muted); }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="bg" id="bg"></div>
+  <div class="overlay"></div>
+
+  <header>
+    <div class="brand">🕒 Pomodoro Focus</div>
+    <div class="badges">
+      <div class="badge" id="badge-streak">Streak: 0</div>
+      <div class="badge" id="badge-mode">focus</div>
+  <button class="ghost-btn" id="openSettings">⚙️ Settings</button>
+  <button class="ghost-btn" id="openGallery">📸 Gallery</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Timer Card -->
+    <section class="card">
+      <div class="section-title">⏱️ Timer</div>
+      <div class="timer-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" stroke="var(--ring)" stroke-width="6" fill="transparent" />
+            <circle id="progress" cx="50" cy="50" r="45" stroke="#fff" stroke-width="6" fill="transparent" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" />
+          </svg>
+          <div class="time">
+            <div class="big" id="time">25:00</div>
+            <div class="sub" id="subtitle">Deep focus</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="solid" id="btnStart">Start</button>
+          <button class="solid secondary" id="btnPause">Pause</button>
+          <button class="outline" id="btnReset">Reset</button>
+          <button class="outline" id="btnSkip">Skip</button>
+        </div>
+
+        <div class="sliders">
+          <div class="slider">
+            <label>Focus length <span id="lblFocus">25 min</span></label>
+            <input type="range" id="rangeFocus" min="5" max="60" step="1" value="25" />
+          </div>
+          <div class="slider">
+            <label>Break length <span id="lblBreak">5 min</span></label>
+            <input type="range" id="rangeBreak" min="1" max="30" step="1" value="5" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="switch"><input type="checkbox" id="autoNext" checked /> Auto-start next stage</div>
+          <div class="switch"><input type="checkbox" id="soundOn" checked /> Sound</div>
+          <button class="ghost-btn" id="btnToggleMode">Switch to Break</button>
+        </div>
+
+        <div class="small" style="margin-top:10px;">Shortcuts：<kbd>Space</kbd> Start/Pause · <kbd>S</kbd> Skip · <kbd>R</kbd> Reset</div>
+      </div>
+    </section>
+
+    
+  </main>
+
+  <footer>
+    <div>Photos from Unsplash（在圖庫可查看作者連結）</div>
+    <div>Built for focused work ❤</div>
+  </footer>
+
+  <!-- Gallery Modal -->
+  <div class="modal" id="gallery">
+    <div class="backdrop" data-close></div>
+    <div class="dialog">
+      <header>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <strong>Wallpaper Gallery</strong>
+          <button class="ghost-btn" data-close>Close</button>
+        </div>
+      </header>
+      <div class="body">
+        <h4 style="margin:0 0 10px 0;">Curated</h4>
+        <div class="gallery-grid" id="gridCurated"></div>
+        <h4 style="margin:16px 0 10px 0;">Yours</h4>
+        <div class="gallery-grid" id="gridCustom"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Wallpaper & Rotation moved here) -->
+  <div class="modal" id="settingsModal">
+    <div class="backdrop" data-close></div>
+    <div class="dialog">
+      <header>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <strong>Wallpaper & Rotation</strong>
+          <button class="ghost-btn" data-close>Close</button>
+        </div>
+      </header>
+      <div class="body">
+        <div class="preview">
+          <div class="box" id="previewBox"></div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="switch"><input type="checkbox" id="rotate" checked /> Rotate backgrounds</div>
+          <button class="ghost-btn" id="btnPrev">Prev</button>
+          <button class="ghost-btn" id="btnNext">Next</button>
+        </div>
+
+        <div class="slider" style="margin-top: 12px;">
+          <label>Rotate every <span id="lblRotate">10 min</span></label>
+          <input type="range" id="rangeRotate" min="1" max="60" step="1" value="10" />
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="switch"><input type="radio" name="wpMode" id="modeShuffle" checked /> Shuffle mode</div>
+          <div class="switch"><input type="radio" name="wpMode" id="modeStatic" /> Static mode</div>
+          <button class="ghost-btn" id="setStatic">Set current as wallpaper</button>
+        </div>
+
+        <div class="slider" style="margin-top: 12px;">
+          <label>Add your own image</label>
+          <input type="file" id="fileInput" accept="image/*" />
+          <div class="small">Custom images只會儲存在你的瀏覽器（localStorage）。</div>
+        </div>
+
+        <div class="small" style="margin-top: 10px;">Tip：Shuffle 模式會依排程與階段切換時更新背景；Static 模式則固定你選擇的圖片。</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // ---------- Utilities ----------
+  const $ = (sel, el=document) => el.querySelector(sel);
+  const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (s) => `${pad(Math.floor(s/60))}:${pad(Math.floor(s%60))}`;
+  const load = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+  // ---------- Images ----------
+  const DEFAULT_IMAGES = [
+    { id: 'uns1', url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop', author: 'Luca Bravo', link: 'https://unsplash.com/photos/217x7d2fXJc' },
+    { id: 'uns2', url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1920&auto=format&fit=crop', author: 'Nathan Dumlao', link: 'https://unsplash.com/photos/pN7DBkysR0o' },
+    { id: 'uns3', url: 'https://images.unsplash.com/photo-1756535789308-8523b9ee209d?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', author: 'Alexander Lunyov', link: 'https://unsplash.com/photos/airplane-wing-and-engine-flying-above-clouds-at-sunset-pWjJcw3c7Pk' },
+    { id: 'uns4', url: 'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=1920&auto=format&fit=crop', author: 'Patrick Tomasso', link: 'https://unsplash.com/photos/GXXYkSwndP4' },
+    { id: 'uns5', url: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1920&auto=format&fit=crop', author: 'Luca Bravo', link: 'https://unsplash.com/photos/9l_326FISzk' },
+    { id: 'uns6', url: 'https://images.unsplash.com/photo-1756460886382-5d0340e8b23f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', author: 'Will Xiang', link: 'https://unsplash.com/photos/street-covered-in-deep-snow-with-buildings-and-cars-Ubyt7aqUMCU' },
+    { id: 'uns7', url: 'https://images.unsplash.com/photo-1754215683705-ee0a731d7288?q=80&w=1075&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', author:'Kristaps Ungurs', link: 'https://unsplash.com/photos/a-beautiful-sunset-over-a-calm-lake-PS5RtVp_rVA' },
+    { id: 'uns8', url: 'https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?q=80&w=1920&auto=format&fit=crop', author: 'Kari Shea', link: 'https://unsplash.com/photos/yjQDnOhGE34' },
+    { id: 'uns9', url: 'https://images.unsplash.com/photo-1470116945706-e6bf5d5a53ca?q=80&w=1920&auto=format&fit=crop', author: 'Matthew Henry', link: 'https://unsplash.com/photos/7wCzV0Z3fVA' },
+    { id: 'uns10', url: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1920&auto=format&fit=crop', author: 'Annie Spratt', link: 'https://unsplash.com/photos/eoSfmvt7uZ8' },
+    { id: 'uns11', url: 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?q=80&w=1920&auto=format&fit=crop', author: 'Kari Shea', link: 'https://unsplash.com/photos/cS2ITsOq8d8' },
+    { id: 'uns12', url: 'https://images.unsplash.com/photo-1659720879265-4d4ac0cab23b?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', author: 'Hans', link: 'https://unsplash.com/photos/a-close-up-of-a-flower-FNS6mP4fsIs' },
+  ];
+  const customImgs = load('pwa_customImgs', []);
+  let IMAGES = [...DEFAULT_IMAGES, ...customImgs];
+
+  // ---------- Elements ----------
+  const elBg = $('#bg');
+  const elPreview = $('#previewBox'); // modal preview
+  const elTime = $('#time');
+  const elSub = $('#subtitle');
+  const elBadgeMode = $('#badge-mode');
+  const elBadgeStreak = $('#badge-streak');
+  const elProg = $('#progress');
+
+  // Timer controls
+  const btnStart = $('#btnStart');
+  const btnPause = $('#btnPause');
+  const btnReset = $('#btnReset');
+  const btnSkip = $('#btnSkip');
+  const btnToggleMode = $('#btnToggleMode');
+
+  // Ranges & toggles
+  const rFocus = $('#rangeFocus');
+  const rBreak = $('#rangeBreak');
+  const lblFocus = $('#lblFocus');
+  const lblBreak = $('#lblBreak');
+  const autoNext = $('#autoNext');
+  const soundOn = $('#soundOn');
+
+  const rotate = $('#rotate');
+  const rRotate = $('#rangeRotate');
+  const lblRotate = $('#lblRotate');
+  const btnPrev = $('#btnPrev');
+  const btnNext = $('#btnNext');
+  const modeShuffle = $('#modeShuffle');
+  const modeStatic = $('#modeStatic');
+  const setStaticBtn = $('#setStatic');
+  const fileInput = $('#fileInput');
+
+  // Gallery
+  const openGallery = $('#openGallery');
+  const gallery = $('#gallery');
+  const gridCurated = $('#gridCurated');
+  const gridCustom = $('#gridCustom');
+  // Settings modal controls
+  const openSettings = $('#openSettings');
+  const settingsModal = $('#settingsModal');
+
+  // ---------- State ----------
+  let focusMin = load('pwa_focusMin', 25);
+  let breakMin = load('pwa_breakMin', 5);
+  let mode = load('pwa_mode', 'focus'); // 'focus' | 'break'
+  let secondsLeft = load('pwa_secondsLeft', focusMin * 60);
+  let running = false;
+  let autoNextVal = load('pwa_autoNext', true);
+  let streak = load('pwa_streak', 0);
+
+  let rotateOn = load('pwa_rotate', true);
+  let rotateEveryMin = load('pwa_rotateEvery', 10);
+  let wallpaperMode = load('pwa_wallpaperMode', 'shuffle'); // 'shuffle' | 'static'
+  let imgIndex = load('pwa_imgIndex', 0) % IMAGES.length;
+  let staticUrl = load('pwa_staticUrl', IMAGES[0]?.url);
+  let soundOnVal = load('pwa_soundOn', true);
+
+  // ---------- Audio (beep) ----------
+  async function beep(){
+    if (!soundOnVal) return;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 784; // G5
+    o.connect(g); g.connect(ctx.destination);
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+0.25);
+    o.start(); o.stop(t+0.3);
+  }
+
+  // ---------- Timer ----------
+  let tickTimer = null;
+  function start(){ if(!tickTimer){ tickTimer = setInterval(onTick, 1000); } running = true; }
+  function pause(){ if(tickTimer){ clearInterval(tickTimer); tickTimer = null; } running = false; }
+  function reset(){ pause(); secondsLeft = (mode==='focus'?focusMin:breakMin)*60; save('pwa_secondsLeft', secondsLeft); render(); }
+  function skip(){ secondsLeft = 0; render(); }
+
+  function onTick(){
+    if (secondsLeft > 0) { secondsLeft--; save('pwa_secondsLeft', secondsLeft); renderProgress(); elTime.textContent = fmt(secondsLeft); return; }
+    // finished
+    stageComplete();
+  }
+
+  async function stageComplete(){
+    await beep();
+    if (mode === 'focus') { streak++; save('pwa_streak', streak); }
+    if (autoNextVal){
+      mode = (mode==='focus') ? 'break' : 'focus';
+      save('pwa_mode', mode);
+      secondsLeft = (mode==='focus'?focusMin:breakMin)*60; save('pwa_secondsLeft', secondsLeft);
+      if (wallpaperMode === 'shuffle') { nextImage(); }
+      render();
+    } else {
+      pause();
+    }
+  }
+
+  // ---------- Background rotation ----------
+  let rotateTimer = null;
+  function ensureRotateTimer(){
+    if (rotateTimer) { clearInterval(rotateTimer); rotateTimer = null; }
+    if (wallpaperMode==='shuffle' && rotateOn){
+      rotateTimer = setInterval(() => { nextImage(); }, rotateEveryMin * 60 * 1000);
+    }
+  }
+
+  function currentBgUrl(){
+    if (wallpaperMode==='static') return staticUrl || IMAGES[0]?.url;
+    return IMAGES[imgIndex % IMAGES.length]?.url || IMAGES[0]?.url;
+  }
+
+  function setBg(url){ elBg.style.backgroundImage = `url(${url})`; if (elPreview) elPreview.style.backgroundImage = `url(${url})`; }
+  function nextImage(){ imgIndex = (imgIndex + 1) % IMAGES.length; save('pwa_imgIndex', imgIndex); setBg(currentBgUrl()); }
+  function prevImage(){ imgIndex = (imgIndex - 1 + IMAGES.length) % IMAGES.length; save('pwa_imgIndex', imgIndex); setBg(currentBgUrl()); }
+
+  // ---------- Rendering ----------
+  function renderProgress(){
+    const total = (mode==='focus'?focusMin:breakMin)*60;
+    const progress = 1 - (secondsLeft / total);
+    const circ = 2 * Math.PI * 45; // r=45
+    const dash = circ * progress;
+    elProg.setAttribute('stroke-dasharray', String(circ));
+    elProg.setAttribute('stroke-dashoffset', String(circ - dash));
+  }
+
+  function render(){
+    // timer ring & text
+    elTime.textContent = fmt(secondsLeft);
+    elSub.textContent = mode==='focus' ? 'Deep focus' : 'Rest well';
+    renderProgress();
+
+    // badges
+    elBadgeMode.textContent = mode;
+    elBadgeStreak.textContent = `Streak: ${streak}`;
+
+    // ranges & toggles
+    rFocus.value = focusMin; lblFocus.textContent = `${focusMin} min`;
+    rBreak.value = breakMin; lblBreak.textContent = `${breakMin} min`;
+
+    autoNext.checked = autoNextVal;
+    soundOn.checked = soundOnVal;
+
+    rotate.checked = rotateOn;
+    rRotate.value = rotateEveryMin; lblRotate.textContent = `${rotateEveryMin} min`;
+
+    modeShuffle.checked = (wallpaperMode==='shuffle');
+    modeStatic.checked = (wallpaperMode==='static');
+
+  setBg(currentBgUrl());
+    ensureRotateTimer();
+
+    // buttons text
+    btnToggleMode.textContent = (mode==='focus') ? 'Switch to Break' : 'Switch to Focus';
+  }
+
+  // ---------- Events ----------
+  btnStart.addEventListener('click', start);
+  btnPause.addEventListener('click', pause);
+  btnReset.addEventListener('click', reset);
+  btnSkip.addEventListener('click', skip);
+  btnToggleMode.addEventListener('click', () => { mode = (mode==='focus') ? 'break':'focus'; save('pwa_mode', mode); reset(); render(); });
+
+  rFocus.addEventListener('input', e => { focusMin = +e.target.value; lblFocus.textContent = `${focusMin} min`; save('pwa_focusMin', focusMin); if(!running && mode==='focus'){ secondsLeft = focusMin*60; save('pwa_secondsLeft', secondsLeft); render(); } else { renderProgress(); }});
+  rBreak.addEventListener('input', e => { breakMin = +e.target.value; lblBreak.textContent = `${breakMin} min`; save('pwa_breakMin', breakMin); if(!running && mode==='break'){ secondsLeft = breakMin*60; save('pwa_secondsLeft', secondsLeft); render(); } else { renderProgress(); }});
+  autoNext.addEventListener('change', e => { autoNextVal = e.target.checked; save('pwa_autoNext', autoNextVal); });
+  soundOn.addEventListener('change', e => { soundOnVal = e.target.checked; save('pwa_soundOn', soundOnVal); });
+
+  rotate.addEventListener('change', e => { rotateOn = e.target.checked; save('pwa_rotate', rotateOn); ensureRotateTimer(); });
+  rRotate.addEventListener('input', e => { rotateEveryMin = +e.target.value; lblRotate.textContent = `${rotateEveryMin} min`; save('pwa_rotateEvery', rotateEveryMin); ensureRotateTimer(); });
+  btnPrev.addEventListener('click', prevImage);
+  btnNext.addEventListener('click', nextImage);
+
+  modeShuffle.addEventListener('change', () => { wallpaperMode = 'shuffle'; save('pwa_wallpaperMode', wallpaperMode); ensureRotateTimer(); render(); });
+  modeStatic.addEventListener('change', () => { wallpaperMode = 'static'; save('pwa_wallpaperMode', wallpaperMode); ensureRotateTimer(); render(); });
+  setStaticBtn.addEventListener('click', () => { staticUrl = currentBgUrl(); wallpaperMode = 'static'; save('pwa_staticUrl', staticUrl); save('pwa_wallpaperMode', wallpaperMode); render(); });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const item = { id: `custom_${Date.now()}`, url: dataUrl, author: 'You', link: '#' };
+      const list = load('pwa_customImgs', []);
+      list.push(item);
+      save('pwa_customImgs', list);
+      IMAGES.push(item);
+      buildGallery();
+      alert('已加入自訂圖片（僅儲存在本機瀏覽器）');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Keyboard
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.code === 'Space'){ e.preventDefault(); running ? pause() : start(); }
+    if (e.key.toLowerCase() === 's'){ skip(); }
+    if (e.key.toLowerCase() === 'r'){ reset(); }
+  });
+
+  // Gallery modal
+  openGallery.addEventListener('click', () => gallery.classList.add('open'));
+  gallery.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) gallery.classList.remove('open'); });
+
+  // Settings modal
+  if (openSettings) openSettings.addEventListener('click', () => settingsModal.classList.add('open'));
+  if (settingsModal) settingsModal.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) settingsModal.classList.remove('open'); });
+
+  function buildGallery(){
+    gridCurated.innerHTML = '';
+    DEFAULT_IMAGES.forEach((img, idx) => gridCurated.appendChild(makeThumb(img, idx, false)));
+
+    gridCustom.innerHTML = '';
+    const list = IMAGES.filter(i => i.id.startsWith('custom_'));
+    if (list.length === 0){ gridCustom.innerHTML = '<div class="small">尚無自訂圖片。</div>'; }
+    list.forEach((img, idx) => gridCustom.appendChild(makeThumb(img, idx, true)));
+  }
+
+  function makeThumb(info, idx, isCustom){
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = info.url; img.alt = 'bg';
+    wrap.appendChild(img);
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const btnUse = document.createElement('button'); btnUse.className = 'solid'; btnUse.textContent = 'Use';
+    btnUse.addEventListener('click', () => {
+      staticUrl = info.url; wallpaperMode = 'static'; save('pwa_staticUrl', staticUrl); save('pwa_wallpaperMode', wallpaperMode); setBg(staticUrl); gallery.classList.remove('open');
+    });
+    actions.appendChild(btnUse);
+    if (!isCustom){
+      const btnShuffle = document.createElement('button'); btnShuffle.className = 'solid secondary'; btnShuffle.textContent = 'Shuffle from here';
+      btnShuffle.addEventListener('click', () => {
+        wallpaperMode = 'shuffle'; save('pwa_wallpaperMode', wallpaperMode);
+        // set imgIndex to this curated image's position in IMAGES
+        const baseIdx = IMAGES.findIndex(x => x.id === info.id);
+  imgIndex = (baseIdx >= 0 ? baseIdx : 0);
+  save('pwa_imgIndex', imgIndex);
+  setBg(currentBgUrl()); gallery.classList.remove('open');
+      });
+      actions.appendChild(btnShuffle);
+    }
+    wrap.appendChild(actions);
+    const credit = document.createElement('a'); credit.href = info.link || '#'; credit.target = '_blank'; credit.rel = 'noreferrer'; credit.className = 'credit'; credit.textContent = `© ${info.author}`;
+    wrap.appendChild(credit);
+    return wrap;
+  }
+
+  // ---------- Init ----------
+  // clamp secondsLeft if lengths changed
+  secondsLeft = Math.min(secondsLeft, (mode==='focus'?focusMin:breakMin)*60);
+  render();
+  buildGallery();
+})();
+</script>
+</body>
+</html>

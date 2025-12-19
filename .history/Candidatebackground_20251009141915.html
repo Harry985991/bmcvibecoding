@@ -1,0 +1,3936 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>104應徵分析</title>
+  <style>
+    :root {
+      --bg: #F8F8F8;           /* page background - 淺灰色背景 */
+      --primary: #333333;      /* 深灰色文字 */
+      --banner: #1E1E3F;       /* banner color */
+      --underline: #3B82F6;    /* banner 底部亮藍下劃線 */
+      --muted: #666666;        /* 次要文字顏色 */
+      --accent: #007BFF;       /* 主要藍色 */
+      --teal: #E5E5E5;         /* 淺灰色 */
+      --title-blue: #E3F2FD;   /* 淺藍色標題背景 */
+      --card-bg: #ffffff;      /* 白色卡片背景 */
+      --section-bg: #ffffff;   /* 白色區塊背景 */
+      --card-border: rgba(0,0,0,0.08);
+      --success: #28A745;      /* 成功綠色 */
+      --warning: #FFC107;      /* 警告橙色 */
+      --panel: #ffffff;        /* 面板背景 */
+      --text: #1e293b;         /* 主要文字 */
+      --chip: #f1f5f9;         /* 標籤背景 */
+      --chip-bd: #cbd5e1;      /* 標籤邊框 */
+      --table-zebra: #f8fafc;  /* 表格斑馬紋 */
+    }
+    * { box-sizing: border-box; }
+    body { 
+      margin: 0; 
+      font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; 
+      background-color: var(--bg); 
+      color: var(--text); 
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    header { 
+      background: var(--banner);
+      padding: 8px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: none;
+      box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      position: relative;
+    }
+
+    /* left: logo + title */
+    .header-left {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    /* header actions (right) - white text, subtle white borders */
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .container { max-width: none; margin: 0; padding: 0; }
+    
+    /* 整體佈局 */
+    .main-layout {
+      display: flex;
+      min-height: calc(100vh - 80px);
+      width: 100%;
+    }
+    
+    /* 左側導航區 */
+    .sidebar {
+      width: 200px;
+      background: #f8f9fa;
+      padding: 20px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+      border-right: 1px solid var(--card-border);
+      height: calc(100vh - 80px);
+      position: fixed;
+      left: 0;
+      top: 80px;
+      overflow-y: auto;
+    }
+    
+    .sidebar h3 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      color: var(--primary);
+      font-weight: 700;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent);
+    }
+    
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 200ms ease;
+      text-align: left;
+    }
+    
+    .nav-item:hover {
+      background: rgba(0,123,255,0.1);
+      border-color: rgba(0,123,255,0.2);
+    }
+    
+    .nav-item.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    
+    /* 右側內容區 */
+    .content-area {
+      flex: 1;
+      min-width: 0;
+      margin-left: 200px;
+      padding: 24px;
+      height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+    h1 { 
+      font-size: 24px;
+      color: #ffffff;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin: 0;
+    }
+    .sub { 
+      color: var(--muted); 
+      font-size: 14px; 
+      margin-top: 8px; 
+      line-height: 1.5;
+    }
+    .panel { 
+      background: var(--panel); 
+      border: 1px solid var(--card-border); 
+      border-radius: 16px; 
+      padding: 24px; 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); }
+    .col-12{ grid-column: span 12; }
+    .controls-row { display:flex; gap:12px; align-items: center; flex-wrap: wrap; }
+    .chip { 
+      display:inline-flex; 
+      align-items:center; 
+      gap:8px; 
+      padding:6px 10px; 
+      background: var(--chip); 
+      border:1px solid var(--chip-bd); 
+      border-radius: 999px; 
+      font-size:14px; 
+      color: var(--text); 
+      font-weight: 600;
+    }
+    .btn { 
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,0.04);
+      transform: translateY(-1px);
+    }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .link-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: inherit;
+    }
+    .link-btn:hover { text-decoration: underline; }
+    .btn.accent { 
+      display: inline-block;
+      background: var(--banner);
+      color: #ffffff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+    .btn.accent:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,123,255,0.16);
+      filter: brightness(0.98);
+    }
+    .btn.ghost { 
+      background: rgba(255,255,255,0.2); 
+      color: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    
+    /* 篩選區域的按鈕樣式 */
+    .filter-btn {
+      background: #f8f9fa;
+      color: var(--text);
+      border: 1px solid #dee2e6;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .filter-btn:hover {
+      background: #e9ecef;
+      border-color: #adb5bd;
+      transform: translateY(-1px);
+    }
+    .file { 
+      border:1px dashed var(--card-border); 
+      border-radius: 12px; 
+      padding: 12px; 
+      display:inline-flex; 
+      align-items:center; 
+      gap:10px; 
+      background: var(--chip); 
+    }
+    label { 
+      font-size: 14px; 
+      color: var(--primary); 
+      font-weight: 600;
+    }
+    select, input[type="text"], input[type="search"] { 
+      background: var(--card-bg); 
+      border:1px solid var(--card-border); 
+      color: var(--text); 
+      padding:10px 12px; 
+      border-radius: 8px; 
+      font-size: 14px; 
+      min-width: 140px; 
+    }
+    details { 
+      border:1px solid var(--card-border); 
+      border-radius: 12px; 
+      padding: 16px; 
+      background: var(--card-bg);
+    }
+    details > summary { 
+      cursor: pointer; 
+      font-size: 14px; 
+      color: var(--primary); 
+      font-weight: 600;
+    }
+    .kvs { display:flex; flex-wrap: wrap; gap:8px; margin-top: 8px; }
+    .kvs .chip { font-size: 12px; }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 12px; 
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    thead th { 
+      position: sticky; 
+      top: 0; 
+      background: var(--card-bg); 
+      border-bottom: 1px solid var(--card-border); 
+      padding: 12px; 
+      text-align: left; 
+      font-weight: 700; 
+      font-size: 14px; 
+      color: var(--primary);
+      z-index: 1;
+    }
+    tbody td { 
+      padding: 12px; 
+      border-bottom: 1px solid var(--card-border); 
+      font-size: 14px; 
+      color: var(--text);
+    }
+    tbody tr:nth-child(even) { background: var(--table-zebra); }
+    .right { text-align: right; }
+    .muted { color: var(--muted); }
+    .badges { display:flex; gap:8px; flex-wrap:wrap; }
+    .nowrap { white-space: nowrap; }
+    .grow { flex: 1 1 auto; }
+    .search { min-width: 220px; }
+    a.company-link { color: var(--accent); text-decoration: underline; cursor:pointer; font-weight: 600; }
+
+    /* Modal */
+    .modal-backdrop { 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(0,0,0,0.45); 
+      display:none; 
+      align-items: center; 
+      justify-content: center; 
+      z-index: 50; 
+    }
+    .modal { 
+      width: min(1400px, 98vw); 
+      max-height: 86vh; 
+      overflow: hidden; 
+      border-radius: 12px; 
+      background: var(--card-bg); 
+      border:1px solid var(--card-border); 
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12); 
+      display:flex; 
+      flex-direction: column; 
+    }
+    .modal header { 
+      position: relative; 
+      padding: 20px; 
+      border-bottom: 1px solid var(--card-border); 
+      background: var(--card-bg); 
+    }
+    .modal h2 { 
+      font-size: 18px; 
+      margin:0; 
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .modal .meta { 
+      font-size:14px; 
+      color: var(--muted); 
+      margin-top:8px; 
+    }
+    .modal main { 
+      padding: 0 20px 12px; 
+      overflow: auto; 
+    }
+    
+    .modal table {
+      min-width: 100%;
+      table-layout: auto;
+    }
+    
+    .modal th {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    
+    .modal th:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .modal th.sortable::after {
+      content: " ↕";
+      opacity: 0.5;
+      font-size: 12px;
+    }
+    
+    .modal th.sort-asc::after {
+      content: " ↑";
+      opacity: 1;
+      color: var(--accent);
+    }
+    
+    .modal th.sort-desc::after {
+      content: " ↓";
+      opacity: 1;
+      color: var(--accent);
+    }
+    .modal footer { 
+      padding: 16px 20px; 
+      border-top: 1px solid var(--card-border); 
+      display:flex; 
+      gap:8px; 
+      justify-content: flex-end; 
+    }
+    .tag { 
+      border: 1px solid var(--card-border); 
+      border-radius: 999px; 
+      padding: 4px 8px; 
+      font-size: 12px; 
+      color: var(--text); 
+      background: var(--chip);
+    }
+    .close-x { 
+      position:absolute; 
+      right:16px; 
+      top:16px; 
+      cursor:pointer; 
+      font-size: 20px; 
+      color: var(--muted);
+      font-weight: 700;
+    }
+    
+    /* 整體分析表格樣式覆蓋 */
+    .overview-table th[style*="text-align: right"],
+    .overview-table td[style*="text-align: right"] {
+      text-align: right !important;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>104應徵分析</h1>
+    </div>
+    
+    <div class="header-actions">
+      <button class="btn accent" id="importBtn">匯入資料</button>
+      <button id="downloadCsv" class="btn accent" disabled>下載結果</button>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <!-- 左側導航區 -->
+    <div class="sidebar">
+      <h3>統計分析</h3>
+      <button class="nav-item active" id="tabOverview">整體分析</button>
+      <button class="nav-item" id="tabCompany">公司統計</button>
+      <button class="nav-item" id="tabExperience">年資統計</button>
+      <button class="nav-item" id="tabEducation">學歷分析</button>
+      <button class="nav-item" id="tabGeography">地理分析</button>
+      <button class="nav-item" id="tabJobAnalysis">職務剖析</button>
+      <!-- 新增側欄區塊標題：報告圖表 -->
+      <div style="margin-top:12px; padding-top:8px; border-top:1px solid var(--card-border);">
+        <h3 style="margin:0; font-size:14px; color:var(--primary);">報告圖表</h3>
+        <div style="margin-top:8px;">
+          <button class="nav-item" id="tabJobStats">新人應徵指標</button>
+          <button class="nav-item" id="tabApplicationDistribution">應徵筆數分布</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側內容區 -->
+    <div class="content-area">
+        <section class="panel" style="margin-top:0px;">
+      <div class="grid">
+        <div class="col-12">
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- 月份篩選 -->
+            <div>
+              <div class="controls-row" style="align-items: center; gap: 8px;">
+                <label style="margin: 0;">月份</label>
+                <button class="filter-btn" id="monthSelectAll">全選</button>
+                <button class="filter-btn" id="monthClear">清除</button>
+                <div id="monthChips" class="kvs" style="margin: 0;"></div>
+              </div>
+            </div>
+            
+            <!-- 職系篩選 -->
+            <div>
+              <div class="controls-row" style="align-items: center; gap: 8px;">
+                <label style="margin: 0;">職系</label>
+                <button class="filter-btn" id="idlSelectAll">全選</button>
+                <button class="filter-btn" id="idlClear">清除</button>
+                <div id="idlChips" class="kvs" style="margin: 0;"></div>
+              </div>
+            </div>
+            
+            <!-- 功能篩選 -->
+            <div>
+              <div class="controls-row" style="align-items: center; gap: 8px;">
+                <label style="margin: 0;">功能</label>
+                <button class="filter-btn" id="funcSelectAll">全選</button>
+                <button class="filter-btn" id="funcClear">清除</button>
+                <div id="funcChips" class="kvs" style="margin: 0;"></div>
+              </div>
+            </div>
+            
+            <!-- 廠區篩選 -->
+            <div>
+              <div class="controls-row" style="align-items: center; gap: 8px;">
+                <label style="margin: 0;">廠區</label>
+                <button class="filter-btn" id="locSelectAll">全選</button>
+                <button class="filter-btn" id="locClear">清除</button>
+                <div id="locChips" class="kvs" style="margin: 0;"></div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+        <div class="col-12 controls-row" style="margin-top:6px; display: none;">
+          <label class="chip"><input type="checkbox" id="toggleDedup" /> 去除重複（以「姓名＋職務名稱一＋應徵日期」去重）</label>
+          <label class="chip"><input type="checkbox" id="toggleHideUnknown" /> 排除「未填寫／求職者設定隱藏」公司</label>
+        </div>
+      </div>
+      
+  <!-- (職務統計面板已移至頁面底部，避免與篩選卡片混在一起) -->
+    </section>
+
+    <section class="panel" style="margin-top:12px; display: none;">
+      <details>
+        <summary>分類規則（可於程式內調整）</summary>
+        <div style="margin-top:8px; color: var(--muted); font-size: 13px; line-height:1.7;">
+          <div><strong>Function 優先序：</strong>RD → 生產製造 → 資訊 → 行銷業務 → 其他。</div>
+          <div><strong>職務名稱地點：</strong>若職務名稱含「龍科」→ 龍科廠；含「雲科／雲林／斗六」→ 雲科廠；含「中科／后里」→ 中科/后里；其餘預設 → 桃園廠。</div>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <div id="statsHeader" class="controls-row" style="justify-content: space-between;">
+        <div class="badges" id="statusBadges"></div>
+      </div>
+      
+      
+      <!-- 整體分析內容 -->
+      <div id="overviewStats" class="tab-content">
+        <div id="overviewOutput"></div>
+      </div>
+      
+      <!-- 公司統計內容 -->
+      <div id="companyStats" class="tab-content" style="display: none;">
+        <!-- 公司名稱關鍵字搜尋 -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">公司篩選</h4>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label style="font-weight: 600; color: var(--text);">公司名稱關鍵字：</label>
+            <input id="companySearch" class="search" type="search" placeholder="輸入關鍵字過濾公司" style="min-width: 300px; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; background: var(--card-bg); color: var(--text);" />
+          </div>
+        </div>
+        <div id="output"></div>
+      </div>
+      
+      <!-- 年資統計內容 -->
+      <div id="experienceStats" class="tab-content" style="display: none;">
+        <div id="experienceOutput"></div>
+      </div>
+      
+      <!-- 學歷分析內容 -->
+      <div id="educationStats" class="tab-content" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <button class="btn accent" id="filterNewcomers" style="background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-right: 8px;">
+            篩選新進人員（無年資+二年以內）
+          </button>
+          <button class="btn" id="clearNewcomerFilter" style="background: #f8f9fa; color: var(--text); border: 1px solid #dee2e6; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            清除篩選
+          </button>
+        </div>
+        <div id="educationOutput"></div>
+      </div>
+      
+      <!-- 地理分析內容 -->
+      <div id="geographyStats" class="tab-content" style="display: none;">
+        <div id="geographyOutput"></div>
+      </div>
+      
+      <!-- 職務分析內容 -->
+      <div id="jobAnalysisStats" class="tab-content" style="display: none;">
+        <!-- 職務篩選器 -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">職務篩選</h4>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label style="font-weight: 600; color: var(--text);">選擇職務：</label>
+            <select id="jobFilter" style="min-width: 300px; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; background: var(--card-bg); color: var(--text);">
+              <option value="">請選擇職務...</option>
+            </select>
+            <button id="clearJobFilter" class="btn" style="background: #f8f9fa; color: var(--text); border: 1px solid #dee2e6; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+              清除篩選
+            </button>
+          </div>
+        </div>
+        
+        <!-- 核心數據摘要 -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">核心數據摘要</h4>
+          <div id="jobAnalysisKPIs" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <!-- KPI 卡片將由 JavaScript 動態生成 -->
+          </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+          <div style="display:flex; gap:8px;">
+            <button id="jobHistByMonth" class="btn" style="background:#f8f9fa; color:var(--text); border:1px solid var(--card-border);">按月</button>
+            <button id="jobHistByWeek" class="btn accent" style="background:var(--accent); color:white; border:none;">按週</button>
+          </div>
+        </div>
+        <div id="jobHistContainer"></div>
+        </div>
+        
+        <!-- 經驗背景分析 -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">經驗背景分析</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- 年資分佈 -->
+            <div>
+              <h5 style="margin: 0 0 12px 0; color: var(--primary); font-size: 16px;">年資分佈</h5>
+              <div id="jobAnalysisSeniorityChart"></div>
+            </div>
+            <!-- 前五大來源公司 -->
+            <div>
+              <h5 style="margin: 0 0 12px 0; color: var(--primary); font-size: 16px;">前五大來源公司</h5>
+              <div id="jobAnalysisTopCompanies"></div>
+            </div>
+          </div>
+          <div style="margin-top: 24px;">
+            <h5 style="margin: 0 0 12px 0; color: var(--primary); font-size: 16px;">前五大前置職務</h5>
+            <div id="jobAnalysisPreviousJobs"></div>
+          </div>
+        </div>
+        
+        <!-- 學術與地理分析 -->
+        <div class="panel" style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">學術與地理分析</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- 主要畢業學校與科系 -->
+            <div>
+              <h5 style="margin: 0 0 12px 0; color: var(--primary); font-size: 16px;">主要畢業學校與科系</h5>
+              <div id="jobAnalysisEducation"></div>
+            </div>
+            <!-- 應徵者居住地分佈 -->
+            <div>
+              <h5 style="margin: 0 0 12px 0; color: var(--primary); font-size: 16px;">應徵者居住地分佈</h5>
+              <div id="jobAnalysisLocation"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 應徵者清單 -->
+        <div class="panel">
+          <h4 style="margin: 0 0 16px 0; color: var(--primary);">應徵者清單</h4>
+          <div id="jobAnalysisApplicantList"></div>
+        </div>
+      </div>
+      
+      <!-- 職務統計內容（顯示於頁面最下方，避免與篩選卡片並列） -->
+      <div id="jobStatsPanel" class="tab-content" style="display: none;">
+        <div class="panel" style="padding:12px;">
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+            <label class="chip" style="margin:0;">
+              <input type="checkbox" id="jobStatsFreshOnly" checked /> 只計算「新鮮人職缺」為 Y 的職缺數
+            </label>
+          </div>
+          <!-- 上方卡片：目標新人 -->
+          <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:12px;">
+            <div style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px;">目標新人</div>
+            <div id="jobStatsContent" style="min-height:20px; color:var(--muted);"></div>
+          </div>
+          <!-- 下方卡片：全部新人 -->
+          <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:12px;">
+            <div style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px;">全部新人</div>
+            <div id="targetStatsContent" style="min-height:20px; color:var(--muted);"></div>
+          </div>
+          <!-- 圖表呈現 -->
+          <div id="chartPanel" style="margin-top:12px;">
+            <h5 style="margin:0 0 8px 0; color: var(--primary);">圖表呈現</h5>
+            <div id="comparisonChart" style="min-height:260px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="applicationDistributionPanel" class="tab-content" style="display: none;">
+        <div class="panel" style="padding:12px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <h4 style="margin:0; color: var(--primary);">應徵筆數分布</h4>
+            <div class="muted" style="font-size:13px;">概覽目前篩選條件下的投遞量與職缺量趨勢</div>
+          </div>
+          <div id="applicationDistributionContent" style="display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="chart-card" style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <h5 style="margin:0; font-size:16px; color: var(--primary);">月份應徵筆數分布</h5>
+              <div id="monthlyApplicationsChart" style="min-height:220px;"></div>
+            </div>
+            <div class="chart-card" style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <h5 style="margin:0; font-size:16px; color: var(--primary);">每月職缺數量</h5>
+              <div id="monthlyJobCountChart" style="min-height:220px;"></div>
+            </div>
+            <div class="chart-card" style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <h5 style="margin:0; font-size:16px; color: var(--primary);">平均每職缺應徵筆數</h5>
+              <div id="avgApplicationsPerJobChart" style="min-height:220px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer" style="display: none;">操作提示：點公司名稱可展開人選清單；表格支援排序（點欄位標題）。</div>
+    </section>
+    </div>
+  </div>
+
+  <!-- Import Reminder Modal -->
+  <div id="importReminderModal" class="modal-backdrop" style="display: flex;">
+    <div class="modal" role="dialog" aria-modal="true" style="max-width: 500px;">
+      <header>
+        <h2>歡迎使用應徵者背景分析系統</h2>
+        <div class="meta">請先匯入 CSV 檔案以開始分析</div>
+      </header>
+      <main style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+          <p style="color: var(--muted); line-height: 1.6; margin: 0;">
+            請選擇包含應徵者資料的 CSV 檔案進行匯入，<br>
+            系統將自動分析並提供統計報表。
+          </p>
+        </div>
+      </main>
+      <footer>
+        <button class="btn accent" id="startImportBtn" style="background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          選擇檔案
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modal for Candidate List -->
+  <div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header>
+        <span class="close-x" id="modalClose" title="關閉">×</span>
+        <h2 id="modalTitle">人選清單</h2>
+        <div class="meta" id="modalMeta"></div>
+      </header>
+      <main>
+        <div style="padding: 10px 0; display:flex; gap:8px; align-items:center;">
+          <span class="tag" id="modalFilters"></span>
+          <div class="grow"></div>
+          <button class="btn" id="btnExportCandidates">匯出人選 CSV</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>姓名</th>
+              <th>職務名稱 IDL/DL</th>
+              <th>年資</th>
+              <th>公司（工作經驗一）</th>
+              <th>工作經驗一職務名稱</th>
+              <th>學校NEW</th>
+              <th>學歷科系名稱一</th>
+              <th>職缺 function</th>
+              <th>新鮮人（2y內）</th>
+              <th>目標學校</th>
+            </tr>
+          </thead>
+          <tbody id="modalTbody"></tbody>
+        </table>
+      </main>
+      <footer>
+        <button class="btn ghost" id="btnClose">關閉</button>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // --- Helpers ---
+    const MONTH_ORDER = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const MODE = {TOTAL: 'total', BY_MONTH: 'byMonth'};
+
+    const KEYWORDS = {
+      RD: ["研發","開發","設計","NPI","新事業","技術","材料","配方","應用工程師","研發工程師","產品開發","光學設計","電機設計","工藝"],
+      MFG: ["製程","生產","製造","現場","產線","封裝","測試","機台","設備","品保","品檢","QC","QA","維修","維護","保養","作業員","技術員","工務","製造工程師","製程工程師","儀校","維運","工業工程","整合工程師","電控","設備工程師","IE","新產品工程師"],
+      IT: ["資訊","軟體","軟件","軟工","前端","後端","全端","資料","數據","AI","機器學習","演算法","算法","DevOps","雲","雲端","系統","網路","資安","IT","MIS","程式","程式設計","程式開發","Python","Java","C#","SQL","雲端工程師","數位技術中心"],
+      MKT: ["行銷","市場","品牌","業務","Sales","通路","客戶經理","業務助理","BD","商務","企劃","公關","數位行銷","產品經理","PM","AE","客服"]
+    };
+
+    const FUNC_LABELS = [
+      {key:'RD', label:'研發'},
+      {key:'MFG', label:'生產製造'},
+      {key:'MKT', label:'行銷業務'},
+      {key:'IT', label:'資訊'},
+      {key:'OTHER', label:'其他'},
+      {key:'INTERN', label:'實習'}
+    ];
+
+    const LOC_LABELS = [
+      {key:'HQ', label:'桃園廠'},
+      {key:'LONGKE', label:'龍科廠'},
+      {key:'YUNKE', label:'雲科廠'},
+      {key:'ZK_HOULI', label:'中科/后里'},
+      {key:'OTHER', label:'其他'}
+    ];
+
+    const BAR_CHART_COLORS = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d', '#17a2b8', '#343a40', '#8e8e93'];
+
+  const DEFAULT_CSV_PATH = 'Data/2025-104應徵統計.csv';
+
+    function normalizeKey(k){ return (k||'').toString().trim(); }
+    function normalizeVal(v){ return (v==null? '': String(v)).trim(); }
+
+    function guessFunction(title){
+      const t = (title||'').toString().toLowerCase();
+      const hit = (arr) => arr.some(w => t.includes(w.toLowerCase()));
+      
+      // 特殊規則：優先處理特殊情況
+      if(t.includes('q種子暑期實習')) return 'INTERN';
+      if(t.includes('實習')) return 'INTERN';
+      if(t.includes('品質系統')) return 'OTHER';
+      if(t.includes('醫材研發技術文件專員')) return 'OTHER';
+      if(t.includes('醫療器材技術文件')) return 'OTHER';
+      if(t.includes('技術文件')) return 'OTHER';
+      if(t.includes('數位技術中心')) return 'IT';
+      if(t.includes('品牌管理處')) return 'MKT';
+      
+      // 業務相關規則：國際業務、業務專員等都歸為行銷業務
+      if(t.includes('國際業務') || t.includes('業務專員') || t.includes('業務')) return 'MKT';
+      
+      // 製程技術屬於生產製造
+      if(t.includes('製程技術')) return 'MFG';
+      
+      // AOI應用屬於資訊
+      if(t.includes('aoi應用')) return 'IT';
+      
+      // 一般分類規則
+      if(hit(KEYWORDS.RD)) return 'RD';
+      if(hit(KEYWORDS.MFG)) return 'MFG';
+      if(hit(KEYWORDS.IT)) return 'IT';
+      if(hit(KEYWORDS.MKT)) return 'MKT';
+      return 'OTHER';
+    }
+
+    function guessLocation(title){
+      const t = (title||'').toString().toLowerCase();
+      if(t.includes('龍科')) return 'LONGKE';
+      if(t.includes('雲科') || t.includes('雲林') || t.includes('斗六')) return 'YUNKE';
+      if(t.includes('中科') || t.includes('后里') || t.includes('後里')) return 'ZK_HOULI';
+      return 'HQ';
+    }
+
+    // CSV parser
+    function parseCSV(text){
+      const rows = [];
+      let row = [], cell = '', inQuotes = false;
+      for(let i=0;i<text.length;i++){
+        const ch = text[i];
+        const next = text[i+1];
+        if(inQuotes){
+          if(ch === '"' && next === '"'){ cell += '"'; i++; }
+          else if(ch === '"'){ inQuotes = false; }
+          else { cell += ch; }
+        } else {
+          if(ch === '"'){ inQuotes = true; }
+          else if(ch === ','){ row.push(cell); cell=''; }
+          else if(ch === '\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+          else if(ch === '\r'){ /* skip */ }
+          else { cell += ch; }
+        }
+      }
+      if(cell.length>0 || row.length>0){ row.push(cell); rows.push(row); }
+      if(rows.length===0) return [];
+      const headers = rows[0].map(h=>normalizeKey(h));
+      return rows.slice(1).filter(r=>r.some(c=>c!==''))
+        .map(r=>{ const o = {}; headers.forEach((h,idx)=>{ o[h] = normalizeVal(r[idx]); }); return o; });
+    }
+
+    // Global state
+    let raw = [];
+    let data = [];
+    let selectedMonths = new Set();
+    let selectedIDL = new Set();
+    let selectedFuncs = new Set();
+    let selectedLocs = new Set();
+    let mode = MODE.TOTAL; // 固定為總合模式
+    let isNewcomerFilterActive = false; // 新進人員篩選狀態
+    let selectedJobTitle = ''; // 選中的職務名稱
+
+    // Elements
+    const $output = document.getElementById('output');
+    const $download = document.getElementById('downloadCsv');
+    const $monthChips = document.getElementById('monthChips');
+    const $idlChips = document.getElementById('idlChips');
+    const $funcChips = document.getElementById('funcChips');
+    const $locChips = document.getElementById('locChips');
+    const $monthSelectAll = document.getElementById('monthSelectAll');
+    const $monthClear = document.getElementById('monthClear');
+    const $idlSelectAll = document.getElementById('idlSelectAll');
+    const $idlClear = document.getElementById('idlClear');
+    const $funcSelectAll = document.getElementById('funcSelectAll');
+    const $funcClear = document.getElementById('funcClear');
+    const $locSelectAll = document.getElementById('locSelectAll');
+    const $locClear = document.getElementById('locClear');
+    const $companySearch = document.getElementById('companySearch');
+    const $toggleDedup = document.getElementById('toggleDedup');
+    const $toggleHideUnknown = document.getElementById('toggleHideUnknown');
+    const $statusBadges = document.getElementById('statusBadges');
+    
+    // 分頁元素
+    const $tabOverview = document.getElementById('tabOverview');
+    const $tabCompany = document.getElementById('tabCompany');
+    const $tabExperience = document.getElementById('tabExperience');
+    const $tabEducation = document.getElementById('tabEducation');
+    const $tabGeography = document.getElementById('tabGeography');
+    const $tabJobAnalysis = document.getElementById('tabJobAnalysis');
+    const $tabJobStats = document.getElementById('tabJobStats');
+    const $tabApplicationDistribution = document.getElementById('tabApplicationDistribution');
+    const $overviewStats = document.getElementById('overviewStats');
+    const $companyStats = document.getElementById('companyStats');
+    const $experienceStats = document.getElementById('experienceStats');
+    const $educationStats = document.getElementById('educationStats');
+    const $geographyStats = document.getElementById('geographyStats');
+    const $jobAnalysisStats = document.getElementById('jobAnalysisStats');
+    const $jobStatsPanel = document.getElementById('jobStatsPanel');
+    const $applicationDistributionPanel = document.getElementById('applicationDistributionPanel');
+    const $overviewOutput = document.getElementById('overviewOutput');
+    const $experienceOutput = document.getElementById('experienceOutput');
+    const $educationOutput = document.getElementById('educationOutput');
+    const $geographyOutput = document.getElementById('geographyOutput');
+    const $filterNewcomers = document.getElementById('filterNewcomers');
+    const $clearNewcomerFilter = document.getElementById('clearNewcomerFilter');
+    
+    // 職務分析相關元素
+    const $jobFilter = document.getElementById('jobFilter');
+    const $clearJobFilter = document.getElementById('clearJobFilter');
+    const $jobAnalysisKPIs = document.getElementById('jobAnalysisKPIs');
+    const $jobAnalysisSeniorityChart = document.getElementById('jobAnalysisSeniorityChart');
+    const $jobAnalysisTopCompanies = document.getElementById('jobAnalysisTopCompanies');
+    const $jobAnalysisPreviousJobs = document.getElementById('jobAnalysisPreviousJobs');
+    const $jobAnalysisEducation = document.getElementById('jobAnalysisEducation');
+    const $jobAnalysisLocation = document.getElementById('jobAnalysisLocation');
+    const $jobAnalysisApplicantList = document.getElementById('jobAnalysisApplicantList');
+
+    // Map to store monthly resume detail rows for modal display
+    const jobStatsRowMap = new Map();
+
+    // Modal elements
+    const $modalBackdrop = document.getElementById('modalBackdrop');
+    const $modalClose = document.getElementById('modalClose');
+    const $btnClose = document.getElementById('btnClose');
+    const $modalTitle = document.getElementById('modalTitle');
+    const $modalMeta = document.getElementById('modalMeta');
+    const $modalTbody = document.getElementById('modalTbody');
+    const $modalFilters = document.getElementById('modalFilters');
+    const $btnExportCandidates = document.getElementById('btnExportCandidates');
+
+    function enableControls(enabled){
+      [$download,$companySearch,$monthSelectAll,$monthClear,$idlSelectAll,$idlClear,$funcSelectAll,$funcClear,$locSelectAll,$locClear]
+        .forEach(el=> el.disabled = !enabled);
+    }
+
+    function buildChips($root, values, selectedSet, onChange){
+      $root.innerHTML = '';
+      values.forEach(v=>{
+        const id = Math.random().toString(36).slice(2);
+        const wrap = document.createElement('label');
+        wrap.className = 'chip';
+        wrap.innerHTML = `<input type="checkbox" id="${id}"> <span>${v}</span>`;
+        const $cb = wrap.querySelector('input');
+        $cb.checked = selectedSet.has(v);
+        $cb.addEventListener('change', ()=>{ if($cb.checked) selectedSet.add(v); else selectedSet.delete(v); onChange && onChange(); });
+        $root.appendChild(wrap);
+      });
+    }
+
+    function uniqueSortedMonths(arr){
+      const u = Array.from(new Set(arr)).filter(Boolean);
+      return u.sort((a,b)=> MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+    }
+    function uniqueSorted(arr){ return Array.from(new Set(arr)).filter(Boolean).sort(); }
+
+    function initFilters(){
+      const months = uniqueSortedMonths(data.map(d=>d['月份']));
+  const idls = uniqueSorted(data.map(d=>d.__IDL));
+      const funcs = FUNC_LABELS.map(f=>f.label);
+      const locs = LOC_LABELS.map(l=>l.label);
+
+      selectedMonths = new Set(months);
+      selectedIDL = new Set(idls);
+      selectedFuncs = new Set(funcs);
+      selectedLocs = new Set(locs);
+
+      // 初始化篩選器時不觸發更新，避免跳躍
+      buildChips($monthChips, months, selectedMonths, null);
+      buildChips($idlChips, idls, selectedIDL, null);
+      buildChips($funcChips, funcs, selectedFuncs, null);
+      buildChips($locChips, locs, selectedLocs, null);
+
+      enableControls(true);
+      initJobAnalysis();
+      // 最後統一更新一次
+      update();
+    }
+
+    function preprocess(rawRows){
+      return rawRows.map(r=>{
+        const o = {...r};
+        const title = o['職務名稱一'] || o['職務名稱'] || o['職務'] || '';
+        o.__FUNC = guessFunction(title);
+        o.__FUNC_LABEL = FUNC_LABELS.find(x=>x.key===o.__FUNC)?.label || '其他';
+        o.__LOC = guessLocation(title);
+        o.__LOC_LABEL = LOC_LABELS.find(x=>x.key===o.__LOC)?.label || '總部';
+        o.__COMP = o['工作經驗一公司名稱'] || '未填寫';
+        o.__IDL = (o['IDL']||'').toUpperCase();
+        o.__MONTH = o['月份'] || '';
+        o.__APPLY = o['應徵職務一應徵日期'] || o['應徵日期'] || '';
+        o.__NAME = o['姓名'] || '';
+        return o;
+      });
+    }
+
+    function dedup(rows){
+      const seen = new Set();
+      const out = [];
+      for(const r of rows){
+        const key = [r.__NAME, r['職務名稱一']||'', r.__APPLY].join('||');
+        if(seen.has(key)) continue; seen.add(key); out.push(r);
+      }
+      return out;
+    }
+
+    async function fetchDefaultCsvText(path){
+      // Try multiple path variants to improve chance of success when served
+      // from file:// or different servers. Returns text on success or throws.
+      const candidates = [];
+      try {
+        candidates.push(new URL(path, window.location.href).toString());
+      } catch(e) {
+        // ignore
+      }
+      // relative forms
+      candidates.push(path);
+      candidates.push('./' + path);
+      // encoded URI
+      try { candidates.push(encodeURI(path)); } catch(e){}
+      // encoded basename (in case of non-ascii chars)
+      try {
+        const parts = path.split('/');
+        const basename = parts.pop();
+        parts.push(encodeURIComponent(basename));
+        candidates.push(parts.join('/'));
+        parts[parts.length-1] = encodeURI(basename);
+        candidates.push(parts.join('/'));
+      } catch(e){}
+
+      const tried = [];
+      for(const url of Array.from(new Set(candidates)).filter(Boolean)){
+        tried.push(url);
+        try{
+          const resp = await fetch(url, { cache: 'no-cache' });
+          if(resp && resp.ok){
+            return await resp.text();
+          }
+        }catch(err){
+          // continue to XHR fallback below
+        }
+
+        // try XHR fallback for this url
+        try{
+          const text = await new Promise((resolve, reject) => {
+            try{
+              const xhr = new XMLHttpRequest();
+              xhr.open('GET', url, true);
+              xhr.overrideMimeType('text/plain; charset=utf-8');
+              xhr.onload = () => {
+                if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) resolve(xhr.responseText);
+                else reject(new Error(`XHR status ${xhr.status}`));
+              };
+              xhr.onerror = () => reject(new Error('XHR network error'));
+              xhr.send();
+            }catch(e){ reject(e); }
+          });
+          if(text) return text;
+        }catch(e){ /* try next candidate */ }
+      }
+
+      throw new Error('All fetch/XHR attempts failed for paths: ' + tried.join(' | '));
+    }
+
+    function filteredRows(){
+      let rows = data.slice();
+      if($toggleDedup.checked){ rows = dedup(rows); }
+      rows = rows.filter(r=> selectedMonths.has(r.__MONTH));
+      rows = rows.filter(r=> selectedIDL.has(r.__IDL));
+      rows = rows.filter(r=> selectedFuncs.has( FUNC_LABELS.find(x=>x.key===r.__FUNC)?.label || '其他' ));
+      rows = rows.filter(r=> selectedLocs.has( LOC_LABELS.find(x=>x.key===r.__LOC)?.label || '總部' ));
+      if($toggleHideUnknown.checked){ rows = rows.filter(r=> !(r.__COMP==='' || r.__COMP==='未填寫' || r.__COMP==='求職者設定隱藏')); }
+      const q = $companySearch.value.trim();
+      if(q){ const qq = q.toLowerCase(); rows = rows.filter(r=> (r.__COMP||'').toLowerCase().includes(qq)); }
+      
+      // 新進人員篩選
+      if(isNewcomerFilterActive){
+        rows = rows.filter(r=> {
+          const experience = r['年資'] || '';
+          return experience === '無' || 
+                 experience.includes('一年以下') || 
+                 experience.includes('1年以下') || 
+                 experience === '1' || 
+                 experience.includes('1-2年') || 
+                 experience.includes('1~2年') || 
+                 experience === '2';
+        });
+      }
+      
+      return rows;
+    }
+
+    function groupByCompany(rows){
+      // 先按公司分組，並記錄每個公司的唯一人員
+      const companyPeople = new Map(); // 儲存 (公司名稱, Set<人員唯一識別>)
+      
+      for(const r of rows){
+        const company = r.__COMP || '未填寫';
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`; // 人員唯一識別
+        
+        if (!companyPeople.has(company)) {
+          companyPeople.set(company, new Set());
+        }
+        companyPeople.get(company).add(personKey);
+      }
+
+      // 計算每個公司的唯一人數
+      const initialCounts = new Map();
+      for(const [company, peopleSet] of companyPeople.entries()) {
+        initialCounts.set(company, peopleSet.size);
+      }
+
+      const mergedCounts = new Map(); // 儲存 (代表公司, 總唯一人數)
+      const prefixToRepresentative = new Map(); // 儲存 (前綴, 代表公司)
+      const representativePeople = new Map(); // 儲存 (代表公司, Set<人員唯一識別>)
+
+      // 按人數降序排序，確保人數多的公司成為代表
+      const sortedCompanies = Array.from(initialCounts.entries()).sort((a,b) => b[1] - a[1]);
+
+      for(const [companyName, count] of sortedCompanies) {
+        // 判斷前綴長度：財團法人開頭用8個字，其他用4個字
+        const prefix = companyName.startsWith('財團法人') ? 
+          companyName.substring(0, 8) : 
+          companyName.substring(0, 4);
+        
+        const peopleSet = companyPeople.get(companyName);
+
+        if (prefixToRepresentative.has(prefix)) {
+          // 如果該前綴已有代表公司，將人員合併到代表公司
+          const representative = prefixToRepresentative.get(prefix);
+          const representativeSet = representativePeople.get(representative);
+          
+          // 合併人員集合（自動去重）
+          for(const person of peopleSet) {
+            representativeSet.add(person);
+          }
+          
+          mergedCounts.set(representative, representativeSet.size);
+        } else {
+          // 如果該前綴沒有代表公司，此公司成為代表
+          prefixToRepresentative.set(prefix, companyName);
+          representativePeople.set(companyName, new Set(peopleSet));
+          mergedCounts.set(companyName, peopleSet.size);
+        }
+      }
+
+      const arr = Array.from(mergedCounts.entries()).map(([公司,人數])=>({公司,人數}));
+      arr.sort((a,b)=> b.人數 - a.人數 || a.公司.localeCompare(b.公司, 'zh-Hant'));
+      return arr;
+    }
+
+    function groupByMonth(rows){
+      const map = new Map();
+      for(const r of rows){ const m = r.__MONTH || 'NA'; if(!map.has(m)) map.set(m, []); map.get(m).push(r); }
+      const months = Array.from(map.keys()).sort((a,b)=> MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+      return months.map(m=>({month:m, rows: map.get(m)}));
+    }
+
+    function groupByExperience(rows){
+      // 先按年資分組，並記錄每個年資的唯一人員
+      const experiencePeople = new Map(); // 儲存 (年資, Set<人員唯一識別>)
+      
+      for(const r of rows){
+        const experience = r['年資'];
+        // 排除未填寫和空值
+        if (!experience || experience === '' || experience === '未填寫') {
+          continue;
+        }
+        
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`; // 人員唯一識別
+        
+        if (!experiencePeople.has(experience)) {
+          experiencePeople.set(experience, new Set());
+        }
+        experiencePeople.get(experience).add(personKey);
+      }
+
+      // 計算每個年資的唯一人數
+      const experienceCounts = new Map();
+      for(const [experience, peopleSet] of experiencePeople.entries()) {
+        experienceCounts.set(experience, peopleSet.size);
+      }
+
+      // 年資分組邏輯
+      const groupedExperience = new Map();
+      
+      for(const [年資, 人數] of experienceCounts.entries()) {
+        let 分組名稱 = '';
+        
+        // 特殊處理：無、2年以下
+        if (年資 === '無') {
+          分組名稱 = '無';
+        } else if (年資.includes('一年以下') || 年資.includes('1年以下') || 年資 === '1' || 
+                  年資.includes('1-2年') || 年資.includes('1~2年') || 年資 === '2') {
+          分組名稱 = '2年以下';
+        } else {
+          // 提取數字進行分組
+          const match = 年資.match(/(\d+)/);
+          if (match) {
+            const num = parseInt(match[1]);
+            // 每三個區間合併：2-5年、5-8年、8-11年、11-14年...
+            const startYear = Math.floor((num - 2) / 3) * 3 + 2;
+            const endYear = startYear + 3;
+            分組名稱 = `${startYear}-${endYear}年`;
+          } else {
+            // 無法解析的保持原樣
+            分組名稱 = 年資;
+          }
+        }
+        
+        // 合併到分組中
+        if (!groupedExperience.has(分組名稱)) {
+          groupedExperience.set(分組名稱, new Set());
+        }
+        
+        // 將該年資的所有人員加入分組
+        for(const personKey of experiencePeople.get(年資)) {
+          groupedExperience.get(分組名稱).add(personKey);
+        }
+      }
+
+      // 轉換為陣列並排序
+      const arr = Array.from(groupedExperience.entries()).map(([年資, peopleSet])=>({
+        年資, 
+        人數: peopleSet.size
+      }));
+      
+      // 計算總人數用於佔比
+      const totalPeople = arr.reduce((sum, item) => sum + item.人數, 0);
+      
+      // 添加佔比並排序
+      arr.forEach(item => {
+        item.佔比 = totalPeople > 0 ? ((item.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+      });
+      
+      // 年資排序邏輯
+      arr.sort((a,b)=> {
+        // 無排在最上面
+        if (a.年資 === '無') return -1;
+        if (b.年資 === '無') return 1;
+        
+        // 2年以下排第二
+        if (a.年資 === '2年以下') return -1;
+        if (b.年資 === '2年以下') return 1;
+        
+        // 其他按數字排序
+        const aMatch = a.年資.match(/(\d+)/);
+        const bMatch = b.年資.match(/(\d+)/);
+        
+        if (aMatch && bMatch) {
+          return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+        }
+        
+        // 無法解析的按字串排序
+        return a.年資.localeCompare(b.年資, 'zh-Hant');
+      });
+      
+      return arr;
+    }
+
+    function normalizeDegree(degree) {
+      if (!degree || degree === '未填寫') return '未填寫';
+      
+      const d = degree.toString().toLowerCase();
+      
+      // 碩士(肄業)視為"大學(畢業)"
+      if (d.includes('碩士') && d.includes('肄業')) return '大學(畢業)';
+      
+      // 博士(肄業)視為碩士畢業
+      if (d.includes('博士') && d.includes('肄業')) return '碩士(畢業)';
+      
+      // 大學(肄業)視為高中職
+      if (d.includes('大學') && d.includes('肄業')) return '高中職';
+      
+      // 四技(畢業)及二技(畢業)併為一種為"技校(畢業)"
+      if (d.includes('四技') && d.includes('畢業')) return '技校(畢業)';
+      if (d.includes('二技') && d.includes('畢業')) return '技校(畢業)';
+      
+      // 二專及三專及五專併為一種為"專科"
+      if (d.includes('二專')) return '專科';
+      if (d.includes('三專')) return '專科';
+      if (d.includes('五專')) return '專科';
+      
+      // 高中及高職併為一種為"高中職"
+      if (d.includes('高中') && !d.includes('肄業') && !d.includes('就學中')) return '高中職';
+      if (d.includes('高職') && !d.includes('肄業')) return '高中職';
+      
+      // 高中(肄業) 高職(肄業) 國中以下(肄業) 高中(就學中) 國中以下(畢業) 併為一種為"高中以下"
+      if (d.includes('高中') && d.includes('肄業')) return '高中以下';
+      if (d.includes('高職') && d.includes('肄業')) return '高中以下';
+      if (d.includes('國中以下') && d.includes('肄業')) return '高中以下';
+      if (d.includes('高中') && d.includes('就學中')) return '高中以下';
+      if (d.includes('國中以下') && d.includes('畢業')) return '高中以下';
+      
+      // 其他保持原樣
+      return degree;
+    }
+
+    function normalizeMajor(major) {
+      if (!major || major === '未填寫') return '未填寫';
+      
+      let m = major.toString().trim();
+      
+      // 科系整併規則（優先處理）
+      if (m.includes('材料科學與工程') || m.includes('材料系')) return '材料工程系';
+      if (m.includes('高分子科學與工程學研究') || m.includes('有機高分子系')) return '高分子系';
+      if (m.includes('企管系') || m.includes('企業管理')) return '企業管理系';
+      if (m.includes('化工系') || m.includes('化學工程系') || m.includes('化學工程學系')) return '化學工程系';
+      if (m.includes('化學工程與材料工程學系')) return '化工材料系';
+      if (m.includes('機械系')) return '機械工程系';
+      if (m.includes('資管系') || m.includes('資訊管理')) return '資訊管理系';
+      
+      // 統一術語：研究所 改為系（但保持化學系、應用化學系等不變）
+      if (m.endsWith('研究所')) {
+        m = m.replace(/研究所$/, '系');
+      }
+      
+      // 統一術語：所、學系 都視同為"系"（但保持化學系、應用化學系等不變）
+      if (m.endsWith('所') && !m.includes('化學') && !m.includes('應用化學')) {
+        m = m.replace(/所$/, '系');
+      }
+      if (m.endsWith('學系') && !m.includes('化學') && !m.includes('應用化學')) {
+        m = m.replace(/學系$/, '系');
+      }
+      
+      // 沒有寫系或所的，加上"系"
+      if (!m.includes('系') && !m.includes('所') && m !== '未填寫') {
+        m = m + '系';
+      }
+      
+      return m;
+    }
+
+    function parseAddress(address) {
+      if (!address || address === '未填寫' || address === '') {
+        return { city: '未填寫', district: '未填寫' };
+      }
+      
+      const addr = address.toString().trim();
+      
+      // 台灣縣市列表
+      const cities = [
+        '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
+        '基隆市', '新竹市', '嘉義市',
+        '新竹縣', '苗栗縣', '彰化縣', '南投縣', '雲林縣', '嘉義縣',
+        '屏東縣', '宜蘭縣', '花蓮縣', '台東縣', '澎湖縣', '金門縣', '連江縣'
+      ];
+      
+      // 尋找縣市
+      let city = '未填寫';
+      for (const c of cities) {
+        if (addr.includes(c)) {
+          city = c;
+          break;
+        }
+      }
+      
+      // 尋找鄉鎮市區（在縣市之後的部分）
+      let district = '未填寫';
+      if (city !== '未填寫') {
+        const cityIndex = addr.indexOf(city);
+        const afterCity = addr.substring(cityIndex + city.length);
+        
+        // 常見的鄉鎮市區後綴
+        const districtSuffixes = ['市', '區', '鎮', '鄉', '里'];
+        for (const suffix of districtSuffixes) {
+          const regex = new RegExp(`([^\\s${suffix}]+)${suffix}`, 'g');
+          const match = regex.exec(afterCity);
+          if (match) {
+            let foundDistrict = match[1] + suffix;
+            
+            // 如果鄉鎮市區名稱包含縣市名稱，移除縣市名稱
+            for (const c of cities) {
+              if (foundDistrict.includes(c)) {
+                foundDistrict = foundDistrict.replace(c, '');
+                break;
+              }
+            }
+            
+            // 如果處理後還有內容，使用處理後的名稱
+            if (foundDistrict.trim()) {
+              district = foundDistrict.trim();
+              break;
+            }
+          }
+        }
+        
+        // 如果沒找到，嘗試取縣市後的第一個詞
+        if (district === '未填寫') {
+          const words = afterCity.trim().split(/[\s,，]/);
+          if (words.length > 0 && words[0]) {
+            let foundDistrict = words[0];
+            
+            // 如果鄉鎮市區名稱包含縣市名稱，移除縣市名稱
+            for (const c of cities) {
+              if (foundDistrict.includes(c)) {
+                foundDistrict = foundDistrict.replace(c, '');
+                break;
+              }
+            }
+            
+            if (foundDistrict.trim()) {
+              district = foundDistrict.trim();
+            }
+          }
+        }
+      }
+      
+      return { city, district };
+    }
+
+    function groupByGeography(rows){
+      const cityStats = {};
+      const cityDistrictStats = {}; // 縣市+鄉鎮市區組合統計
+      const totalPeople = new Set();
+      
+      // 用於去重的集合，每個人都只計算一筆
+      const cityPeople = new Map(); // 儲存 (縣市, Set<人員唯一識別>)
+      const cityDistrictPeople = new Map(); // 儲存 (縣市+鄉鎮市區, Set<人員唯一識別>)
+      
+      rows.forEach(r => {
+        // 人員唯一識別
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`;
+        totalPeople.add(personKey);
+        
+        // 解析地址
+        const address = r['通訊地址'] || '';
+        const { city, district } = parseAddress(address);
+        
+        // 縣市統計
+        if (city !== '未填寫') {
+          if (!cityPeople.has(city)) {
+            cityPeople.set(city, new Set());
+          }
+          cityPeople.get(city).add(personKey);
+        }
+        
+        
+        // 縣市+鄉鎮市區組合統計
+        if (city !== '未填寫' && district !== '未填寫') {
+          const cityDistrictKey = `${city} - ${district}`;
+          if (!cityDistrictPeople.has(cityDistrictKey)) {
+            cityDistrictPeople.set(cityDistrictKey, new Set());
+          }
+          cityDistrictPeople.get(cityDistrictKey).add(personKey);
+        }
+      });
+      
+      // 轉換為統計數字
+      for (const [city, peopleSet] of cityPeople.entries()) {
+        cityStats[city] = peopleSet.size;
+      }
+      
+      
+      for (const [cityDistrict, peopleSet] of cityDistrictPeople.entries()) {
+        cityDistrictStats[cityDistrict] = peopleSet.size;
+      }
+      
+      // 轉換為陣列並排序
+      const topCities = Object.entries(cityStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([city, count]) => ({縣市: city, 人數: count}));
+        
+        
+      const topCityDistricts = Object.entries(cityDistrictStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([cityDistrict, count]) => ({縣市鄉鎮: cityDistrict, 人數: count}));
+      
+      return {
+        topCities,
+        topCityDistricts,
+        totalPeople: totalPeople.size
+      };
+    }
+
+    function renderGeographyTable(geographyData, caption){
+      const { topCities, topCityDistricts, totalPeople } = geographyData;
+      
+      const html = `
+        <div class="block" style="margin-top:12px;">
+          <div class="controls-row" style="justify-content: space-between;">
+            <div class="muted">${caption||''}</div>
+            <div class="muted">總人數：${totalPeople.toLocaleString()}</div>
+          </div>
+          
+          <!-- 詳細統計表格 -->
+          <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px;">
+            <!-- 前十大居住縣市 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前十大居住縣市</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">縣市</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topCities.map((city, index) => {
+                    const percentage = totalPeople > 0 ? ((city.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          ${city.縣市}
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${city.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- 縣市+鄉鎮市區組合 -->
+          <div style="margin-top: 32px;">
+            <h4 style="margin: 0 0 16px 0; color: var(--primary);">前十五大縣市+鄉鎮市區組合</h4>
+            <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f8f9fa;">
+                  <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">縣市+鄉鎮市區</th>
+                  <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                  <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topCityDistricts.map((cityDistrict, index) => {
+                  const percentage = totalPeople > 0 ? ((cityDistrict.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                  return `
+                    <tr>
+                      <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                        <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                        ${cityDistrict.縣市鄉鎮}
+                      </td>
+                      <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${cityDistrict.人數.toLocaleString()}</td>
+                      <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      return html;
+    }
+
+    function groupByEducation(rows){
+      // 主要畢業學校分佈
+      const schoolStats = {};
+      const majorStats = {};
+      const degreeStats = {};
+      const schoolMajorStats = {}; // 學校+科系組合統計
+      const targetSchoolStats = { total: 0, target: 0 };
+      
+      // 用於去重的集合，每個人都只計算一筆
+      const uniquePeople = new Set();
+      const schoolPeople = new Map(); // 儲存 (學校, Set<人員唯一識別>)
+      const majorPeople = new Map(); // 儲存 (科系, Set<人員唯一識別>)
+      const schoolMajorPeople = new Map(); // 儲存 (學校+科系, Set<人員唯一識別>)
+      const degreePeople = new Map(); // 儲存 (學歷, Set<人員唯一識別>)
+      const targetSchoolPeople = new Set(); // 目標學校人員集合
+      
+      rows.forEach(r => {
+        // 人員唯一識別
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`;
+        
+        // 如果這個人已經計算過，跳過
+        if (uniquePeople.has(personKey)) return;
+        uniquePeople.add(personKey);
+        
+        // 學校統計
+        const school = r['學歷學校名稱一'] || '未填寫';
+        if (school !== '未填寫' && school !== '') {
+          if (!schoolPeople.has(school)) {
+            schoolPeople.set(school, new Set());
+          }
+          schoolPeople.get(school).add(personKey);
+        }
+        
+        // 科系統計（使用標準化後的科系）
+        const originalMajor = r['學歷科系名稱一'] || '未填寫';
+        const normalizedMajor = normalizeMajor(originalMajor);
+        if (normalizedMajor !== '未填寫' && normalizedMajor !== '') {
+          if (!majorPeople.has(normalizedMajor)) {
+            majorPeople.set(normalizedMajor, new Set());
+          }
+          majorPeople.get(normalizedMajor).add(personKey);
+        }
+        
+        // 學校+科系組合統計
+        if (school !== '未填寫' && school !== '' && normalizedMajor !== '未填寫' && normalizedMajor !== '') {
+          const schoolMajorKey = `${school} - ${normalizedMajor}`;
+          if (!schoolMajorPeople.has(schoolMajorKey)) {
+            schoolMajorPeople.set(schoolMajorKey, new Set());
+          }
+          schoolMajorPeople.get(schoolMajorKey).add(personKey);
+        }
+        
+        // 學歷等級統計（使用標準化後的學歷）
+        const originalDegree = r['學歷一'] || '未填寫';
+        const normalizedDegree = normalizeDegree(originalDegree);
+        if (normalizedDegree !== '未填寫' && normalizedDegree !== '') {
+          if (!degreePeople.has(normalizedDegree)) {
+            degreePeople.set(normalizedDegree, new Set());
+          }
+          degreePeople.get(normalizedDegree).add(personKey);
+        }
+        
+        // 目標學校統計
+        targetSchoolStats.total++;
+        const isTarget = r['目標學校'] === 'Y';
+        if (isTarget) {
+          targetSchoolStats.target++;
+          targetSchoolPeople.add(personKey);
+        }
+      });
+      
+      // 轉換為統計數字
+      for (const [school, peopleSet] of schoolPeople.entries()) {
+        schoolStats[school] = peopleSet.size;
+      }
+      
+      for (const [major, peopleSet] of majorPeople.entries()) {
+        majorStats[major] = peopleSet.size;
+      }
+      
+      for (const [schoolMajor, peopleSet] of schoolMajorPeople.entries()) {
+        schoolMajorStats[schoolMajor] = peopleSet.size;
+      }
+      
+      for (const [degree, peopleSet] of degreePeople.entries()) {
+        degreeStats[degree] = peopleSet.size;
+      }
+      
+      // 重新計算目標學校統計（基於唯一人員）
+      targetSchoolStats.total = uniquePeople.size;
+      targetSchoolStats.target = targetSchoolPeople.size;
+      
+      // 轉換為陣列並排序
+      const topSchools = Object.entries(schoolStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([school, count]) => ({學校: school, 人數: count}));
+        
+      const topMajors = Object.entries(majorStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([major, count]) => ({科系: major, 人數: count}));
+        
+      const topSchoolMajors = Object.entries(schoolMajorStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([schoolMajor, count]) => ({學校科系: schoolMajor, 人數: count}));
+        
+      const degreeDistribution = Object.entries(degreeStats)
+        .sort((a,b) => b[1] - a[1])
+        .map(([degree, count]) => ({學歷: degree, 人數: count}));
+      
+      return {
+        topSchools,
+        topMajors,
+        topSchoolMajors,
+        degreeDistribution,
+        targetSchoolStats
+      };
+    }
+
+    function renderEducationTable(educationData, caption){
+      const { topSchools, topMajors, topSchoolMajors, degreeDistribution, targetSchoolStats } = educationData;
+      const totalPeople = targetSchoolStats.total;
+      const targetPercentage = totalPeople > 0 ? ((targetSchoolStats.target / totalPeople) * 100).toFixed(1) : '0.0';
+      
+      const html = `
+        <div class="block" style="margin-top:12px;">
+          <div class="controls-row" style="justify-content: space-between;">
+            <div class="muted">${caption||''}</div>
+            <div class="muted">總人數：${totalPeople.toLocaleString()}</div>
+          </div>
+          
+          <!-- 目標學校成效分析 -->
+          <div style="margin-bottom: 32px;">
+            <h4 style="margin: 0 0 16px 0; color: var(--primary);">目標學校成效分析</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${targetSchoolStats.target.toLocaleString()}</div>
+                <div style="font-size: 14px; color: var(--muted);">目標學校人數</div>
+              </div>
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${targetPercentage}%</div>
+                <div style="font-size: 14px; color: var(--muted);">目標學校佔比</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 詳細統計表格 -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <!-- 前十大畢業學校 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前十大畢業學校</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">學校名稱</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topSchools.map((school, index) => {
+                    const percentage = totalPeople > 0 ? ((school.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          ${school.學校}
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${school.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 前十大畢業科系 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前十大畢業科系</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">科系名稱</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topMajors.map((major, index) => {
+                    const percentage = totalPeople > 0 ? ((major.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          ${major.科系}
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${major.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 學歷等級分佈 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">學歷等級分佈</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">學歷等級</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${degreeDistribution.map((degree, index) => {
+                    const percentage = totalPeople > 0 ? ((degree.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${degree.學歷}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${degree.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 前十大學校+科系組合 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前十大學校+科系組合</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">學校+科系</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topSchoolMajors.map((schoolMajor, index) => {
+                    const percentage = totalPeople > 0 ? ((schoolMajor.人數 / totalPeople) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          <a href="#" class="school-major-link" data-school-major="${escapeHtml(schoolMajor.學校科系)}" style="color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 600;">${schoolMajor.學校科系}</a>
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${schoolMajor.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+      return html;
+    }
+
+    function renderTable(arr, caption, monthTag){
+      const tableId = 'tbl_' + Math.random().toString(36).slice(2);
+      const html = `
+        <div class="block" data-month="${monthTag||''}" style="margin-top:12px;">
+          <div class=\"controls-row\" style=\"justify-content: space-between;\">
+            <div class=\"muted\">${caption||''}</div>
+            <div class=\"muted\">公司數：${arr.length.toLocaleString()}</div>
+          </div>
+          <table id="${tableId}">
+            <thead>
+              <tr>
+                <th data-k="公司">公司名稱</th>
+                <th data-k="人數" class="right">人數</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${arr.map(r=>`
+                <tr>
+                  <td><a href="#" class="company-link" data-company="${escapeHtml(r.公司)}">${escapeHtml(r.公司)}</a></td>
+                  <td class="right">${r.人數.toLocaleString()}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      return html;
+    }
+
+
+    
+    function getExperienceColor(experience) {
+      const colors = {
+        '無': '#90EE90',
+        '2年以下': '#28a745',
+        '2-5年': '#007bff',
+        '5-8年': '#ffc107',
+        '8-11年': '#fd7e14',
+        '11-14年': '#dc3545',
+        '14-17年': '#dc3545',
+        '17-20年': '#dc3545',
+        '20-23年': '#dc3545',
+        '23-26年': '#dc3545'
+      };
+      return colors[experience] || '#dc3545';
+    }
+
+    function renderExperienceTable(arr, caption){
+      const tableId = 'exp_tbl_' + Math.random().toString(36).slice(2);
+      const totalPeople = arr.reduce((sum, item) => sum + item.人數, 0);
+      const maxCount = Math.max(...arr.map(item => item.人數));
+      const yAxisMax = Math.ceil(maxCount * 1.5); // y軸最大值設為實際最大值的1.5倍
+      
+      const html = `
+        <div class="block" style="margin-top:12px;">
+          <div class=\"controls-row\" style=\"justify-content: space-between;\">
+            <div class=\"muted\">${caption||''}</div>
+            <div class=\"muted\">年資區間數：${arr.length.toLocaleString()} | 總人數：${totalPeople.toLocaleString()}</div>
+          </div>
+          <table id="${tableId}">
+            <thead>
+              <tr>
+                <th data-k="年資">年資區間</th>
+                <th data-k="人數" class="right">人數</th>
+                <th data-k="佔比" class="right">佔比</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${arr.map(r=>`
+                <tr>
+                  <td>${escapeHtml(r.年資)}</td>
+                  <td class="right">${r.人數.toLocaleString()}</td>
+                  <td class="right">${r.佔比}%</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          
+          <!-- 直方圖 -->
+          <div class="histogram-container" style="margin-top: 24px;">
+            <div class="histogram-title" style="font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 16px;">
+              年資分布直方圖
+            </div>
+            <div class="histogram" style="display: flex; align-items: end; gap: 8px; height: 200px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+              ${arr.map((item, index) => {
+                const height = (item.人數 / yAxisMax) * 160; // 最大高度160px，基於y軸最大值計算
+                const color = index === 0 ? '#90EE90' : // 無 - 淡綠色
+                              index === 1 ? '#28a745' : // 2年以下 - 綠色
+                              index === 2 ? '#007bff' : // 2-5年 - 藍色
+                              index === 3 ? '#ffc107' : // 5-8年 - 黃色
+                              index === 4 ? '#fd7e14' : // 8-11年 - 橙色
+                              '#dc3545'; // 其他 - 紅色
+                return `
+                  <div class="histogram-bar" style="display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0;">
+                    <div class="bar" style="
+                      width: 100%; 
+                      height: ${height}px; 
+                      background: ${color}; 
+                      border-radius: 4px 4px 0 0;
+                      transition: all 0.3s ease;
+                      cursor: pointer;
+                      position: relative;
+                    " 
+                    onmouseover="this.style.opacity='0.8'; this.style.transform='scale(1.05)'"
+                    onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'"
+                    title="${item.年資}: ${item.人數.toLocaleString()}人 (${item.佔比}%)">
+                    </div>
+                    <div class="bar-label" style="
+                      font-size: 12px; 
+                      color: var(--muted); 
+                      margin-top: 8px; 
+                      text-align: center;
+                      writing-mode: horizontal-tb;
+                      word-break: break-all;
+                      line-height: 1.2;
+                      max-width: 100%;
+                      font-weight: 500;
+                    ">${item.年資}</div>
+                    <div class="bar-value" style="
+                      font-size: 11px; 
+                      color: var(--primary); 
+                      margin-top: 4px; 
+                      text-align: center;
+                      font-weight: 600;
+                    ">${item.人數.toLocaleString()}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            
+          </div>
+        </div>`;
+      return html;
+    }
+
+    function escapeHtml(s){
+      return (s==null?'':String(s))
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/\"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+    }
+
+    function updateBadges(rows){
+      const uniqCompany = new Set(rows.map(r=>r.__COMP));
+      const uniqName = new Set(rows.map(r=>r.__NAME));
+      const badge = (label, val) => `<span class="chip"><strong>${label}：</strong> ${val.toLocaleString()}</span>`;
+      $statusBadges.innerHTML = [ badge('筆數', rows.length), badge('公司數', uniqCompany.size), badge('候選人數(去重姓名)', uniqName.size) ].join(' ');
+    }
+
+    function toCsv(rows){
+      const header = ['公司','人數'];
+      const lines = [header.join(',')];
+      rows.forEach(r=>{ const cc = '"' + (r.公司||'').replace(/\"/g,'\"\"') + '"'; lines.push([cc, r.人數].join(',')); });
+      return lines.join('\n');
+    }
+
+    function renderOverviewTable(rows){
+      const totalRecords = rows.length;
+      const uniqueCandidates = new Set(rows.map(r=>r.__NAME)).size;
+      const avgApplicationsPerPerson = uniqueCandidates > 0 ? (totalRecords / uniqueCandidates).toFixed(1) : 0;
+      
+      // 年資分布（使用與年資統計相同的計算基礎）
+      const experienceAgg = groupByExperience(rows);
+      
+      // 前五大來源公司（使用與公司統計相同的計算基礎）
+      const companyAgg = groupByCompany(rows);
+      const top5Companies = companyAgg.slice(0, 5);
+      
+      // 前五大畢業學校
+      const schoolStats = {};
+      rows.forEach(r => {
+        const school = r['學校NEW'] || '未填寫';
+        if (school !== '未填寫' && school !== '') {
+          schoolStats[school] = (schoolStats[school] || 0) + 1;
+        }
+      });
+      const top5Schools = Object.entries(schoolStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([school, count]) => ({學校: school, 人數: count}));
+      
+      // 按月份統計
+      const monthStats = {};
+      rows.forEach(r => {
+        const month = r.__MONTH || '未知';
+        monthStats[month] = (monthStats[month] || 0) + 1;
+      });
+      
+      // 按職系統計
+      const idlStats = {};
+      rows.forEach(r => {
+        const idl = r.__IDL || '未知';
+        idlStats[idl] = (idlStats[idl] || 0) + 1;
+      });
+      
+      // 按功能統計
+      const funcStats = {};
+      rows.forEach(r => {
+        const func = r.__FUNC_LABEL || '未知';
+        funcStats[func] = (funcStats[func] || 0) + 1;
+      });
+      
+      // 按廠區統計
+      const locStats = {};
+      rows.forEach(r => {
+        const loc = r.__LOC_LABEL || '未知';
+        locStats[loc] = (locStats[loc] || 0) + 1;
+      });
+
+      const html = `
+        <div class="block" style="margin-top:12px;">
+          <div class="controls-row" style="justify-content: space-between;">
+            <div class="muted">整體分析概覽</div>
+          </div>
+          
+          <!-- 基本統計 -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0;">
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${totalRecords.toLocaleString()}</div>
+              <div style="font-size: 14px; color: var(--muted);">總筆數</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${uniqueCandidates.toLocaleString()}</div>
+              <div style="font-size: 14px; color: var(--muted);">候選人數</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${avgApplicationsPerPerson}</div>
+              <div style="font-size: 14px; color: var(--muted);">平均每人投遞數</div>
+            </div>
+          </div>
+          
+          <!-- 詳細統計表格 -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <!-- 年資分布 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">年資分布</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">年資區間</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${experienceAgg.map(item => `
+                    <tr>
+                      <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${item.年資}</td>
+                      <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${item.人數.toLocaleString()}</td>
+                      <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${item.佔比}%</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 功能分布 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">功能分布</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">功能</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">筆數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(funcStats).sort((a,b) => b[1] - a[1]).map(([func, count]) => {
+                    const percentage = totalRecords > 0 ? ((count / totalRecords) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${func}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${count.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 前五大來源公司 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前五大來源公司</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">公司名稱</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${top5Companies.map((company, index) => {
+                    const percentage = uniqueCandidates > 0 ? ((company.人數 / uniqueCandidates) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          ${company.公司}
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${company.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 前五大畢業學校 -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: var(--primary);">前五大畢業學校</h4>
+              <table class="overview-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">學校名稱</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+                    <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">佔比</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${top5Schools.map((school, index) => {
+                    const percentage = uniqueCandidates > 0 ? ((school.人數 / uniqueCandidates) * 100).toFixed(1) : '0.0';
+                    return `
+                      <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                          <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                          ${school.學校}
+                        </td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${school.人數.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${percentage}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- 月份應徵筆數直方圖 -->
+          <div style="margin-top: 32px;">
+            <h4 style="margin: 0 0 16px 0; color: var(--primary);">月份應徵筆數分布</h4>
+            <div class="month-histogram-container" style="margin-top: 16px;">
+              <div class="month-histogram" style="display: flex; align-items: end; gap: 8px; height: 320px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                ${(() => {
+                  const entries = Object.entries(monthStats).sort((a,b) => {
+                    const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                    return monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]);
+                  });
+                  const counts = entries.map(e => e[1] || 0);
+                  const maxCount = Math.max(...counts, 1);
+                  const yAxisMax = Math.ceil(maxCount * 1.2); // 20% headroom
+                  const maxBarHeight = 260; // px, fits within the container height (320px with padding)
+                  const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d', '#17a2b8', '#343a40', '#f8f9fa'];
+                  return entries.map(([month, count], index) => {
+                    const h = count > 0 ? (count / yAxisMax) * maxBarHeight : 0;
+                    const color = colors[index % colors.length];
+                    return `
+                      <div class="month-histogram-bar" style="display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0;">
+                        <div class="bar" style="
+                          width: 100%; 
+                          height: ${h}px; 
+                          background: ${color}; 
+                          border-radius: 4px 4px 0 0;
+                          transition: all 0.3s ease;
+                          cursor: pointer;
+                          position: relative;
+                        " 
+                        onmouseover="this.style.opacity='0.8'; this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'"
+                        title="${month}: ${count.toLocaleString()}筆">
+                        </div>
+                        <div class="bar-label" style="
+                          font-size: 12px; 
+                          color: var(--muted); 
+                          margin-top: 8px; 
+                          text-align: center;
+                          writing-mode: horizontal-tb;
+                          word-break: break-all;
+                          line-height: 1.2;
+                          max-width: 100%;
+                          font-weight: 500;
+                        ">${month}</div>
+                        <div class="bar-value" style="
+                          font-size: 11px; 
+                          color: var(--primary); 
+                          margin-top: 4px; 
+                          text-align: center;
+                          font-weight: 600;
+                        ">${count.toLocaleString()}</div>
+                      </div>
+                    `;
+                  }).join('');
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      
+      return html;
+    }
+
+    function computeMonthlyApplicationMetrics(rows){
+      if(!Array.isArray(rows) || rows.length === 0) return [];
+      const monthMap = new Map();
+      rows.forEach(r => {
+        const month = r?.__MONTH || '未知';
+        if(!monthMap.has(month)){
+          monthMap.set(month, {
+            applications: 0,
+            jobSet: new Set()
+          });
+        }
+        const entry = monthMap.get(month);
+        entry.applications += 1;
+        const jobTitle = (r['職務名稱一'] || r['職務名稱'] || r['職務'] || '').trim() || '未填寫';
+        const jobKey = `${jobTitle}||${r.__IDL || ''}`;
+        entry.jobSet.add(jobKey);
+      });
+
+      const months = Array.from(monthMap.keys());
+      months.sort((a,b)=>{
+        const ia = MONTH_ORDER.indexOf(a);
+        const ib = MONTH_ORDER.indexOf(b);
+        if(ia === -1 && ib === -1) return a.localeCompare(b);
+        if(ia === -1) return 1;
+        if(ib === -1) return -1;
+        return ia - ib;
+      });
+
+      return months.map(month => {
+        const entry = monthMap.get(month);
+        const applications = entry?.applications || 0;
+        const jobCount = entry ? entry.jobSet.size : 0;
+        const avgApplicationsPerJob = jobCount > 0 ? applications / jobCount : 0;
+        return { month, applications, jobCount, avgApplicationsPerJob };
+      });
+    }
+
+    function renderSimpleBarChart(data, options = {}){
+      const {
+        labelKey = 'label',
+        valueKey = 'value',
+        maxBarHeight = 200,
+        colors = BAR_CHART_COLORS,
+        emptyText = '目前沒有資料',
+        valueFormatter
+      } = options;
+
+      const totalHeight = maxBarHeight + 60;
+      const formatValue = typeof valueFormatter === 'function'
+        ? valueFormatter
+        : (v) => Number.isFinite(v) ? v.toLocaleString() : '0';
+
+      if(!Array.isArray(data) || data.length === 0){
+        return `<div style="min-height:${totalHeight}px; display:flex; align-items:center; justify-content:center; color: var(--muted); font-size:13px;">${escapeHtml(emptyText)}</div>`;
+      }
+
+      const numericValues = data.map(item => {
+        const raw = Number(item?.[valueKey]);
+        return Number.isFinite(raw) ? raw : 0;
+      });
+      const maxValue = Math.max(...numericValues, 0);
+      const yMax = maxValue > 0 ? Math.ceil(maxValue * 1.2) : 1;
+
+      const bars = data.map((item, idx) => {
+        const labelRaw = item?.[labelKey];
+        const label = labelRaw == null || labelRaw === '' ? '—' : String(labelRaw);
+        const value = numericValues[idx] || 0;
+        const normalizedHeight = yMax > 0 ? (value / yMax) * maxBarHeight : 0;
+        const barHeight = value > 0 ? Math.max(6, normalizedHeight) : 0;
+        const color = colors[idx % colors.length];
+        const formattedValue = String(formatValue(value));
+        const safeLabel = escapeHtml(label);
+        const safeValue = escapeHtml(formattedValue);
+        return `
+          <div style="display:flex; flex-direction:column; align-items:center; flex:1; min-width:0;">
+            <div style="width:100%; height:${barHeight}px; background:${color}; border-radius:6px 6px 0 0; transition:all 0.2s ease; cursor:default;" title="${safeLabel}: ${safeValue}"></div>
+            <div style="font-size:12px; color: var(--muted); margin-top:8px; text-align:center; font-weight:500;">${safeLabel}</div>
+            <div style="font-size:12px; color: var(--primary); margin-top:4px; font-weight:600;">${safeValue}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div style="background:#ffffff; border-radius:8px; border:1px solid rgba(0,0,0,0.06); padding:12px; display:flex; align-items:flex-end; gap:12px; height:${totalHeight}px;">
+          ${bars}
+        </div>
+      `;
+    }
+
+    function updateApplicationDistribution(rows){
+      const $monthlyApplications = document.getElementById('monthlyApplicationsChart');
+      const $monthlyJobCount = document.getElementById('monthlyJobCountChart');
+      const $avgPerJob = document.getElementById('avgApplicationsPerJobChart');
+      if(!$monthlyApplications || !$monthlyJobCount || !$avgPerJob) return;
+
+      const placeholder = (text) => `<div style="min-height:220px; display:flex; align-items:center; justify-content:center; color: var(--muted); font-size:13px;">${escapeHtml(text)}</div>`;
+
+      if(!Array.isArray(rows) || rows.length === 0){
+        const msg = placeholder('匯入資料後將顯示統計圖表。');
+        $monthlyApplications.innerHTML = msg;
+        $monthlyJobCount.innerHTML = msg;
+        $avgPerJob.innerHTML = msg;
+        return;
+      }
+
+      const metrics = computeMonthlyApplicationMetrics(rows);
+      if(metrics.length === 0){
+        const msg = placeholder('目前篩選條件沒有符合的資料。');
+        $monthlyApplications.innerHTML = msg;
+        $monthlyJobCount.innerHTML = msg;
+        $avgPerJob.innerHTML = msg;
+        return;
+      }
+
+      const applicationData = metrics.map(m => ({ label: m.month, value: m.applications }));
+      const jobCountData = metrics.map(m => ({ label: m.month, value: m.jobCount }));
+      const avgData = metrics.map(m => ({ label: m.month, value: Number(m.avgApplicationsPerJob) }));
+
+      $monthlyApplications.innerHTML = renderSimpleBarChart(applicationData, {
+        emptyText: '目前篩選條件沒有符合的資料。'
+      });
+      $monthlyJobCount.innerHTML = renderSimpleBarChart(jobCountData, {
+        emptyText: '目前篩選條件沒有符合的資料。'
+      });
+      $avgPerJob.innerHTML = renderSimpleBarChart(avgData, {
+        emptyText: '目前篩選條件沒有符合的資料。',
+        valueFormatter: (v) => Number.isFinite(v) ? v.toFixed(1) : '0.0'
+      });
+    }
+
+    function update(){
+      if(data.length===0){ 
+        $output.innerHTML=''; 
+        $experienceOutput.innerHTML='';
+        $overviewOutput.innerHTML='';
+        $educationOutput.innerHTML='';
+        $geographyOutput.innerHTML='';
+        updateJobAnalysis();
+        updateApplicationDistribution([]);
+        return; 
+      }
+      const rows = filteredRows();
+      updateBadges(rows);
+
+      // 更新公司統計
+      let companyHtml = '';
+      if(mode===MODE.TOTAL){
+        const agg = groupByCompany(rows);
+        companyHtml += renderTable(agg, '目前篩選條件下的公司分布', '');
+        $download.onclick = ()=> downloadBlob(toCsv(agg), generateFilename());
+      } else {
+        const byM = groupByMonth(rows);
+        const chunks = byM.map(({month, rows})=> renderTable(groupByCompany(rows), `月份：${month}`, month));
+        companyHtml += chunks.join('');
+        $download.onclick = ()=>{
+          const blocks = [];
+          blocks.push('月份,公司,人數');
+          byM.forEach(({month, rows})=>{
+            const agg = groupByCompany(rows);
+            agg.forEach(r=>{ const c = '"' + (r.公司||'').replace(/\"/g,'\"\"') + '"'; blocks.push([month, c, r.人數].join(',')); });
+          });
+          downloadBlob(blocks.join('\n'), generateFilename());
+        };
+      }
+      $output.innerHTML = companyHtml;
+
+      // 更新整體分析
+      const overviewHtml = renderOverviewTable(rows);
+      $overviewOutput.innerHTML = overviewHtml;
+
+      // 更新年資統計
+      const experienceAgg = groupByExperience(rows);
+      const experienceHtml = renderExperienceTable(experienceAgg, '目前篩選條件下的年資分布');
+      $experienceOutput.innerHTML = experienceHtml;
+
+  // 更新職務統計（可在職務統計頁面查看）
+  if(typeof updateJobStatistics === 'function') updateJobStatistics(rows);
+
+      // 更新學歷分析
+      const educationAgg = groupByEducation(rows);
+      const educationHtml = renderEducationTable(educationAgg, '目前篩選條件下的學歷分析');
+      $educationOutput.innerHTML = educationHtml;
+
+      // 更新地理分析
+      const geographyAgg = groupByGeography(rows);
+      const geographyHtml = renderGeographyTable(geographyAgg, '目前篩選條件下的地理分析');
+      $geographyOutput.innerHTML = geographyHtml;
+      
+      // 更新職務分析
+      updateJobFilterOptions();
+      updateJobAnalysis();
+      updateApplicationDistribution(rows);
+    }
+
+    function downloadBlob(text, filename){
+      const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function generateFilename(){
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `104result-${year}-${month}-${day}.csv`;
+    }
+
+    // --- Company click → modal ---
+    document.addEventListener('click', (e)=>{
+      const a = e.target.closest('a.company-link');
+      if(!a) return; e.preventDefault();
+      const company = a.getAttribute('data-company');
+      const block = a.closest('.block');
+      const monthTag = block?.getAttribute('data-month') || '';
+      openCandidateModal(company, monthTag);
+    });
+
+    // --- School+Major click → modal ---
+    document.addEventListener('click', (e)=>{
+      const a = e.target.closest('a.school-major-link');
+      if(!a) return; e.preventDefault();
+      const schoolMajor = a.getAttribute('data-school-major');
+      openSchoolMajorModal(schoolMajor);
+    });
+
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.resume-trigger');
+      if(!btn) return;
+      const month = btn.getAttribute('data-month') || '';
+      const category = btn.getAttribute('data-category') || 'all';
+      openMonthlyResumeModal(category, month);
+    });
+
+    function openCandidateModal(company, monthTag){
+      let rows = filteredRows();
+      if(monthTag){ rows = rows.filter(r=> r.__MONTH === monthTag); }
+      
+      // 使用與主表格相同的合併邏輯：財團法人用8個字，其他用4個字
+      const companyPrefix = company.startsWith('財團法人') ? 
+        company.substring(0, 8) : 
+        company.substring(0, 4);
+      
+      rows = rows.filter(r=> {
+        const compName = r.__COMP || '';
+        const compPrefix = compName.startsWith('財團法人') ? 
+          compName.substring(0, 8) : 
+          compName.substring(0, 4);
+        return compPrefix === companyPrefix;
+      });
+      rows.sort((a,b)=> (b.__APPLY||'').localeCompare(a.__APPLY||''));
+
+      // 計算不重複的人數（與主表格統計一致）
+      const uniquePeople = new Set();
+      for(const r of rows) {
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`;
+        uniquePeople.add(personKey);
+      }
+
+      $modalTitle.textContent = `人選清單：${company}`;
+      const filtersTxt = [ monthTag? `月份：${monthTag}`: '月份：多選', `IDL/DL：${Array.from(selectedIDL).join('、')||'—'}`, `Function：${Array.from(selectedFuncs).join('、')||'—'}`, `地點：${Array.from(selectedLocs).join('、')||'—'}` ].join('｜');
+      $modalMeta.textContent = `共 ${uniquePeople.size} 人（${rows.length} 筆記錄）`;
+      $modalFilters.textContent = filtersTxt;
+
+      $modalTbody.innerHTML = rows.map(r=>{
+        return `<tr>
+          <td>${escapeHtml(r.__MONTH)}</td>
+          <td>${escapeHtml(r.__NAME)}</td>
+          <td>${escapeHtml((r['職務名稱一']||'') + ' ' + (r.__IDL||''))}</td>
+          <td>${escapeHtml(r['年資']||'')}</td>
+          <td>${escapeHtml(r.__COMP)}</td>
+          <td>${escapeHtml(r['工作經驗一職務名稱']||'')}</td>
+          <td>${escapeHtml(r['學校NEW']||'')}</td>
+          <td>${escapeHtml(r['學歷科系名稱一']||'')}</td>
+          <td>${escapeHtml(r.__FUNC_LABEL||'')}</td>
+          <td>${escapeHtml(r['新鮮人（2y內）'] || r['新鮮人'] || '')}</td>
+          <td>${escapeHtml(r['目標學校'] || '')}</td>
+        </tr>`;
+      }).join('');
+      
+      // 添加排序功能
+      setupModalTableSorting(rows);
+
+      $btnExportCandidates.disabled = rows.length === 0;
+      $btnExportCandidates.onclick = ()=>{
+        const header = ["月份","姓名","職務名稱 IDL/DL","年資","公司（工作經驗一）","工作經驗一職務名稱","學校NEW","學歷科系名稱一","職缺 function","新鮮人（2y內）","目標學校"];
+        const lines = [header.join(',')];
+        rows.forEach(r=>{
+          const line = [ r.__MONTH, r.__NAME, (r['職務名稱一']||'') + ' ' + (r.__IDL||''), r['年資']||'', r.__COMP, r['工作經驗一職務名稱']||'', r['學校NEW']||'', r['學歷科系名稱一']||'', r.__FUNC_LABEL||'', r['新鮮人（2y內）'] || r['新鮮人'] || '', r['目標學校'] || '' ]
+            .map(v=> '"' + String(v||'').replace(/\"/g,'\"\"') + '"').join(',');
+          lines.push(line);
+        });
+        downloadBlob(lines.join('\n'), `candidates_${company}.csv`);
+      }
+
+      $modalBackdrop.style.display = 'flex';
+      $modalBackdrop.setAttribute('aria-hidden','false');
+    }
+
+    function openSchoolMajorModal(schoolMajor){
+      let rows = filteredRows();
+      
+      // 解析學校+科系組合
+      const [school, major] = schoolMajor.split(' - ');
+      
+      // 篩選出符合該學校+科系組合的人選
+      rows = rows.filter(r=> {
+        const candidateSchool = r['學歷學校名稱一'] || '';
+        const candidateMajor = normalizeMajor(r['學歷科系名稱一'] || '');
+        return candidateSchool === school && candidateMajor === major;
+      });
+      
+      rows.sort((a,b)=> (b.__APPLY||'').localeCompare(a.__APPLY||''));
+
+      // 計算不重複的人數
+      const uniquePeople = new Set();
+      for(const r of rows) {
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`;
+        uniquePeople.add(personKey);
+      }
+
+      $modalTitle.textContent = `人選清單：${schoolMajor}`;
+      const filtersTxt = [ 
+        `月份：${Array.from(selectedMonths).join('、')||'—'}`, 
+        `IDL/DL：${Array.from(selectedIDL).join('、')||'—'}`, 
+        `Function：${Array.from(selectedFuncs).join('、')||'—'}`, 
+        `地點：${Array.from(selectedLocs).join('、')||'—'}`,
+        isNewcomerFilterActive ? '新進人員篩選：啟用' : ''
+      ].filter(Boolean).join('｜');
+      $modalMeta.textContent = `共 ${uniquePeople.size} 人（${rows.length} 筆記錄）`;
+      $modalFilters.textContent = filtersTxt;
+
+      $modalTbody.innerHTML = rows.map(r=>{
+        return `<tr>
+          <td>${escapeHtml(r.__MONTH)}</td>
+          <td>${escapeHtml(r.__NAME)}</td>
+          <td>${escapeHtml((r['職務名稱一']||'') + ' ' + (r.__IDL||''))}</td>
+          <td>${escapeHtml(r['年資']||'')}</td>
+          <td>${escapeHtml(r.__COMP)}</td>
+          <td>${escapeHtml(r['工作經驗一職務名稱']||'')}</td>
+          <td>${escapeHtml(r['學校NEW']||'')}</td>
+          <td>${escapeHtml(r['學歷科系名稱一']||'')}</td>
+          <td>${escapeHtml(r.__FUNC_LABEL||'')}</td>
+          <td>${escapeHtml(r['新鮮人（2y內）'] || r['新鮮人'] || '')}</td>
+          <td>${escapeHtml(r['目標學校'] || '')}</td>
+        </tr>`;
+      }).join('');
+      
+      // 添加排序功能
+      setupModalTableSorting(rows);
+
+      $btnExportCandidates.disabled = rows.length === 0;
+      $btnExportCandidates.onclick = ()=>{
+        const header = ["月份","姓名","職務名稱 IDL/DL","年資","公司（工作經驗一）","工作經驗一職務名稱","學校NEW","學歷科系名稱一","職缺 function","新鮮人（2y內）","目標學校"];
+        const lines = [header.join(',')];
+        rows.forEach(r=>{
+          const line = [ r.__MONTH, r.__NAME, (r['職務名稱一']||'') + ' ' + (r.__IDL||''), r['年資']||'', r.__COMP, r['工作經驗一職務名稱']||'', r['學校NEW']||'', r['學歷科系名稱一']||'', r.__FUNC_LABEL||'', r['新鮮人（2y內）'] || r['新鮮人'] || '', r['目標學校'] || '' ]
+            .map(v=> '"' + String(v||'').replace(/\"/g,'\"\"') + '"').join(',');
+          lines.push(line);
+        });
+        downloadBlob(lines.join('\n'), `candidates_${schoolMajor.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '_')}.csv`);
+      }
+
+      $modalBackdrop.style.display = 'flex';
+      $modalBackdrop.setAttribute('aria-hidden','false');
+    }
+
+    function openMonthlyResumeModal(category, month){
+      const key = `${category}|${month}`;
+      const rows = Array.from(jobStatsRowMap.get(key) || []);
+      rows.sort((a,b)=> (b.__APPLY||'').localeCompare(a.__APPLY||''));
+
+      const label = category === 'target' ? '目標新人' : '全部新人';
+      $modalTitle.textContent = `本月履歷投遞：${month || '—'}（${label}）`;
+
+      const uniquePeople = new Set();
+      rows.forEach(r=>{
+        const personKey = `${r.__NAME}||${r['職務名稱一']||''}||${r.__APPLY}`;
+        uniquePeople.add(personKey);
+      });
+
+      const filtersBase = [
+        `月份：${month || '—'}`,
+        `分類：${label}`,
+        `新鮮人（2y內）：Y`,
+        `目標學校：${category === 'target' ? 'Y' : '不限'}`
+      ];
+      const jobFreshOnly = document.getElementById('jobStatsFreshOnly');
+      if(jobFreshOnly){
+        filtersBase.push(`職缺新鮮人條件：${jobFreshOnly.checked ? '只計算新鮮人職缺' : '全部職缺'}`);
+      }
+      const extraFilters = [
+        `IDL/DL：${Array.from(selectedIDL).join('、')||'—'}`,
+        `Function：${Array.from(selectedFuncs).join('、')||'—'}`,
+        `地點：${Array.from(selectedLocs).join('、')||'—'}`,
+        isNewcomerFilterActive ? '新進人員篩選：啟用' : ''
+      ].filter(Boolean);
+
+      $modalMeta.textContent = `共 ${uniquePeople.size} 人（${rows.length} 筆記錄）`;
+      $modalFilters.textContent = filtersBase.concat(extraFilters).join('｜');
+
+      if(rows.length === 0){
+        $modalTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:12px 0; color: var(--muted);">暫無資料</td></tr>`;
+      } else {
+        $modalTbody.innerHTML = rows.map(r=>{
+          return `<tr>
+            <td>${escapeHtml(r.__MONTH)}</td>
+            <td>${escapeHtml(r.__NAME)}</td>
+            <td>${escapeHtml((r['職務名稱一']||'') + ' ' + (r.__IDL||''))}</td>
+            <td>${escapeHtml(r['年資']||'')}</td>
+            <td>${escapeHtml(r.__COMP)}</td>
+            <td>${escapeHtml(r['工作經驗一職務名稱']||'')}</td>
+            <td>${escapeHtml(r['學校NEW']||'')}</td>
+            <td>${escapeHtml(r['學歷科系名稱一']||'')}</td>
+            <td>${escapeHtml(r.__FUNC_LABEL||'')}</td>
+            <td>${escapeHtml(r['新鮮人（2y內）'] || r['新鮮人'] || '')}</td>
+            <td>${escapeHtml(r['目標學校'] || '')}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      setupModalTableSorting(rows);
+
+      $btnExportCandidates.disabled = rows.length === 0;
+      $btnExportCandidates.onclick = () => {
+        if(rows.length === 0) return;
+        const header = ["月份","姓名","職務名稱 IDL/DL","年資","公司（工作經驗一）","工作經驗一職務名稱","學校NEW","學歷科系名稱一","職缺 function","新鮮人（2y內）","目標學校"];
+        const lines = [header.join(',')];
+        rows.forEach(r=>{
+          const line = [ r.__MONTH, r.__NAME, (r['職務名稱一']||'') + ' ' + (r.__IDL||''), r['年資']||'', r.__COMP, r['工作經驗一職務名稱']||'', r['學校NEW']||'', r['學歷科系名稱一']||'', r.__FUNC_LABEL||'', r['新鮮人（2y內）'] || r['新鮮人'] || '', r['目標學校'] || '' ]
+            .map(v=> '"' + String(v||'').replace(/\"/g,'\"\"') + '"').join(',');
+          lines.push(line);
+        });
+        downloadBlob(lines.join('\n'), `monthly_resumes_${category}_${month || 'NA'}.csv`);
+      };
+
+      $modalBackdrop.style.display = 'flex';
+      $modalBackdrop.setAttribute('aria-hidden','false');
+    }
+
+    function closeModal(){ $modalBackdrop.style.display = 'none'; $modalBackdrop.setAttribute('aria-hidden','true'); }
+    [$modalClose, $btnClose].forEach(el=> el.addEventListener('click', closeModal));
+    $modalBackdrop.addEventListener('click', (e)=>{ if(e.target === $modalBackdrop) closeModal(); });
+
+    // 表格排序功能
+    let currentSortColumn = -1;
+    let currentSortDirection = 'asc';
+    let modalRows = [];
+
+    function setupModalTableSorting(rows) {
+      modalRows = rows;
+      const headers = $modalTbody.closest('table').querySelectorAll('thead th');
+      
+      headers.forEach((header, index) => {
+        header.classList.add('sortable');
+        header.addEventListener('click', () => sortModalTable(index));
+      });
+    }
+
+    function sortModalTable(columnIndex) {
+      const headers = $modalTbody.closest('table').querySelectorAll('thead th');
+      
+      // 重置所有標題的排序狀態
+      headers.forEach(header => {
+        header.classList.remove('sort-asc', 'sort-desc');
+      });
+      
+      // 如果點擊同一欄位，切換排序方向
+      if (currentSortColumn === columnIndex) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortDirection = 'asc';
+        currentSortColumn = columnIndex;
+      }
+      
+      // 設定當前標題的排序狀態
+      headers[columnIndex].classList.add(`sort-${currentSortDirection}`);
+
+      if(!modalRows || modalRows.length === 0){
+        $modalTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:12px 0; color: var(--muted);">暫無資料</td></tr>`;
+        return;
+      }
+      
+      // 排序資料
+      const sortedRows = [...modalRows].sort((a, b) => {
+        let valueA, valueB;
+        
+        switch(columnIndex) {
+          case 0: // 月份
+            valueA = a.__MONTH || '';
+            valueB = b.__MONTH || '';
+            break;
+          case 1: // 姓名
+            valueA = a.__NAME || '';
+            valueB = b.__NAME || '';
+            break;
+          case 2: // 職務名稱
+            valueA = (a['職務名稱一']||'') + ' ' + (a.__IDL||'');
+            valueB = (b['職務名稱一']||'') + ' ' + (b.__IDL||'');
+            break;
+          case 3: // 年資
+            valueA = a['年資'] || '';
+            valueB = b['年資'] || '';
+            break;
+          case 4: // 公司
+            valueA = a.__COMP || '';
+            valueB = b.__COMP || '';
+            break;
+          case 5: // 工作經驗一職務名稱
+            valueA = a['工作經驗一職務名稱'] || '';
+            valueB = b['工作經驗一職務名稱'] || '';
+            break;
+          case 6: // 學校
+            valueA = a['學校NEW'] || '';
+            valueB = b['學校NEW'] || '';
+            break;
+          case 7: // 學歷科系
+            valueA = a['學歷科系名稱一'] || '';
+            valueB = b['學歷科系名稱一'] || '';
+            break;
+          case 8: // 職缺function
+            valueA = a.__FUNC_LABEL || '';
+            valueB = b.__FUNC_LABEL || '';
+            break;
+          case 9: // 新鮮人（2y內）
+            valueA = (a['新鮮人（2y內）'] || a['新鮮人'] || '').toString();
+            valueB = (b['新鮮人（2y內）'] || b['新鮮人'] || '').toString();
+            break;
+          case 10: // 目標學校
+            valueA = (a['目標學校'] || '').toString();
+            valueB = (b['目標學校'] || '').toString();
+            break;
+          default:
+            return 0;
+        }
+        
+        // 字串比較
+        const comparison = valueA.localeCompare(valueB, 'zh-Hant');
+        return currentSortDirection === 'asc' ? comparison : -comparison;
+      });
+      
+      // 重新渲染表格
+      $modalTbody.innerHTML = sortedRows.map(r=>{
+        return `<tr>
+          <td>${escapeHtml(r.__MONTH)}</td>
+          <td>${escapeHtml(r.__NAME)}</td>
+          <td>${escapeHtml((r['職務名稱一']||'') + ' ' + (r.__IDL||''))}</td>
+          <td>${escapeHtml(r['年資']||'')}</td>
+          <td>${escapeHtml(r.__COMP)}</td>
+          <td>${escapeHtml(r['工作經驗一職務名稱']||'')}</td>
+          <td>${escapeHtml(r['學校NEW']||'')}</td>
+          <td>${escapeHtml(r['學歷科系名稱一']||'')}</td>
+          <td>${escapeHtml(r.__FUNC_LABEL||'')}</td>
+          <td>${escapeHtml(r['新鮮人（2y內）'] || r['新鮮人'] || '')}</td>
+          <td>${escapeHtml(r['目標學校'] || '')}</td>
+        </tr>`;
+      }).join('');
+    }
+
+
+    // 職務分析相關函數
+  // histogram mode: 'week' or 'month'
+  window.jobHistMode = 'week';
+    function initJobAnalysis() {
+      if (data.length === 0) return;
+      
+      // 初始化職務篩選器選項
+      updateJobFilterOptions();
+      // 設定按鈕事件
+      const btnMonth = document.getElementById('jobHistByMonth');
+      const btnWeek = document.getElementById('jobHistByWeek');
+      if(btnMonth && btnWeek){
+        btnMonth.addEventListener('click', ()=>{
+          window.jobHistMode = 'month';
+          btnMonth.className = 'btn accent'; btnMonth.style.background = 'var(--accent)'; btnMonth.style.color='white'; btnMonth.style.border='none';
+          btnWeek.className = 'btn'; btnWeek.style.background = '#f8f9fa'; btnWeek.style.color='var(--text)'; btnWeek.style.border='1px solid var(--card-border)';
+          updateJobAnalysis();
+        });
+        btnWeek.addEventListener('click', ()=>{
+          window.jobHistMode = 'week';
+          btnWeek.className = 'btn accent'; btnWeek.style.background = 'var(--accent)'; btnWeek.style.color='white'; btnWeek.style.border='none';
+          btnMonth.className = 'btn'; btnMonth.style.background = '#f8f9fa'; btnMonth.style.color='var(--text)'; btnMonth.style.border='1px solid var(--card-border)';
+          updateJobAnalysis();
+        });
+      }
+    }
+
+    function renderJobMonthlyHistogram(monthArr){
+      if(!monthArr || monthArr.length===0) return '<div style="color: var(--muted); padding: 12px;">無月份資料</div>';
+      const max = Math.max(...monthArr.map(i=>i.count));
+      const maxBar = 200;
+      return `
+        <div style="margin-top:16px;">
+          <h5 style="margin:0 0 8px 0; color: var(--primary);">月份應徵筆數</h5>
+          <div style="display:flex; gap:8px; align-items:end; height:${maxBar + 60}px; padding:8px; background:#f8f9fa; border-radius:8px; border:1px solid #e9ecef;">
+            ${monthArr.map(item=>{ const h = max>0? Math.round((item.count/max)*maxBar):0; return `
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; min-width:0;">
+                <div style="position: relative; width:100%; display:flex; justify-content:center;">
+                  <div style="width:100%; height:${h}px; background:#28a745; border-radius:4px 4px 0 0; position:relative; display:flex; align-items:flex-start; justify-content:center;">
+                    <div style="font-size:12px; font-weight:700; color:#ffffff; padding:2px 6px; margin-top:4px; text-shadow:0 1px 0 rgba(0,0,0,0.3);">${item.count}</div>
+                  </div>
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-top:8px;">${item.month}</div>
+              </div>`; }).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    function updateJobFilterOptions() {
+      if (data.length === 0) return;
+      
+      // 根據當前篩選條件獲取可用的職務列表
+      const filteredData = data.filter(r => {
+        // 檢查月份篩選
+        if (!selectedMonths.has(r.__MONTH)) return false;
+        
+        // 檢查職系篩選
+        if (!selectedIDL.has(r.__IDL)) return false;
+        
+        // 檢查功能篩選
+        const funcLabel = FUNC_LABELS.find(x => x.key === r.__FUNC)?.label || '其他';
+        if (!selectedFuncs.has(funcLabel)) return false;
+        
+        // 檢查廠區篩選
+        const locLabel = LOC_LABELS.find(x => x.key === r.__LOC)?.label || '總部';
+        if (!selectedLocs.has(locLabel)) return false;
+        
+        // 檢查公司名稱關鍵字篩選
+        const companySearch = $companySearch.value.trim();
+        if (companySearch) {
+          const companyName = (r.__COMP || '').toLowerCase();
+          if (!companyName.includes(companySearch.toLowerCase())) return false;
+        }
+        
+        // 檢查去重和隱藏未知公司選項
+        if ($toggleHideUnknown.checked) {
+          if (r.__COMP === '' || r.__COMP === '未填寫' || r.__COMP === '求職者設定隱藏') return false;
+        }
+        
+        return true;
+      });
+      
+      // 從篩選後的數據中提取不重複的職務名稱
+      const jobTitles = uniqueSorted(filteredData.map(d => d['職務名稱一'])).filter(Boolean);
+      
+      // 更新下拉選單
+      $jobFilter.innerHTML = '<option value="">請選擇職務...</option>' + 
+        jobTitles.map(job => `<option value="${escapeHtml(job)}">${escapeHtml(job)}</option>`).join('');
+      
+      // 如果當前選中的職務不在新的選項中，清除選擇
+      if (selectedJobTitle && !jobTitles.includes(selectedJobTitle)) {
+        selectedJobTitle = '';
+        $jobFilter.value = '';
+        updateJobAnalysis();
+      }
+    }
+    
+    function getJobFilteredRows() {
+      if (!selectedJobTitle) return [];
+      return filteredRows().filter(r => r['職務名稱一'] === selectedJobTitle);
+    }
+    
+    function updateJobAnalysis() {
+      if (data.length === 0) {
+        $jobAnalysisKPIs.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 40px;">請先匯入資料</div>';
+        return;
+      }
+      
+      if (!selectedJobTitle) {
+        $jobAnalysisKPIs.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 40px;">請選擇一個職務進行分析</div>';
+        $jobAnalysisSeniorityChart.innerHTML = '';
+        $jobAnalysisTopCompanies.innerHTML = '';
+        $jobAnalysisPreviousJobs.innerHTML = '';
+        $jobAnalysisEducation.innerHTML = '';
+        $jobAnalysisLocation.innerHTML = '';
+        $jobAnalysisApplicantList.innerHTML = '';
+        return;
+      }
+      
+      const jobRows = getJobFilteredRows();
+      if (jobRows.length === 0) {
+        $jobAnalysisKPIs.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 40px;">該職務暫無應徵者資料</div>';
+        return;
+      }
+      
+      // 更新核心數據摘要
+      updateJobAnalysisKPIs(jobRows);
+      
+      // 更新經驗背景分析
+      updateJobAnalysisExperience(jobRows);
+      
+      // 更新學術與地理分析
+      updateJobAnalysisEducationAndLocation(jobRows);
+      
+      // 更新應徵者清單
+      updateJobAnalysisApplicantList(jobRows);
+    }
+    
+    function updateJobAnalysisKPIs(jobRows) {
+      const totalApplicants = jobRows.length;
+      const uniqueApplicants = new Set(jobRows.map(r => r.__NAME)).size;
+      
+      // 計算平均年資
+      const validExperiences = jobRows
+        .map(r => r['年資'])
+        .filter(exp => exp && exp !== '未填寫' && exp !== '無')
+        .map(exp => {
+          const match = exp.match(/(\d+)/);
+          return match ? parseInt(match[1]) : 0;
+        });
+      const avgSeniority = validExperiences.length > 0 ? 
+        (validExperiences.reduce((sum, exp) => sum + exp, 0) / validExperiences.length).toFixed(1) : 'N/A';
+      
+      // 計算新鮮人佔比
+      const freshGraduates = jobRows.filter(r => {
+        const exp = r['年資'] || '';
+        return exp === '無' || exp.includes('一年以下') || exp.includes('1年以下') || 
+               exp === '1' || exp.includes('1-2年') || exp.includes('1~2年') || exp === '2';
+      }).length;
+      const freshGraduateRatio = totalApplicants > 0 ? ((freshGraduates / totalApplicants) * 100).toFixed(1) : '0.0';
+      
+      // 計算目標學校佔比
+      const targetSchoolApplicants = jobRows.filter(r => r['目標學校'] === 'Y').length;
+      const targetSchoolRatio = totalApplicants > 0 ? ((targetSchoolApplicants / totalApplicants) * 100).toFixed(1) : '0.0';
+      
+  $jobAnalysisKPIs.innerHTML = `
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${totalApplicants.toLocaleString()}</div>
+          <div style="font-size: 14px; color: var(--muted);">應徵總人數</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${avgSeniority}</div>
+          <div style="font-size: 14px; color: var(--muted);">平均年資</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${freshGraduateRatio}%</div>
+          <div style="font-size: 14px; color: var(--muted);">新鮮人佔比</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${targetSchoolRatio}%</div>
+          <div style="font-size: 14px; color: var(--muted);">目標學校佔比</div>
+        </div>
+      `;
+
+  // 根據模式顯示月或週直方圖
+  const $histContainer = document.getElementById('jobHistContainer');
+  if($histContainer){
+    if(window.jobHistMode === 'week'){
+      const weekly = groupByWeek(jobRows);
+      $histContainer.innerHTML = renderJobWeeklyHistogram(weekly);
+    } else {
+      const byMonth = groupByMonth(jobRows).map(m=> ({ month: m.month, count: m.rows.length }));
+      $histContainer.innerHTML = renderJobMonthlyHistogram(byMonth);
+    }
+  }
+    }
+
+    // 新增：以週的起始/結束日期為標籤來統計每週筆數
+    function pad(n){ return String(n).padStart(2,'0'); }
+
+    function formatMd(d){ return `${pad(d.getMonth()+1)}/${pad(d.getDate())}`; }
+
+    // 這個 function 會根據傳入日期計算該日期所在的「年 + 週序」以及該週的起迄 Date
+    function getWeekInfo(dateStr){
+      if(!dateStr) return null;
+      const d = new Date(dateStr);
+      if(isNaN(d)) return null;
+      const year = d.getFullYear();
+      const jan1 = new Date(year,0,1);
+      const dayOfYear = Math.floor((d - jan1) / 86400000) + 1;
+      const week = Math.ceil(dayOfYear / 7);
+      const weekKey = `${year}-W${String(week).padStart(2,'0')}`;
+      const start = new Date(jan1.getTime() + (week - 1) * 7 * 86400000);
+      const end = new Date(start.getTime() + 6 * 86400000);
+      const label = `${formatMd(start)} - ${formatMd(end)}`;
+      return { weekKey, start, end, label };
+    }
+
+    function groupByWeek(rows){
+      const map = new Map(); // weekKey -> {count, start, end, label}
+      for(const r of rows){
+        const dateVal = r.__APPLY || r['應徵日期'] || '';
+        const info = getWeekInfo(dateVal) || { weekKey: '未知', start: null, end: null, label: '未知' };
+        const key = info.weekKey;
+        if(!map.has(key)) map.set(key, { count: 0, start: info.start, end: info.end, label: info.label });
+        map.get(key).count += 1;
+      }
+      const arr = Array.from(map.entries()).map(([weekKey, v])=> ({ weekKey, count: v.count, start: v.start, end: v.end, label: v.label }));
+      arr.sort((a,b)=> {
+        if(a.start && b.start) return a.start - b.start;
+        return a.weekKey.localeCompare(b.weekKey);
+      });
+      return arr;
+    }
+
+    function renderJobWeeklyHistogram(weeklyArr){
+      if(!weeklyArr || weeklyArr.length===0) return '<div style="color: var(--muted); padding: 12px;">無週別資料</div>';
+      const maxCount = Math.max(...weeklyArr.map(i=>i.count));
+      const maxBar = 200; // px
+      return `
+        <div style="margin-top:16px;">
+          <h5 style="margin:0 0 8px 0; color: var(--primary);">週別應徵筆數 (週起迄日期)</h5>
+          <div style="display:flex; gap:8px; align-items:end; height: ${maxBar + 60}px; padding: 8px; background:#f8f9fa; border-radius:8px; border:1px solid #e9ecef;">
+            ${weeklyArr.map(item=>{
+              const h = maxCount>0? Math.round((item.count/maxCount)*maxBar):0;
+              // split label ("MM/DD - MM/DD") into two lines with hyphen at line end
+              const parts = (item.label||'').split(' - ');
+              const left = parts[0] || '';
+              const right = parts[1] || '';
+              return `
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; min-width:0;">
+                  <div style="position: relative; width:100%; display:flex; justify-content:center;">
+                    <div title="${item.label}: ${item.count} 筆" style="width:100%; height:${h}px; background:var(--accent); border-radius:4px 4px 0 0; position:relative; display:flex; align-items:flex-start; justify-content:center;">
+                      <div style="font-size:12px; font-weight:700; color:#ffffff; padding:2px 6px; margin-top:4px; text-shadow:0 1px 0 rgba(0,0,0,0.3);">${item.count}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:11px; color:var(--muted); margin-top:8px; white-space:normal; text-align:center; line-height:1.0;">${left}-<br>${right}</div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    function updateJobAnalysisExperience(jobRows) {
+      // 年資分佈
+      const experienceAgg = groupByExperience(jobRows);
+      $jobAnalysisSeniorityChart.innerHTML = renderJobAnalysisSeniorityChart(experienceAgg);
+      
+      // 前五大來源公司
+      const companyAgg = groupByCompany(jobRows);
+      const top5Companies = companyAgg.slice(0, 5);
+      $jobAnalysisTopCompanies.innerHTML = renderJobAnalysisTopCompanies(top5Companies);
+      
+      // 前五大前置職務
+      const previousJobStats = {};
+      jobRows.forEach(r => {
+        const prevJob = r['工作經驗一職務名稱'] || '未填寫';
+        if (prevJob !== '未填寫' && prevJob !== '') {
+          previousJobStats[prevJob] = (previousJobStats[prevJob] || 0) + 1;
+        }
+      });
+      const top5PreviousJobs = Object.entries(previousJobStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([job, count]) => ({職務: job, 人數: count}));
+      $jobAnalysisPreviousJobs.innerHTML = renderJobAnalysisPreviousJobs(top5PreviousJobs);
+    }
+    
+    function updateJobAnalysisEducationAndLocation(jobRows) {
+      // 主要畢業學校與科系
+      const schoolMajorStats = {};
+      jobRows.forEach(r => {
+        const school = r['學歷學校名稱一'] || '未填寫';
+        const major = normalizeMajor(r['學歷科系名稱一'] || '未填寫');
+        if (school !== '未填寫' && major !== '未填寫') {
+          const key = `${school} - ${major}`;
+          schoolMajorStats[key] = (schoolMajorStats[key] || 0) + 1;
+        }
+      });
+      const top5SchoolMajors = Object.entries(schoolMajorStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([schoolMajor, count]) => ({學校科系: schoolMajor, 人數: count}));
+      $jobAnalysisEducation.innerHTML = renderJobAnalysisEducation(top5SchoolMajors);
+      
+      // 應徵者居住地分佈
+      const locationStats = {};
+      jobRows.forEach(r => {
+        const address = r['通訊地址'] || '';
+        const { city } = parseAddress(address);
+        if (city !== '未填寫') {
+          locationStats[city] = (locationStats[city] || 0) + 1;
+        }
+      });
+      const top5Locations = Object.entries(locationStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([city, count]) => ({縣市: city, 人數: count}));
+      $jobAnalysisLocation.innerHTML = renderJobAnalysisLocation(top5Locations);
+    }
+    
+    function updateJobAnalysisApplicantList(jobRows) {
+      // 按應徵日期排序，最近的排在最上面
+      const sortedRows = [...jobRows].sort((a, b) => {
+        const dateA = new Date(a.__APPLY || '');
+        const dateB = new Date(b.__APPLY || '');
+        return dateB - dateA; // 降序排列，最新的在前
+      });
+      
+      $jobAnalysisApplicantList.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6; width: 80px;">姓名</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">年資</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">前一公司</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">前一職務</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">最高學歷</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">畢業學校+科系</th>
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">應徵日期</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedRows.map(r => {
+              // 格式化應徵日期，只保留月/日/年
+              const applyDate = r.__APPLY || '';
+              const formattedDate = applyDate ? applyDate.split(' ')[0] : '';
+              
+              // 組合畢業學校+科系
+              const school = r['學校NEW'] || '';
+              const major = r['學歷科系名稱一'] || '';
+              const schoolMajor = school && major ? `${school} - ${major}` : (school || major || '');
+              
+              return `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4; width: 80px;">${escapeHtml(r.__NAME)}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(r['年資'] || '')}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(r.__COMP)}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(r['工作經驗一職務名稱'] || '')}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(r['學歷一'] || '')}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(schoolMajor)}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">${escapeHtml(formattedDate)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+    
+    function renderJobAnalysisSeniorityChart(experienceAgg) {
+      const maxCount = Math.max(...experienceAgg.map(item => item.人數));
+      const yAxisMax = Math.ceil(maxCount * 1.2);
+      
+      return `
+        <div style="display: flex; align-items: end; gap: 8px; height: 150px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+          ${experienceAgg.map((item, index) => {
+            const height = (item.人數 / yAxisMax) * 120;
+            const colors = ['#90EE90', '#28a745', '#007bff', '#ffc107', '#fd7e14', '#dc3545'];
+            const color = colors[index % colors.length];
+            return `
+              <div style="display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0;">
+                <div style="
+                  width: 100%; 
+                  height: ${height}px; 
+                  background: ${color}; 
+                  border-radius: 4px 4px 0 0;
+                  transition: all 0.3s ease;
+                  cursor: pointer;
+                " 
+                onmouseover="this.style.opacity='0.8'"
+                onmouseout="this.style.opacity='1'"
+                title="${item.年資}: ${item.人數.toLocaleString()}人">
+                </div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; word-break: break-all; line-height: 1.2;">
+                  ${item.年資}
+                </div>
+                <div style="font-size: 10px; color: var(--primary); margin-top: 4px; text-align: center; font-weight: 600;">
+                  ${item.人數}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // --- 職務統計：計算每月職務數、累計職務數、每月履歷投遞筆數、累計履歷投遞筆數、平均每職缺履歷數 ---
+    function computeJobStats(rows){
+      // rows: already filtered rows (may include duplicates depending on dedup toggle)
+      // 1) group by month -> per-month job set and counts
+      const freshOnlyCheckbox = document.getElementById('jobStatsFreshOnly');
+      const freshOnly = !!(freshOnlyCheckbox && freshOnlyCheckbox.checked);
+      const byMonth = new Map(); // month -> { jobs: Set, resumes: count, resumeRows: [] }
+      rows.forEach(r => {
+        // only count rows that belong to an IDL category
+        const idl = (r.__IDL || '').toString().trim();
+        if(!idl) return; // skip rows not classified to an IDL
+        // If freshOnly is enabled (job-level), only consider rows whose 原始欄位 新鮮人職缺 is 'Y'
+        const freshFlag = (r['新鮮人職缺'] || r.__isFresh || '').toString().trim().toUpperCase();
+        if(freshOnly && freshFlag !== 'Y') return;
+
+        const month = r.__MONTH || '未知';
+        if(!byMonth.has(month)) byMonth.set(month, { jobs: new Set(), resumes: 0, resumeRows: [] });
+        const entry = byMonth.get(month);
+        const jobTitle = r['職務名稱一'] || '未填寫';
+        entry.jobs.add(jobTitle);
+
+        // Applicant-level fresh flag must be Y AND target school must be Y
+        const applicantFreshRaw = (r['新鮮人（2y內）'] || r['新鮮人'] || r.__isFreshApplicant || '').toString().trim().toUpperCase();
+        const targetSchoolRaw = (r['目標學校'] || '').toString().trim().toUpperCase();
+        const isApplicantFresh = applicantFreshRaw === 'Y';
+        const isTargetSchool = targetSchoolRaw === 'Y';
+
+        if(isApplicantFresh && isTargetSchool){
+          entry.resumes += 1;
+          entry.resumeRows.push(r);
+        }
+      });
+
+      // Convert to sorted array by MONTH_ORDER or by natural month ordering if present
+      const months = Array.from(byMonth.keys()).sort((a,b)=>{
+        const ia = MONTH_ORDER.indexOf(a);
+        const ib = MONTH_ORDER.indexOf(b);
+        if(ia>=0 && ib>=0) return ia-ib;
+        if(ia>=0) return -1;
+        if(ib>=0) return 1;
+        return a.localeCompare(b);
+      });
+
+      const stats = [];
+      let cumulativeJobsSet = new Set();
+      let cumulativeResumes = 0;
+      months.forEach(m => {
+        const entry = byMonth.get(m);
+        const jobCount = entry.jobs.size;
+        cumulativeJobsSet = new Set([...cumulativeJobsSet, ...Array.from(entry.jobs)]);
+        cumulativeResumes += entry.resumes;
+        // 平均每職缺履歷數：使用累計履歷投遞 / 累計職缺數
+        const cumulativeJobs = cumulativeJobsSet.size;
+        const avgResumesPerJob = cumulativeJobs > 0 ? (cumulativeResumes / cumulativeJobs) : 0;
+        stats.push({ month: m, jobCount, resumes: entry.resumes, cumulativeJobs, cumulativeResumes, avgResumesPerJob, resumeRows: Array.from(entry.resumeRows) });
+      });
+
+      // Also compute overall averages across months
+      const totalJobCounts = stats.reduce((s,it)=> s+it.jobCount, 0);
+      const totalResumes = stats.reduce((s,it)=> s+it.resumes, 0);
+      const avgJobsPerMonth = stats.length ? (totalJobCounts / stats.length) : 0;
+      const avgResumesPerMonth = stats.length ? (totalResumes / stats.length) : 0;
+
+      return { stats, avgJobsPerMonth, avgResumesPerMonth };
+    }
+
+    function renderJobStats(computed, title, category = 'all'){
+      if(!computed) return `<div style="color:var(--muted); padding:12px;">暫無資料</div>`;
+      const rows = computed.stats || [];
+      const header = `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+          ${title ? `<div style="font-weight:700; font-size:15px;">${escapeHtml(title)}</div>` : ''}
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <div style="background:#f8f9fa; padding:10px; border-radius:8px;">平均每月職缺數：<strong>${computed.avgJobsPerMonth.toFixed(1)}</strong></div>
+            <div style="background:#f8f9fa; padding:10px; border-radius:8px;">平均每月履歷投遞：<strong>${computed.avgResumesPerMonth.toFixed(1)}</strong></div>
+          </div>
+        </div>
+      `;
+
+      const tableRows = rows.map(r=> {
+        const hasDetail = r.resumeRows && r.resumeRows.length > 0;
+        const resumeDisplay = hasDetail
+          ? `<button type="button" class="link-btn resume-trigger" data-category="${category}" data-month="${escapeHtml(r.month)}" data-count="${r.resumes}">${r.resumes}</button>`
+          : `<span>${r.resumes}</span>`;
+
+        return `
+        <div style="display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--card-border);">
+          <div style="width:110px; font-weight:700;">${escapeHtml(r.month)}</div>
+          <div style="flex:1; display:flex; gap:12px;">
+            <div style="min-width:140px;">職缺數：<strong>${r.jobCount}</strong></div>
+            <div style="min-width:140px;">累計職缺：<strong>${r.cumulativeJobs}</strong></div>
+            <div style="min-width:160px;">本月履歷投遞：<strong>${resumeDisplay}</strong></div>
+            <div style="min-width:160px;">累計履歷投遞：<strong>${r.cumulativeResumes}</strong></div>
+            <div style="min-width:180px;">平均每職缺履歷數：<strong>${r.avgResumesPerJob.toFixed(2)}</strong></div>
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      return `<div>${header}<div style="background:var(--panel); padding:8px; border-radius:8px;">${tableRows}</div></div>`;
+    }
+
+    function updateJobStatistics(rows){
+      // compute and render into #jobStatsContent
+      const container = document.getElementById('jobStatsContent');
+      if(!container) return;
+      jobStatsRowMap.clear();
+      const computed = computeJobStats(rows);
+      const tcomputed = computeTargetStats(rows);
+
+      container.innerHTML = renderJobStats(computed, undefined, 'target');
+      if(computed && Array.isArray(computed.stats)){
+        computed.stats.forEach(stat => {
+          jobStatsRowMap.set(`target|${stat.month}`, stat.resumeRows || []);
+        });
+      }
+
+      const tcontainer = document.getElementById('targetStatsContent');
+      if(tcontainer){
+        tcontainer.innerHTML = renderJobStats(tcomputed, undefined, 'all');
+      }
+      if(tcomputed && Array.isArray(tcomputed.stats)){
+        tcomputed.stats.forEach(stat => {
+          jobStatsRowMap.set(`all|${stat.month}`, stat.resumeRows || []);
+        });
+      }
+      // render comparison chart showing monthly resumes for all vs target schools
+      const chartEl = document.getElementById('comparisonChart');
+      if(chartEl){
+        try{
+          const all = (tcomputed && Array.isArray(tcomputed.stats)) ? tcomputed.stats : [];
+          const target = (computed && Array.isArray(computed.stats)) ? computed.stats : [];
+          chartEl.innerHTML = renderComparisonChart(all, target);
+        }catch(e){ chartEl.innerHTML = '<div style="color:var(--muted); padding:12px;">無法產生圖表</div>'; }
+      }
+    }
+
+    // render a simple SVG two-line chart for comparison
+    function renderComparisonChart(allStats, targetStats){
+      // styled line chart matching provided attachment
+      const MONTH_ORDER = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const months = Array.from(new Set([...(allStats||[]).map(s=>s.month), ...(targetStats||[]).map(s=>s.month)]));
+      months.sort((a,b)=> MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+  // use 平均每職缺履歷數 (avgResumesPerJob) as the plotted value
+  const allMap = (allStats||[]).reduce((m,s)=> (m[s.month]= Number(s.avgResumesPerJob) || 0, m), {});
+  const tgtMap = (targetStats||[]).reduce((m,s)=> (m[s.month]= Number(s.avgResumesPerJob) || 0, m), {});
+
+      const THRESHOLD_VALUES = [16, 26];
+      const collectedValues = [];
+      months.forEach(m => {
+        const av = allMap[m];
+        const tv = tgtMap[m];
+        if(Number.isFinite(av)) collectedValues.push(av);
+        if(Number.isFinite(tv)) collectedValues.push(tv);
+      });
+      collectedValues.push(...THRESHOLD_VALUES);
+      const validValues = collectedValues.filter(v => Number.isFinite(v));
+      let minV = validValues.length ? Math.min(...validValues) : 0;
+      let maxV = validValues.length ? Math.max(...validValues) : 1;
+      if(!isFinite(minV)) minV = 0;
+      if(!isFinite(maxV)) maxV = 1;
+      if(maxV === minV){ maxV = minV + 1; }
+
+      const w = 900, h = 260, pad = 50;
+      const xStep = (w - pad*2) / Math.max(1, months.length - 1);
+      const yScale = v => {
+        const clamped = Math.min(Math.max(v, minV), maxV);
+        return h - pad - (((clamped - minV) / (maxV - minV)) * (h - pad*2));
+      };
+
+      const makePath = (map) => months.map((m,i)=> `${pad + i * xStep},${yScale(map[m]||0)}`).join(' ');
+      const pAll = makePath(allMap);
+      const pTgt = makePath(tgtMap);
+
+      const monthLabels = months.map((m,i)=> `<text x="${pad + i * xStep}" y="${h - pad + 22}" font-size="14" text-anchor="middle" fill="var(--muted)">${m}</text>`).join('');
+
+      const fmt = v => {
+        const n = Number(v) || 0;
+        return (Math.abs(n - Math.round(n)) < 0.01) ? String(Math.round(n)) : n.toFixed(2);
+      };
+
+      const allLabels = months.map((m,i)=> `<text x="${pad + i * xStep}" y="${yScale(allMap[m]||0) - 12}" font-size="12" text-anchor="middle" fill="#b5631a">${fmt(allMap[m]||0)}</text>`).join('');
+      const tgtLabels = months.map((m,i)=> `<text x="${pad + i * xStep}" y="${yScale(tgtMap[m]||0) - 12}" font-size="12" text-anchor="middle" fill="#666">${fmt(tgtMap[m]||0)}</text>`).join('');
+
+      const allDots = months.map((m,i)=> `<circle cx="${pad + i * xStep}" cy="${yScale(allMap[m]||0)}" r="4" fill="#f0b429" />`).join('');
+      const tgtDots = months.map((m,i)=> `<circle cx="${pad + i * xStep}" cy="${yScale(tgtMap[m]||0)}" r="4" fill="#7a7a7a" />`).join('');
+
+      // legend centered
+      const legend = `
+        <g transform="translate(${w/2 - 140},14)">
+          <circle cx="8" cy="8" r="6" fill="#f0b429" />
+          <text x="22" y="12" font-size="13" fill="#333">平均每職缺履歷數_全部學校</text>
+          <circle cx="260" cy="8" r="6" fill="#7a7a7a" />
+          <text x="284" y="12" font-size="13" fill="#333">平均每職缺履歷數_目標學校</text>
+        </g>
+      `;
+
+      const thresholdLines = [
+        { value: 16, color: '#f97316', label: 'y = 16' },
+        { value: 26, color: '#9ca3af', label: 'y = 26' },
+      ].map(({ value, color, label }) => {
+        const y = yScale(value);
+        return `
+          <line x1="${pad}" x2="${w - pad}" y1="${y}" y2="${y}" stroke="${color}" stroke-width="1.5" stroke-dasharray="6 6" />
+          <text x="${pad - 8}" y="${y + 4}" font-size="12" fill="${color}" text-anchor="end">${label}</text>
+        `;
+      }).join('');
+
+      return `
+        <svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+          <rect x="0" y="0" width="${w}" height="${h}" fill="transparent" />
+          <!-- subtle horizontal grid -->
+          ${[0,0.25,0.5,0.75,1].map(g=> `<line x1="${pad}" x2="${w-pad}" y1="${pad + g*(h-pad*2)}" y2="${pad + g*(h-pad*2)}" stroke="#f1f1f1" stroke-width="1"/>`).join('')}
+          ${thresholdLines}
+          ${legend}
+          <!-- all (now orange) line -->
+          <polyline points="${pAll}" fill="none" stroke="#f0b429" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+          ${allDots}
+          <!-- target (now grey) line -->
+          <polyline points="${pTgt}" fill="none" stroke="#7a7a7a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+          ${tgtDots}
+          ${allLabels}
+          ${tgtLabels}
+          ${monthLabels}
+        </svg>
+      `;
+    }
+
+    function computeTargetStats(rows){
+      // same structure as computeJobStats but resumes count所有符合新鮮人條件的投遞
+      const byMonth = new Map();
+      rows.forEach(r => {
+        const idl = (r.__IDL || '').toString().trim();
+        if(!idl) return;
+        const freshFlagJob = (r['新鮮人職缺'] || r.__isFresh || '').toString().trim().toUpperCase();
+        const freshOnlyCheckbox = document.getElementById('jobStatsFreshOnly');
+        const freshOnly = !!(freshOnlyCheckbox && freshOnlyCheckbox.checked);
+        if(freshOnly && freshFlagJob !== 'Y') return;
+
+        const month = r.__MONTH || '未知';
+        if(!byMonth.has(month)) byMonth.set(month, { jobs: new Set(), resumes: 0, resumeRows: [] });
+        const entry = byMonth.get(month);
+        const jobTitle = r['職務名稱一'] || '未填寫';
+        entry.jobs.add(jobTitle);
+
+        const applicantFreshRaw = (r['新鮮人（2y內）'] || r['新鮮人'] || r.__isFreshApplicant || '').toString().trim().toUpperCase();
+        let isApplicantFresh = false;
+        if(applicantFreshRaw) {
+          isApplicantFresh = (applicantFreshRaw === 'Y');
+        } else {
+          const exp = (r['年資'] || '').toString();
+          isApplicantFresh = (exp === '無' || exp.includes('一年以下') || exp.includes('1年以下') || exp === '1' || exp.includes('1-2年') || exp.includes('1~2年') || exp === '2');
+        }
+
+        if(isApplicantFresh){
+          entry.resumes += 1;
+          entry.resumeRows.push(r);
+        }
+      });
+
+      const months = Array.from(byMonth.keys()).sort((a,b)=>{
+        const ia = MONTH_ORDER.indexOf(a);
+        const ib = MONTH_ORDER.indexOf(b);
+        if(ia>=0 && ib>=0) return ia-ib;
+        if(ia>=0) return -1;
+        if(ib>=0) return 1;
+        return a.localeCompare(b);
+      });
+
+      const stats = [];
+      let cumulativeJobsSet = new Set();
+      let cumulativeResumes = 0;
+      months.forEach(m => {
+        const entry = byMonth.get(m);
+        const jobCount = entry.jobs.size;
+        cumulativeJobsSet = new Set([...cumulativeJobsSet, ...Array.from(entry.jobs)]);
+        cumulativeResumes += entry.resumes;
+        const cumulativeJobs = cumulativeJobsSet.size;
+        const avgResumesPerJob = cumulativeJobs > 0 ? (cumulativeResumes / cumulativeJobs) : 0;
+        stats.push({ month: m, jobCount, resumes: entry.resumes, cumulativeJobs, cumulativeResumes, avgResumesPerJob, resumeRows: Array.from(entry.resumeRows) });
+      });
+
+      const totalJobCounts = stats.reduce((s,it)=> s+it.jobCount, 0);
+      const totalResumes = stats.reduce((s,it)=> s+it.resumes, 0);
+      const avgJobsPerMonth = stats.length ? (totalJobCounts / stats.length) : 0;
+      const avgResumesPerMonth = stats.length ? (totalResumes / stats.length) : 0;
+
+      return { stats, avgJobsPerMonth, avgResumesPerMonth };
+    }
+
+    // Sidebar button: show jobStats panel
+    if($tabJobStats){
+      $tabJobStats.addEventListener('click', ()=>{
+        $tabOverview.className = 'nav-item';
+        $tabCompany.className = 'nav-item';
+        $tabExperience.className = 'nav-item';
+        $tabEducation.className = 'nav-item';
+        $tabGeography.className = 'nav-item';
+        $tabJobAnalysis.className = 'nav-item';
+        $tabJobStats.className = 'nav-item active';
+        if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+
+        document.querySelectorAll('.tab-content').forEach(el=> el.style.display = 'none');
+        if($jobStatsPanel) $jobStatsPanel.style.display = 'block';
+        if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+      });
+    }
+
+    if($tabApplicationDistribution){
+      $tabApplicationDistribution.addEventListener('click', ()=>{
+        $tabOverview.className = 'nav-item';
+        $tabCompany.className = 'nav-item';
+        $tabExperience.className = 'nav-item';
+        $tabEducation.className = 'nav-item';
+        $tabGeography.className = 'nav-item';
+        $tabJobAnalysis.className = 'nav-item';
+        if($tabJobStats) $tabJobStats.className = 'nav-item';
+        $tabApplicationDistribution.className = 'nav-item active';
+
+        document.querySelectorAll('.tab-content').forEach(el=> el.style.display = 'none');
+        if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'block';
+      });
+    }
+    // jobStatsFreshOnly checkbox: re-render job stats on change
+    const $jobStatsFreshOnly = document.getElementById('jobStatsFreshOnly');
+    if($jobStatsFreshOnly){
+      $jobStatsFreshOnly.addEventListener('change', ()=>{
+        // recompute and render based on current filters
+        try{ updateJobStatistics(filteredRows()); }catch(e){/* ignore */}
+      });
+    }
+    
+    function renderJobAnalysisTopCompanies(companies) {
+      return `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${companies.map((company, index) => {
+            const maxCount = Math.max(...companies.map(c => c.人數));
+            const width = (company.人數 / maxCount) * 100;
+            return `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-size: 12px; color: var(--muted); min-width: 20px;">${index + 1}</div>
+                <div style="flex: 1; background: #e9ecef; border-radius: 4px; height: 20px; position: relative;">
+                  <div style="
+                    background: var(--accent); 
+                    height: 100%; 
+                    width: ${width}%; 
+                    border-radius: 4px; 
+                    transition: width 0.3s ease;
+                  "></div>
+                  <div style="position: absolute; top: 50%; left: 8px; transform: translateY(-50%); font-size: 11px; color: white; font-weight: 600;">
+                    ${company.公司}
+                  </div>
+                </div>
+                <div style="font-size: 12px; color: var(--primary); font-weight: 600; min-width: 30px;">
+                  ${company.人數}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+    
+    function renderJobAnalysisPreviousJobs(jobs) {
+      return `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${jobs.map((job, index) => {
+            const maxCount = Math.max(...jobs.map(j => j.人數));
+            const width = (job.人數 / maxCount) * 100;
+            return `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-size: 12px; color: var(--muted); min-width: 20px;">${index + 1}</div>
+                <div style="flex: 1; background: #e9ecef; border-radius: 4px; height: 20px; position: relative;">
+                  <div style="
+                    background: #28a745; 
+                    height: 100%; 
+                    width: ${width}%; 
+                    border-radius: 4px; 
+                    transition: width 0.3s ease;
+                  "></div>
+                  <div style="position: absolute; top: 50%; left: 8px; transform: translateY(-50%); font-size: 11px; color: white; font-weight: 600;">
+                    ${job.職務}
+                  </div>
+                </div>
+                <div style="font-size: 12px; color: var(--primary); font-weight: 600; min-width: 30px;">
+                  ${job.人數}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+    
+    function renderJobAnalysisEducation(schoolMajors) {
+      return `
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">學校+科系</th>
+              <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${schoolMajors.map((item, index) => `
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                  ${escapeHtml(item.學校科系)}
+                </td>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${item.人數.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+    
+    function renderJobAnalysisLocation(locations) {
+      return `
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8f9fa;">
+              <th style="padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6;">縣市</th>
+              <th style="padding: 8px; text-align: right; border-bottom: 1px solid #dee2e6;">人數</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${locations.map((item, index) => `
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #f1f3f4;">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: var(--accent); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+                  ${escapeHtml(item.縣市)}
+                </td>
+                <td style="padding: 8px; text-align: right; border-bottom: 1px solid #f1f3f4;">${item.人數.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    $companySearch.addEventListener('input', ()=> update());
+    $toggleDedup.addEventListener('change', ()=> update());
+    $toggleHideUnknown.addEventListener('change', ()=> update());
+
+    $monthSelectAll.addEventListener('click', ()=>{ selectedMonths = new Set(uniqueSortedMonths(data.map(d=>d['月份']))); buildChips($monthChips, Array.from(selectedMonths).sort((a,b)=> MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b)), selectedMonths, update); update(); });
+    $monthClear.addEventListener('click', ()=>{ selectedMonths = new Set(); buildChips($monthChips, uniqueSortedMonths(data.map(d=>d['月份'])), selectedMonths, update); update(); });
+
+  $idlSelectAll.addEventListener('click', ()=>{ selectedIDL = new Set(uniqueSorted(data.map(d=>d.__IDL))); buildChips($idlChips, Array.from(selectedIDL).sort(), selectedIDL, update); update(); });
+  $idlClear.addEventListener('click', ()=>{ selectedIDL = new Set(); buildChips($idlChips, uniqueSorted(data.map(d=>d.__IDL)), selectedIDL, update); update(); });
+
+    $funcSelectAll.addEventListener('click', ()=>{ selectedFuncs = new Set(FUNC_LABELS.map(f=>f.label)); buildChips($funcChips, Array.from(selectedFuncs), selectedFuncs, update); update(); });
+    $funcClear.addEventListener('click', ()=>{ selectedFuncs = new Set(); buildChips($funcChips, FUNC_LABELS.map(f=>f.label), selectedFuncs, update); update(); });
+
+    $locSelectAll.addEventListener('click', ()=>{ selectedLocs = new Set(LOC_LABELS.map(l=>l.label)); buildChips($locChips, Array.from(selectedLocs), selectedLocs, update); update(); });
+    $locClear.addEventListener('click', ()=>{ selectedLocs = new Set(); buildChips($locChips, LOC_LABELS.map(l=>l.label), selectedLocs, update); update(); });
+
+    // 職務分析篩選器事件
+    $jobFilter.addEventListener('change', ()=>{
+      selectedJobTitle = $jobFilter.value;
+      updateJobAnalysis();
+    });
+    
+    $clearJobFilter.addEventListener('click', ()=>{
+      selectedJobTitle = '';
+      $jobFilter.value = '';
+      updateJobAnalysis();
+    });
+
+    // 分頁切換事件
+    $tabOverview.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item active';
+      $tabCompany.className = 'nav-item';
+      $tabExperience.className = 'nav-item';
+      $tabEducation.className = 'nav-item';
+      $tabGeography.className = 'nav-item';
+      $tabJobAnalysis.className = 'nav-item';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'block';
+      $companyStats.style.display = 'none';
+      $experienceStats.style.display = 'none';
+      $educationStats.style.display = 'none';
+      $geographyStats.style.display = 'none';
+  $jobAnalysisStats.style.display = 'none';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    $tabCompany.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item';
+      $tabCompany.className = 'nav-item active';
+      $tabExperience.className = 'nav-item';
+      $tabEducation.className = 'nav-item';
+      $tabGeography.className = 'nav-item';
+      $tabJobAnalysis.className = 'nav-item';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'none';
+  $companyStats.style.display = 'block';
+  $experienceStats.style.display = 'none';
+  $educationStats.style.display = 'none';
+  $geographyStats.style.display = 'none';
+  $jobAnalysisStats.style.display = 'none';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    $tabExperience.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item';
+      $tabCompany.className = 'nav-item';
+      $tabExperience.className = 'nav-item active';
+      $tabEducation.className = 'nav-item';
+      $tabGeography.className = 'nav-item';
+      $tabJobAnalysis.className = 'nav-item';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'none';
+  $companyStats.style.display = 'none';
+  $experienceStats.style.display = 'block';
+  $educationStats.style.display = 'none';
+  $geographyStats.style.display = 'none';
+  $jobAnalysisStats.style.display = 'none';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    $tabEducation.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item';
+      $tabCompany.className = 'nav-item';
+      $tabExperience.className = 'nav-item';
+      $tabEducation.className = 'nav-item active';
+      $tabGeography.className = 'nav-item';
+      $tabJobAnalysis.className = 'nav-item';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'none';
+  $companyStats.style.display = 'none';
+  $experienceStats.style.display = 'none';
+  $educationStats.style.display = 'block';
+  $geographyStats.style.display = 'none';
+  $jobAnalysisStats.style.display = 'none';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    $tabGeography.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item';
+      $tabCompany.className = 'nav-item';
+      $tabExperience.className = 'nav-item';
+      $tabEducation.className = 'nav-item';
+      $tabGeography.className = 'nav-item active';
+      $tabJobAnalysis.className = 'nav-item';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'none';
+  $companyStats.style.display = 'none';
+  $experienceStats.style.display = 'none';
+  $educationStats.style.display = 'none';
+  $geographyStats.style.display = 'block';
+  $jobAnalysisStats.style.display = 'none';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    $tabJobAnalysis.addEventListener('click', ()=>{
+      $tabOverview.className = 'nav-item';
+      $tabCompany.className = 'nav-item';
+      $tabExperience.className = 'nav-item';
+      $tabEducation.className = 'nav-item';
+      $tabGeography.className = 'nav-item';
+      $tabJobAnalysis.className = 'nav-item active';
+      if($tabJobStats) $tabJobStats.className = 'nav-item';
+      if($tabApplicationDistribution) $tabApplicationDistribution.className = 'nav-item';
+  $overviewStats.style.display = 'none';
+  $companyStats.style.display = 'none';
+  $experienceStats.style.display = 'none';
+  $educationStats.style.display = 'none';
+  $geographyStats.style.display = 'none';
+  $jobAnalysisStats.style.display = 'block';
+  if($jobStatsPanel) $jobStatsPanel.style.display = 'none';
+      if($applicationDistributionPanel) $applicationDistributionPanel.style.display = 'none';
+    });
+
+    // 新進人員篩選按鈕事件
+    $filterNewcomers.addEventListener('click', ()=>{
+      isNewcomerFilterActive = true;
+      $filterNewcomers.style.background = '#28a745';
+      $filterNewcomers.textContent = '✓ 已篩選新進人員';
+      update();
+    });
+
+    $clearNewcomerFilter.addEventListener('click', ()=>{
+      isNewcomerFilterActive = false;
+      $filterNewcomers.style.background = 'var(--accent)';
+      $filterNewcomers.textContent = '篩選新進人員（無年資+二年以內）';
+      update();
+    });
+
+    // 禁用控制直到載入資料
+    enableControls(false);
+    
+    // 匯入提醒視窗相關元素
+    const $importReminderModal = document.getElementById('importReminderModal');
+    const $startImportBtn = document.getElementById('startImportBtn');
+    
+    // 開始匯入按鈕事件
+    $startImportBtn.addEventListener('click', () => {
+      // 關閉提醒視窗
+      $importReminderModal.style.display = 'none';
+      // 觸發檔案選擇
+      document.getElementById('importBtn').click();
+    });
+    
+    // helper: load CSV text (used for file import and auto-load from localStorage)
+    function loadCsvFromText(text, filename){
+      try{
+        const parsed = parseCSV(text);
+        if(!parsed || parsed.length===0){ console.warn('自動載入：無資料'); return false; }
+        raw = parsed;
+        data = preprocess(raw);
+        mode = MODE.TOTAL;
+        $companySearch.value = '';
+        $toggleDedup.checked = false;
+        $toggleHideUnknown.checked = false;
+        initFilters();
+
+        // switch to overview
+        if($tabOverview){ $tabOverview.className = 'nav-item active'; }
+        if($companyStats) $companyStats.style.display = 'none';
+        if($experienceStats) $experienceStats.style.display = 'none';
+        if($overviewStats) $overviewStats.style.display = 'block';
+
+        // store last filename (optional) and mark that we loaded
+        if(filename) localStorage.setItem('lastImportName', filename);
+        return true;
+      }catch(err){ console.error('載入 CSV 失敗', err); return false; }
+    }
+    
+    // 檔案匯入成功後關閉提醒視窗
+    const originalImportHandler = document.getElementById('importBtn').onclick;
+    document.getElementById('importBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 創建新的檔案輸入元素
+      const newFileInput = document.createElement('input');
+      newFileInput.type = 'file';
+      newFileInput.accept = '.csv';
+      newFileInput.style.display = 'none';
+      
+      newFileInput.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const text = reader.result.toString();
+            // save raw CSV to localStorage for next visit
+            try { localStorage.setItem('lastImportedCsv', text); } catch(e){ /* ignore storage errors */ }
+            raw = parseCSV(text);
+            if (raw.length === 0) {
+              alert('讀不到資料，請確認 CSV 內容。');
+              return;
+            }
+            data = preprocess(raw);
+            mode = MODE.TOTAL;
+            $companySearch.value = '';
+            $toggleDedup.checked = false;
+            $toggleHideUnknown.checked = false;
+            initFilters();
+            
+            // 匯入成功後關閉提醒視窗
+            $importReminderModal.style.display = 'none';
+            
+            // 自動切換到整體分析頁面
+            $tabOverview.className = 'nav-item active';
+            $tabCompany.className = 'nav-item';
+            $tabExperience.className = 'nav-item';
+            $overviewStats.style.display = 'block';
+            $companyStats.style.display = 'none';
+            $experienceStats.style.display = 'none';
+          } catch (error) {
+            console.error('檔案處理錯誤:', error);
+            alert('檔案處理失敗，請確認檔案格式正確。');
+          }
+        };
+        reader.onerror = () => {
+          alert('檔案讀取失敗，請重試。');
+        };
+        reader.readAsText(file, 'utf-8');
+        
+        // 清理臨時元素
+        document.body.removeChild(newFileInput);
+      });
+      
+      // 添加到 DOM 並觸發點擊
+      document.body.appendChild(newFileInput);
+      newFileInput.click();
+    });
+
+    // on page load: attempt to auto-load last imported CSV, fallback to default dataset
+    (async function tryAutoLoad(){
+      try{
+        const last = localStorage.getItem('lastImportedCsv');
+        if(last){
+          const ok = loadCsvFromText(last, localStorage.getItem('lastImportName')||'last.csv');
+          if(ok){
+            try{ $importReminderModal.style.display = 'none'; }catch(e){}
+            return;
+          }
+        }
+
+        if(DEFAULT_CSV_PATH){
+          try{
+            const text = await fetchDefaultCsvText(DEFAULT_CSV_PATH);
+            if(text){
+              const ok = loadCsvFromText(text, '2025-104 應徵統計.csv');
+              if(ok){
+                try {
+                  localStorage.setItem('lastImportedCsv', text);
+                  localStorage.setItem('lastImportName', '2025-104 應徵統計.csv');
+                  $importReminderModal.style.display = 'none';
+                } catch(storageError){ /* ignore storage errors */ }
+                return;
+              }
+            }
+          }catch(fetchError){
+            console.warn('Default CSV load error', fetchError);
+          }
+        }
+      }catch(e){ console.warn('Auto-load failed', e); }
+    })();
+  </script>
+</body>
+</html>

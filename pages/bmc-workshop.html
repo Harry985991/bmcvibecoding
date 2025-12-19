@@ -84,9 +84,14 @@
 
         /* Top Banner */
         .top-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             background: white;
             padding: 20px 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
         }
 
         .banner-content {
@@ -147,7 +152,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 120px 20px 40px 20px;
         }
 
         /* Header Section */
@@ -193,6 +198,11 @@
             margin: 60px 0 40px 0;
             flex-wrap: wrap;
             animation: fadeIn 1s ease-out;
+        }
+
+        /* Showcase Page Tab Navigation - 縮短上方空白 */
+        #page-showcase .tab-navigation {
+            margin: 20px 0 40px 0;
         }
 
         .tab-btn {
@@ -519,6 +529,10 @@
                 display: none;
             }
 
+            .container {
+                padding-top: 160px;
+            }
+
             .banner-content {
                 flex-direction: column;
                 gap: 20px;
@@ -582,22 +596,21 @@
     </div>
 
     <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-            <div class="title-group">
-                <div class="main-title">Vibe</div>
-                <div class="main-title">Coding</div>
-            </div>
-            <div class="tagline">in BMC</div>
-        </div>
-
         <!-- Main Page (Default) -->
         <div class="page-content active" id="page-main">
+            <!-- Header Section -->
+            <div class="header">
+                <div class="title-group">
+                    <div class="main-title">Vibe</div>
+                    <div class="main-title">Coding</div>
+                </div>
+                <div class="tagline">in BMC</div>
+            </div>
+
             <div class="main-intro">
                 <div class="intro-text">
                     <h2>人人都能用 AI 寫程式</h2>
                     <h3>什麼是 <span class="highlight">Vibe Coding</span>？</h3>
-                    <h4>一句話，一個 網站</h4>
                     <p>
                         Vibe Coding 是由前 Tesla AI 總監 Andrej Karpathy 提出的全新開發哲學。
                         它顛覆了傳統寫程式的定義：你不需要精通複雜的語法，也不用逐行敲打代碼，
@@ -621,14 +634,124 @@
         <div class="page-content" id="page-showcase">
             <!-- Showcase Tab Navigation -->
             <div class="tab-navigation" id="showcase">
-                <button class="tab-btn active" onclick="switchShowcaseTab('data')">資料轉換</button>
+                <button class="tab-btn active" onclick="switchShowcaseTab('all')">ALL</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('data')">資料轉換</button>
                 <button class="tab-btn" onclick="switchShowcaseTab('dashboard')">報表儀表板</button>
                 <button class="tab-btn" onclick="switchShowcaseTab('productivity')">生產力工具</button>
                 <button class="tab-btn" onclick="switchShowcaseTab('other')">其他</button>
             </div>
 
+            <!-- Showcase Tab Content: ALL -->
+            <div class="tab-content active" id="showcase-all">
+                <div class="cards-grid">
+                    <!-- 資料轉換 -->
+                    <div class="command-card">
+                        <div class="card-number">📊</div>
+                        <h3 class="card-title">CSV 轉 JSON 轉換器</h3>
+                        <p class="card-description">快速將 CSV 檔案轉換為 JSON 格式，方便資料處理和 API 使用。</p>
+                        <div class="code-block">資料轉換工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🔄</div>
+                        <h3 class="card-title">Excel 資料清理工具</h3>
+                        <p class="card-description">自動清理和標準化 Excel 資料，節省人工處理時間。</p>
+                        <div class="code-block">資料轉換工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <!-- 報表儀表板 -->
+                    <div class="command-card">
+                        <div class="card-number">📈</div>
+                        <h3 class="card-title">銷售數據儀表板</h3>
+                        <p class="card-description">即時顯示銷售數據，支援多維度分析和互動式圖表。</p>
+                        <div class="code-block">數據視覺化</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">💹</div>
+                        <h3 class="card-title">財務分析報表</h3>
+                        <p class="card-description">自動生成財務報表和趨勢分析圖表。</p>
+                        <div class="code-block">數據視覺化</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <!-- 生產力工具 -->
+                    <div class="command-card">
+                        <div class="card-number">✅</div>
+                        <h3 class="card-title">待辦事項管理 App</h3>
+                        <p class="card-description">簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">⏰</div>
+                        <h3 class="card-title">番茄鐘計時器</h3>
+                        <p class="card-description">幫助您專注工作，提升效率的番茄工作法計時器。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">📝</div>
+                        <h3 class="card-title">筆記應用</h3>
+                        <p class="card-description">支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <!-- 其他 -->
+                    <div class="command-card">
+                        <div class="card-number">🎮</div>
+                        <h3 class="card-title">互動式小遊戲</h3>
+                        <p class="card-description">使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🎨</div>
+                        <h3 class="card-title">個人作品集網站</h3>
+                        <p class="card-description">展示您的技能和專案的精美作品集網站模板。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🌐</div>
+                        <h3 class="card-title">登陸頁生成器</h3>
+                        <p class="card-description">快速創建專業的產品登陸頁面。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Showcase Tab Content: 資料轉換 -->
-            <div class="tab-content active" id="showcase-data">
+            <div class="tab-content" id="showcase-data">
                 <div class="cards-grid">
                     <div class="command-card">
                         <div class="card-number">📊</div>
@@ -801,6 +924,17 @@
             
             // Show showcase page
             document.getElementById('page-showcase').classList.add('active');
+            
+            // Reset to ALL tab - 預設顯示 ALL
+            const tabBtns = document.querySelectorAll('#page-showcase .tab-btn');
+            const tabContents = document.querySelectorAll('#page-showcase .tab-content');
+            
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Activate ALL tab and content
+            tabBtns[0].classList.add('active'); // First button is ALL
+            document.getElementById('showcase-all').classList.add('active');
             
             // Scroll to top to keep banner fully visible
             window.scrollTo({ 

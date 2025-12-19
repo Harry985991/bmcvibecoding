@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Side Projects</title>
+  <link rel="icon" type="image/png" href="assets/icons/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+  .avatar-logo { width:36px; height:36px; border-radius:50%; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:#E5E7EB; }
+  .avatar-logo img { width:100%; height:100%; object-fit:cover; display:block; }
+  </style>
+  <style>
+:root{
+  --bg: #F7F8FC;           /* 柔和淺灰藍背景 */
+  --primary: #2E2E2E;      /* 主要文字 */
+  --banner: #FFFFFF;       /* 頂部白底 */
+  --underline: #7367F0;    /* 主紫 */
+  --muted: #6B7280;        /* 次要文字 */
+  --accent: #7367F0;       /* 主紫色 */
+  --teal: #E5E5E5;
+  --title-blue: #EEF2FF;   /* 紫系淡底籤 */
+  --card-bg: #ffffff;      /* 白色卡片背景 */
+  --section-bg: transparent;   /* 區塊透明 */
+  --card-border: rgba(16,24,40,0.06);
+}
+
+/* base */
+html,body { height:100%; }
+body {
+  font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+  background-color: var(--bg);
+  color: var(--primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* top banner */
+header {
+  background: var(--banner);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none; /* 取消原本邊線，改用下劃線 */
+  box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  position: relative;
+}
+
+
+/* left: logo + title */
+.header-left {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.header-logo { width:40px; height:40px; border-radius:8px; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:#EEF2FF; border:1px solid rgba(255,255,255,0.08); box-shadow:0 6px 16px rgba(0,0,0,0.16); }
+.header-logo img { width:100%; height:100%; object-fit:cover; display:block; }
+.header-title {
+  font-size:24px; /* 主要標題 24px */
+  color:#ffffff;
+  font-weight:700;
+  letter-spacing:0.2px;
+}
+
+/* header actions (right) - white text, subtle white borders */
+.header-actions {
+  display: flex; /* 確保水平排列 */
+  gap: 10px;
+  align-items: center; /* 垂直置中 */
+  justify-content: flex-end; /* 靠右對齊 */
+
+
+}
+
+.header-actions button, .header-actions a {
+  background: transparent;
+  color: #ffffff; /* 白字 */
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight:600;
+  font-size:16px; /* 按鈕文字 16px */
+  text-decoration:none;
+  cursor:pointer;
+}
+.header-actions button:hover, .header-actions a:hover {
+  background: rgba(255,255,255,0.04);
+  transform: translateY(-1px);
+}
+
+/* sidebar layout + content header */
+.app-layout { display:grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidebar { background:#0B1E33; border-right:1px solid rgba(255,255,255,0.08); padding:16px 12px; position:sticky; top:0; height:100vh; box-sizing:border-box; }
+.brand { display:flex; align-items:center; gap:10px; padding:6px 8px; margin-bottom:8px; }
+.brand-logo { width:36px; height:36px; border-radius:8px; background:rgba(255,255,255,0.1); color:#E6EDF3; display:inline-flex; align-items:center; justify-content:center; font-weight:800; border:1px solid rgba(255,255,255,0.16); }
+.brand-name { font-weight:800; color:#E6EDF3; }
+
+.collapse-btn { display:inline-flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.08); color:#E6EDF3; border:1px solid rgba(255,255,255,0.16); border-radius:999px; width:40px; height:40px; padding:0; cursor:pointer; box-shadow: none; }
+.collapse-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.24); }
+.collapse-btn svg { width:18px; height:18px; transition: transform 160ms ease; color:#E6EDF3; }
+
+.nav { display:flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.nav-section-title { font-size:12px; color: rgba(230,237,243,0.7); padding: 8px 12px; text-transform: uppercase; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius: 10px; color: #E6EDF3; text-decoration:none; border: 1px solid transparent; }
+.nav-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+.nav-item.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.24); }
+.icon { width:18px; height:18px; color:#9FB4C8; flex:0 0 18px; }
+.nav-item.active .icon { color: #A6C8FF; }
+.nav-item .label { white-space: nowrap; }
+
+.content { display:flex; flex-direction: column; min-width:0; }
+.content-header { display:flex; align-items:center; justify-content: space-between; padding: 18px 24px; position: sticky; top:0; background: var(--bg); border-bottom: none; z-index: 10; }
+.content-title { font-size: 28px; font-weight: 700; display:flex; align-items:center; gap:14px; font-family: 'Inter','Noto Sans TC',sans-serif; letter-spacing: .2px; }
+/* removed .content-title .icon explicit sizing to use inline sizes */
+.content-header .header-actions { display:flex; gap:10px; align-items:center; }
+.content-header .header-actions button, .content-header .header-actions a { background:#fff; color: var(--primary); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight:600; font-size:16px; text-decoration:none; cursor:pointer; }
+.content-header .header-actions button:hover, .content-header .header-actions a:hover { background:#F8FAF9; transform: translateY(-1px); }
+
+/* collapsed state */
+.app-layout.collapsed { grid-template-columns: 68px 1fr; }
+.app-layout.collapsed .sidebar { width:68px; padding:12px 8px; overflow:hidden; }
+.app-layout.collapsed .brand-name { display:none; }
+.app-layout.collapsed .nav-section-title { display:block; padding: 6px 12px; font-size:10px; letter-spacing:.12em; }
+.app-layout.collapsed .label { display:none; }
+.app-layout.collapsed .nav-item { justify-content:center; padding:10px 0; width:100%; }
+.app-layout.collapsed #expandBtn { display:inline-flex; }
+.app-layout.collapsed .collapse-btn { width:40px; height:40px; background: rgba(255,255,255,0.08); color:#E6EDF3; border:1px solid rgba(255,255,255,0.16); }
+.app-layout.collapsed .collapse-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.24); }
+.app-layout.collapsed .collapse-btn svg { transform: rotate(180deg); color:#E6EDF3; }
+
+/* 折疊時置中品牌、MENU 與按鈕 */
+.app-layout.collapsed .brand { justify-content: center; }
+.app-layout.collapsed .nav { align-items: center; }
+.app-layout.collapsed .nav-section-title { text-align: center; width: 100%; padding: 6px 0; }
+.app-layout.collapsed .collapse-btn { margin-left: auto; margin-right: auto; }
+
+/* view toggle */
+.view-hidden { display:none; }
+
+/* embedded page view (e.g., Investment) */
+.iframe-container { width:100%; height: calc(100vh - 160px); background:#ffffff; border:1px solid var(--card-border); border-radius:12px; overflow:hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.iframe-container iframe { width:100%; height:100%; border:0; }
+
+/* layout */
+main {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* section container */
+.section {
+  background: transparent; /* 透明 */
+  padding: 0;              /* 移除內邊距 */
+  border-radius: 0;        /* 無圓角 */
+  box-shadow: none;        /* 無陰影 */
+  border: none;            /* 無邊框 */
+  margin-bottom: 10px;
+}
+.section h2 {
+  margin: 0 0 12px 0;
+  font-size: 18px;              /* 區塊標題 18px */
+  color: var(--primary);
+  font-weight: 700;             /* 粗體 */
+  padding: 8px 12px;
+  display: inline-block;
+  background: rgba(255,255,255,0.0);
+  border-radius: 8px;
+}
+
+/* responsive tweaks for section titles */
+@media (max-width:760px){
+  .section h2 { font-size: 16px; }
+  .modal-content { width: 92%; }
+  main { padding: 16px; }
+  header { padding: 12px 16px; }
+  .header-title { font-size: 20px; }
+  .header-actions button, .header-actions a { font-size: 14px; }
+}
+
+/* grid & cards */
+.grid {
+  display: grid;
+  /* 自適應：依容器寬度調整欄數，確保不溢出且滿版 */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px; /* 水平與垂直間距 20px */
+  align-items: stretch;
+}
+
+/* card: modern white style */
+.card {
+  background: var(--card-bg);
+  color: var(--primary);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  height: 120px;          /* 統一卡片高度為 120px */
+  min-height: 120px;
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+
+/* hover: 微亮邊框與互動感 */
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+  border-color: var(--accent); /* 藍色邊框 */
+}
+
+/* Tools: style the first card only */
+#allToolsContainer .card:first-child {
+  background: #47A3F3; /* bright blue */
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+#allToolsContainer .card:first-child h3 { 
+  background: rgba(255,255,255,0.18); 
+  color:#fff; 
+}
+#allToolsContainer .card:first-child p { color: rgba(255,255,255,0.9); }
+#allToolsContainer .card:first-child .visit-btn {
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  border-color: rgba(255,255,255,0.24);
+}
+#allToolsContainer .card:first-child .visit-btn:hover { filter:none; box-shadow: 0 8px 20px rgba(17,24,39,0.28); }
+
+/* 2nd card: teal-green */
+#allToolsContainer .card:nth-child(2) {
+  background: #22C983;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+#allToolsContainer .card:nth-child(2) h3 { background: rgba(255,255,255,0.18); color:#fff; }
+#allToolsContainer .card:nth-child(2) p { color: rgba(255,255,255,0.9); }
+
+/* 3rd card: aqua-green */
+#allToolsContainer .card:nth-child(3) {
+  background: #2EC7A6;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+#allToolsContainer .card:nth-child(3) h3 { background: rgba(255,255,255,0.18); color:#fff; }
+#allToolsContainer .card:nth-child(3) p { color: rgba(255,255,255,0.9); }
+
+/* 4th card: orange */
+#allToolsContainer .card:nth-child(4) {
+  background: #FF9F43;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+#allToolsContainer .card:nth-child(4) h3 { background: rgba(255,255,255,0.18); color:#fff; }
+#allToolsContainer .card:nth-child(4) p { color: rgba(255,255,255,0.9); }
+
+/* removed left icon badge for first card */
+
+/* drag state */
+.card.dragging { opacity: .6; transform: scale(0.99); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+
+.card-head {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:6px;
+}
+/* title as light-blue badge (button-like) */
+.card h3 {
+  margin: 0;
+  display: inline-block;
+  background: var(--accent); /* 與按鈕互調顏色 */
+  color: #ffffff; /* 標題文字改為白色 */
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 17px;              /* 微調卡片標題 */
+  font-weight: 600;             /* 半粗體 */
+  line-height: 1;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02);
+}
+
+/* description */
+.card p {
+  font-size: 14px;              /* 說明文字 14px */
+  color: var(--muted);          /* 次要文字顏色 */
+  margin: 6px 0 8px 0;
+  flex-grow: 1;
+}
+
+/* actions area layout */
+.card-actions { margin-top: 6px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+
+/* visit link: 亮藍色 #007BFF，白字 */
+.visit-btn {
+  display: inline-block;
+  background: var(--title-blue); /* 與標題互調顏色 */
+  color: var(--primary); /* 淺底配深字，提升可讀性 */
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;             /* 加粗 */
+  font-size: 14px;              /* 縮小字體 */
+  text-decoration: none;
+  border: 1px solid rgba(16,24,40,0.06);
+  box-shadow: 0 4px 10px rgba(115,103,240,0.12);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.visit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(115,103,240,0.18);
+  filter: brightness(0.98);
+}
+
+/* edit/delete: 淺灰背景，深色文字 */
+.card-actions .right button {
+  background-color: #f5f5f5; /* 不明顯的淺灰色 */
+  color: #9CA3AF; /* 淡灰色字體 */
+  border: 1px solid #e0e0e0; /* 淺色邊框 */
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 400;            /* 不加粗 */
+  font-size: 14px;             /* 縮小字體 */
+  transition: all 120ms ease;
+  margin-left: 4px; /* 按鈕間的小空格 */
+}
+.card-actions .right button:first-child {
+  margin-left: 0; /* 第一個按鈕不需要左邊距 */
+}
+.card-actions .right button:hover {
+  background-color: #e8e8e8; /* hover 時稍微深一點的灰 */
+  border-color: #d0d0d0;
+  transform: translateY(-1px);
+}
+
+/* modal */
+.modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.45); display:none; justify-content:center; align-items:center; z-index:1000; }
+.modal-content { background: var(--card-bg); padding:20px; border-radius:12px; width:420px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); border:1px solid var(--card-border); }
+.modal-content h2 { font-size:18px; margin:0 0 12px 0; color:var(--primary); font-weight:700; }
+.modal-content label { font-size:14px; display:block; margin-top:12px; color:var(--primary); font-weight:600; }
+.modal-content input[type="text"], .modal-content textarea { width:100%; padding:10px; font-size:16px; margin-top:6px; border:1px solid var(--card-border); border-radius:8px; color:var(--primary); background: #fff; }
+
+/* categories */
+.categories { display:flex; gap:10px; margin-top:8px; align-items:center; color:var(--muted); }
+.categories input[type="checkbox"] { width:16px; height:16px; accent-color: var(--accent); }
+
+/* small text */
+.small-muted { font-size:14px; color:var(--muted); }
+
+/* responsive tweaks */
+@media (max-width:760px){
+  .modal-content { width: 92%; }
+  main { padding: 16px; }
+  header { padding: 12px 16px; }
+}
+
+/* responsive: 若視窗過窄則改為自適應欄數 */
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Add buttons: 灰色字體 + 一般字重 */
+#addBtn, #promptAddBtn { color: var(--muted) !important; font-weight: 400 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="avatar-logo" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.16);"><img src="assets/icons/logo.png" alt="Logo"></div>
+        <div class="brand-name">Side Projects</div>
+    </div>
+      <button id="collapseBtn" class="collapse-btn" aria-label="折疊側欄">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 6l6 6-6 6"/>
+        </svg>
+      </button>
+      <div class="nav" style="color:#E6EDF3;">
+        <div class="nav-section-title">MENU</div>
+        <a href="#" class="nav-item active" id="navTools">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <circle cx="7" cy="9" r="1"/>
+            <circle cx="11" cy="9" r="1"/>
+            <circle cx="15" cy="9" r="1"/>
+            <path d="M4 12h16"/>
+          </svg>
+          <span class="label">Tools</span>
+        </a>
+        <a href="#" class="nav-item" id="navPrompts">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v3"/>
+            <rect x="6" y="8" width="12" height="10" rx="2"/>
+            <circle cx="10" cy="13" r="1"/>
+            <circle cx="14" cy="13" r="1"/>
+            <path d="M9 16h6"/>
+            <rect x="4" y="10" width="2" height="6" rx="1"/>
+            <rect x="18" y="10" width="2" height="6" rx="1"/>
+          </svg>
+          <span class="label">My GPT</span>
+        </a>
+        <a href="#" class="nav-item" id="navHealth">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/>
+          </svg>
+          <span class="label">Health</span>
+        </a>
+        <a href="#" class="nav-item" id="navInvestment">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 3v18h18"/>
+            <path d="M7 15l4-4 3 3 5-5"/>
+          </svg>
+          <span class="label">Investment</span>
+        </a>
+        <a href="#" class="nav-item" id="navSettings">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.07a2 2 0 1 1-3.38 0l.02-.07A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.07.02a2 2 0 1 1 0-3.38l.07.02A1.65 1.65 0 0 0 8.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 9 8.6a1.65 1.65 0 0 0 .33-1.82l-.02-.07a2 2 0 1 1 3.38 0l-.02.07A1.65 1.65 0 0 0 15 8.6c.37 0 .73-.12 1-.33a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 12c0 .37.12.73.33 1Z"/>
+          </svg>
+          <span class="label">Settings</span>
+        </a>
+        <a href="#" class="nav-item" id="navAbout">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+          </svg>
+          <span class="label">About</span>
+        </a>
+      </div>
+    </aside>
+
+    <div class="content">
+      <header class="content-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button id="expandBtn" class="collapse-btn" aria-label="展開側欄" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 6l-6 6 6 6"/>
+            </svg>
+          </button>
+          <div class="content-title">Tools</div>
+        </div>
+    <div class="header-actions">
+          <div id="toolsActions">
+      <button id="addBtn" title="Add">Add</button>
+          </div>
+          <div id="promptsActions" style="display:none">
+            <button id="promptAddBtn" title="Add">Add</button>
+          </div>
+    </div>
+  </header>
+
+      <main id="toolsView">
+        <section class="section" id="toolsSection">
+          <div id="allToolsContainer" class="grid"></div>
+    </section>
+      </main>
+
+      <main id="promptsView" class="view-hidden">
+        <section class="section">
+          <div id="allPromptsContainer" class="grid"></div>
+    </section>
+      </main>
+
+      <!-- Settings View: 匯入/匯出放置於卡片容器內，涵蓋 Tools 與 My GPT -->
+      <main id="settingsView" class="view-hidden">
+        <section class="section" aria-labelledby="settingsTitle">
+          <h2 id="settingsTitle">Settings</h2>
+          <div class="grid" id="settingsGrid">
+            <div class="card" id="exportAllCard">
+              <div class="card-head"><h3>匯出全部</h3></div>
+              <p>將 Tools、My GPT、Investment、Health 一併匯出為單一 JSON 檔。</p>
+              <div class="card-actions">
+                <div><a href="#" class="visit-btn" id="exportAllRun">執行</a></div>
+                <div class="right"></div>
+              </div>
+            </div>
+            <div class="card" id="importAllCard">
+              <div class="card-head"><h3>匯入全部</h3></div>
+              <p>從匯出的 JSON 檔載入，覆寫目前的 Tools、My GPT、Investment、Health。</p>
+              <div class="card-actions">
+                <div><a href="#" class="visit-btn" id="importAllRun">選擇檔案</a></div>
+                <div class="right"></div>
+              </div>
+            </div>
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>備註</h3></div>
+              <p>匯入會覆寫現有資料；若要提供「合併」模式可再加上選項。</p>
+            </div>
+          </div>
+    </section>
+  </main>
+
+      <!-- Embedded external page view -->
+      <main id="externalView" class="view-hidden">
+        <section class="section">
+          <div class="iframe-container">
+            <iframe id="externalFrame" src=""></iframe>
+          </div>
+        </section>
+      </main>
+      
+      <!-- About View -->
+      <main id="aboutView" class="view-hidden">
+        <section class="section" aria-labelledby="aboutTitle">
+          <h2 id="aboutTitle">About</h2>
+          <div class="grid" id="aboutGrid">
+            <!-- 個人簡介 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>個人簡介</h3></div>
+              <p>
+                <span style="display:inline-flex; align-items:center; gap:8px;">
+                  <span class="avatar-logo" style="width:28px;height:28px; background:#EEF2FF;"><img src="https://www.gravatar.com/avatar?d=mp&s=56" alt="avatar"></span>
+                  <strong>Harry</strong>
+                </span>
+                <br/>
+                一個人的個人工具中樞：把常用的 Tools、My GPT、健康與投資資訊聚合在同一處，快速啟動、集中管理。
+              </p>
+            </div>
+            
+            <!-- 產品目的 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>產品目的</h3></div>
+              <p>
+                以極簡與高效率為核心，讓個人工作流一目了然：
+                - 以卡片式清單集中常用工具
+                - 以拖曳排序快速調整優先順序
+                - 一鍵匯入/匯出，維護多裝置一致性
+              </p>
+            </div>
+
+            <!-- 快速總覽（動態） -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>快速總覽</h3></div>
+              <p>
+                Tools：<strong id="aboutToolsCount">0</strong>，最新：<span id="aboutLatestTool">—</span><br/>
+                My GPT：<strong id="aboutPromptsCount">0</strong>，最新：<span id="aboutLatestPrompt">—</span><br/>
+                最後備份時間：<span id="aboutLastBackup">—</span>
+              </p>
+            </div>
+
+            <!-- 資料與隱私 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>資料與隱私</h3></div>
+              <p>
+                所有資料僅儲存在瀏覽器的 localStorage，無伺服器上傳。
+                主要使用的 keys：
+                <code>personal_tools_v1</code>、<code>personal_prompts_v1</code>、
+                <code>pfv1</code>、<code>weight_bmi_profile_v1</code>、<code>weight_bmi_v1</code>。
+                可於 Settings 進行匯出備份與匯入復原。
+              </p>
+            </div>
+
+            <!-- 匯入/匯出說明 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>匯入/匯出說明</h3></div>
+              <p>
+                建議每 1-2 週備份一次。到 Settings 中使用「匯出全部」產生 <code>vibe_data.json</code>；
+                如需還原，於「匯入全部」選擇先前備份檔即可（注意：將覆寫目前資料）。
+              </p>
+            </div>
+
+            <!-- 儲存用量（動態） -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>儲存用量</h3></div>
+              <p>
+                估計使用：<strong id="aboutStorageBytes">0 KB</strong>（約 <span id="aboutStoragePercent">0%</span> of 5MB）
+              </p>
+            </div>
+
+            <!-- 健康/投資摘要（動態） -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>健康 / 投資 摘要</h3></div>
+              <p>
+                健康紀錄：<strong id="aboutHealthCount">0</strong> 筆，最近紀錄日：<span id="aboutHealthLastDate">—</span><br/>
+                投資資料：<span id="aboutInvestmentState">未載入</span><span id="aboutInvestmentUpdatedAt"></span>
+              </p>
+            </div>
+
+            <!-- 版本與更新紀錄 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>版本與更新紀錄</h3></div>
+              <p>
+                目前版本：<strong id="aboutVersion">—</strong><br/>
+                最近更新：新增 About 區域、動態統計、備份提醒與一鍵匯出。
+              </p>
+            </div>
+
+            <!-- 快捷鍵 / 使用指南 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>快捷鍵 / 使用指南</h3></div>
+              <p>
+                - ESC 關閉開啟中的視窗（Modal）<br/>
+                - 卡片可拖曳調整排序（會自動儲存）<br/>
+                - 新增工具 / Prompt 於各自頁籤的右上角按鈕
+              </p>
+            </div>
+
+            <!-- 聯絡方式 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>聯絡方式</h3></div>
+              <p>
+                Email：<a href="mailto:you@example.com">you@example.com</a>
+              </p>
+            </div>
+
+            <!-- 致謝 / 授權 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>致謝 / 授權</h3></div>
+              <p>
+                圖示基於簡易 SVG，頁面為個人用途；若公開發佈請依第三方資源授權規範標註。
+              </p>
+            </div>
+
+            <!-- 風險與免責 -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>風險與免責</h3></div>
+              <p>
+                投資與健康資訊僅供參考，不構成專業建議。請自行評估風險並負責相關決策。
+              </p>
+            </div>
+
+            <!-- Roadmap -->
+            <div class="card" style="height:auto; min-height:auto;">
+              <div class="card-head"><h3>Roadmap</h3></div>
+              <p>
+                - 自動備份提醒 + 雲端同步選項<br/>
+                - About 動態更多統計（如常用工具熱度）<br/>
+                - 可自訂主題與樣式
+              </p>
+            </div>
+
+            <!-- 備份提醒（動態顯示） -->
+            <div class="card" id="aboutBackupReminder" style="height:auto; min-height:auto; display:none; border-color:#F59E0B;">
+              <div class="card-head"><h3>備份提醒</h3></div>
+              <p>
+                已超過建議備份周期。為避免資料遺失，建議立即匯出備份。
+              </p>
+              <div class="card-actions">
+                <div><a href="#" class="visit-btn" id="aboutBackupNowBtn">立即匯出</a></div>
+                <div class="right"></div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="toolModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <h2 id="modalTitle">新增工具</h2>
+      <label>工具名稱</label>
+      <input type="text" id="toolName" />
+      <label>簡介</label>
+      <textarea id="toolDesc" rows="3"></textarea>
+      <label>連結 (可使用相對路徑，例如 pages/aiarokr.html 或 ./subfolder/tool.html)</label>
+      <input type="text" id="toolLink" placeholder="例：pages/aiarokr.html 或 ./subfolder/tool.html">
+
+      <label>分類</label>
+      <select id="toolCategory">
+        <option value="">（未設定）</option>
+        <option value="HR">HR</option>
+        <option value="AI">AI</option>
+        <option value="生產力">生產力</option>
+        <option value="個人">個人</option>
+      </select>
+
+      
+
+      <div class="modal-actions" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="cancelBtn">取消</button>
+        <button type="button" id="deleteBtn" style="margin-right:auto; color:#ef4444; background:transparent; border:1px solid #ef4444;">刪除</button>
+        <button type="button" id="saveBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompt Modal (獨立資料集) -->
+  <div class="modal" id="promptModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <h2 id="promptModalTitle">新增 Prompt</h2>
+      <label>名稱</label>
+      <input type="text" id="promptName" />
+      <label>簡介</label>
+      <textarea id="promptDesc" rows="3"></textarea>
+      <label>連結 (可留空)</label>
+      <input type="text" id="promptLink" placeholder="例：/path 或 URL">
+
+      <label>分類</label>
+      <select id="promptCategory">
+        <option value="">（未設定）</option>
+        <option value="HR">HR</option>
+        <option value="AI">AI</option>
+        <option value="生產力">生產力</option>
+        <option value="個人">個人</option>
+      </select>
+
+      <div class="modal-actions" style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" id="promptCancelBtn">取消</button>
+        <button type="button" id="promptDeleteBtn" style="margin-right:auto; color:#ef4444; background:transparent; border:1px solid #ef4444;">刪除</button>
+        <button type="button" id="promptSaveBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const STORAGE_KEY = 'personal_tools_v1';
+  const PROMPT_STORAGE_KEY = 'personal_prompts_v1';
+  const ABOUT_LAST_BACKUP_AT_KEY = 'vibe_last_backup_at';
+  const ABOUT_VERSION = '1.0.0';
+
+  let tools = [];
+  let prompts = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    tools = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(tools)) tools = [];
+  } catch (e) {
+    console.warn('localStorage parse error, resetting tools', e);
+    tools = [];
+  }
+  try {
+    const raw = localStorage.getItem(PROMPT_STORAGE_KEY);
+    prompts = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(prompts)) prompts = [];
+  } catch (e) {
+    console.warn('localStorage parse error, resetting prompts', e);
+    prompts = [];
+  }
+
+  // normalize existing items (backward compatibility)
+  tools = tools.map(t => {
+    if (!t || typeof t !== 'object') {
+      return { name: '', desc: '', link: '', order: 1 };
+    }
+    // migrate legacy 'categories' to order if needed (default 1)
+    if (t.order === undefined || t.order === null || Number.isNaN(Number(t.order))) {
+      t.order = 1;
+    } else {
+      t.order = Math.max(1, parseInt(t.order, 10) || 1);
+    }
+
+    return t;
+  });
+  // sort once at load
+  tools.sort((a,b) => (a.order||1) - (b.order||1));
+
+  let editIndex = null;
+  let promptEditIndex = null;
+  const allToolsContainer = document.getElementById('allToolsContainer');
+  const modal = document.getElementById('toolModal');
+  const nameInput = document.getElementById('toolName');
+  const descInput = document.getElementById('toolDesc');
+  const linkInput = document.getElementById('toolLink');
+  const categoryInput = document.getElementById('toolCategory');
+  // order input removed; order managed via drag-and-drop only
+  const modalTitle = document.getElementById('modalTitle');
+  let lastFocusedElement = null;
+
+  // prompt refs
+  const pModal = document.getElementById('promptModal');
+  const pName = document.getElementById('promptName');
+  const pDesc = document.getElementById('promptDesc');
+  const pLink = document.getElementById('promptLink');
+  const pCategory = document.getElementById('promptCategory');
+  const allPromptsContainer = document.getElementById('allPromptsContainer');
+  // category -> color mapping (Chinese labels)
+  const CATEGORY_COLORS = {
+    'HR': '#47A3F3',
+    'AI': '#2ECC71',
+    '生產力': '#9B51E0',
+    '個人': '#F7931E'
+  };
+
+  function colorFromName(name){
+    const colors = ['#47A3F3', '#F7931E', '#2ECC71', '#9B51E0'];
+    const s = (name||'').toString();
+    let h = 0;
+    for (let i=0;i<s.length;i++) h = ((h<<5)-h) + s.charCodeAt(i);
+    const idx = Math.abs(h) % colors.length;
+    return colors[idx];
+  }
+
+  function applyCardTheme(card, color){
+    if (!color) return;
+    card.style.background = color;
+    card.style.color = '#ffffff';
+    card.style.border = '1px solid rgba(255,255,255,0.18)';
+    card.style.borderRadius = '16px';
+    card.style.boxShadow = '0 10px 22px rgba(15,23,42,0.18)';
+
+    const h3 = card.querySelector('h3');
+    if (h3) {
+      h3.style.background = 'rgba(255,255,255,0.18)';
+      h3.style.color = '#ffffff';
+    }
+
+    const p = card.querySelector('p');
+    if (p) p.style.color = 'rgba(255,255,255,0.9)';
+
+    const visitBtn = card.querySelector('.visit-btn');
+    if (visitBtn) {
+      visitBtn.style.background = 'rgba(255,255,255,0.16)';
+      visitBtn.style.color = '#ffffff';
+      visitBtn.style.borderColor = 'rgba(255,255,255,0.24)';
+    }
+
+    const rightButtons = card.querySelectorAll('.card-actions .right button');
+    rightButtons.forEach(btn => {
+      btn.style.background = 'rgba(255,255,255,0.16)';
+      btn.style.color = '#ffffff';
+      btn.style.border = '1px solid rgba(255,255,255,0.24)';
+    });
+  }
+
+  function createCard(tool, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.setAttribute('draggable', 'true');
+    card.dataset.index = String(index);
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    const h3 = document.createElement('h3');
+    h3.textContent = tool.name || '';
+    head.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.textContent = tool.desc || '';
+
+    // 移除「使用」按鈕，改為整張卡片可點擊開啟
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const left = document.createElement('div');
+
+    const right = document.createElement('div');
+    right.className = 'right';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '編輯';
+    editBtn.addEventListener('click', (e) => { e.stopPropagation(); editTool(index); });
+
+    right.appendChild(editBtn);
+
+    actions.appendChild(left);
+    actions.appendChild(right);
+
+    card.appendChild(head);
+    card.appendChild(p);
+    card.appendChild(actions);
+
+    // 讓卡片可點擊開啟連結（避免拖曳時誤觸）
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+      if (card.classList.contains('dragging')) return;
+      const href = (tool.link || '').trim();
+      if (!href) return;
+      window.open(href, '_blank', 'noopener');
+    });
+
+    // 套用顏色：先看分類，其次名稱雜湊（保持穩定）
+    const catColor = CATEGORY_COLORS[(tool.category||'').trim()] || null;
+    applyCardTheme(card, catColor || colorFromName(tool.name||''));
+
+    return card;
+  }
+
+  function renderTools() {
+    allToolsContainer.innerHTML = '';
+    tools.forEach((tool, index) => {
+      allToolsContainer.appendChild(createCard(tool, index));
+    });
+    // 啟用拖曳排序
+    enableDragSort(allToolsContainer);
+    if (!allToolsContainer.children.length) {
+      const hint = document.createElement('div');
+      hint.className = 'small-muted';
+      hint.textContent = '尚未新增任何工具';
+      allToolsContainer.appendChild(hint);
+    }
+  }
+
+  function enableDragSort(container) {
+    let dragEl = null;
+    let dragStartIndex = -1;
+
+    container.addEventListener('dragstart', (e) => {
+      const target = e.target.closest('.card');
+      if (!target) return;
+      dragEl = target;
+      dragStartIndex = Number(target.dataset.index || -1);
+      target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragStartIndex.toString());
+    });
+
+    container.addEventListener('dragend', (e) => {
+      if (dragEl) dragEl.classList.remove('dragging');
+      dragEl = null;
+      dragStartIndex = -1;
+    });
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const after = getDragAfterElement(container, e.clientY);
+      const dragging = container.querySelector('.card.dragging');
+      if (!dragging) return;
+      if (after == null) {
+        container.appendChild(dragging);
+      } else {
+        container.insertBefore(dragging, after);
+      }
+    });
+
+    container.addEventListener('drop', (e) => {
+      e.preventDefault();
+      // 根據容器中卡片的新順序，更新 tools.order 並儲存
+      const ordered = Array.from(container.querySelectorAll('.card'));
+      ordered.forEach((el, idx) => {
+        const oldIdx = Number(el.dataset.index || idx);
+        const tool = tools[oldIdx];
+        if (tool) tool.order = idx + 1;
+      });
+      tools.sort((a,b) => (a.order||1) - (b.order||1));
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tools)); } catch (e) {}
+      // 重新渲染以更新 dataset.index
+      renderTools();
+    });
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+  }
+
+  // ----- Prompt CRUD (獨立資料集) -----
+  function createPromptCard(item, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.setAttribute('draggable', 'true');
+    card.dataset.index = String(index);
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    const h3 = document.createElement('h3');
+    h3.textContent = item.name || '';
+    head.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.textContent = item.desc || '';
+
+    // 移除「使用」按鈕，改為整張卡片可點擊開啟
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const left = document.createElement('div');
+
+    const right = document.createElement('div');
+    right.className = 'right';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '編輯';
+    editBtn.addEventListener('click', (e) => { e.stopPropagation(); openPromptModal(index); });
+
+    right.appendChild(editBtn);
+
+    actions.appendChild(left);
+    actions.appendChild(right);
+
+    card.appendChild(head);
+    card.appendChild(p);
+    card.appendChild(actions);
+
+    // 讓卡片可點擊開啟連結
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => {
+      const href = (item.link || '').trim();
+      if (!href) return;
+      window.open(href, '_blank', 'noopener');
+    });
+
+    const promptColor = CATEGORY_COLORS[(item.category||'').trim()] || null;
+    applyCardTheme(card, promptColor || colorFromName(item.name||''));
+
+    return card;
+  }
+
+  function renderPrompts() {
+    allPromptsContainer.innerHTML = '';
+    prompts.forEach((item, index) => {
+      allPromptsContainer.appendChild(createPromptCard(item, index));
+    });
+    enablePromptDragSort(allPromptsContainer);
+    if (!allPromptsContainer.children.length) {
+      const hint = document.createElement('div');
+      hint.className = 'small-muted';
+      hint.textContent = '尚未新增任何 Prompt';
+      allPromptsContainer.appendChild(hint);
+    }
+  }
+
+  function openPromptModal(editIdx = null) {
+    lastFocusedElement = document.activeElement;
+    pModal.style.display = 'flex';
+    pModal.setAttribute('aria-hidden', 'false');
+    promptEditIndex = editIdx;
+    const title = document.getElementById('promptModalTitle');
+    if (promptEditIndex !== null) {
+      title.textContent = '編輯 Prompt';
+      const t = prompts[promptEditIndex];
+      pName.value = t.name || '';
+      pDesc.value = t.desc || '';
+      pLink.value = t.link || '';
+      if (pCategory) pCategory.value = t.category || '';
+    } else {
+      title.textContent = '新增 Prompt';
+      pName.value = '';
+      pDesc.value = '';
+      pLink.value = '';
+      if (pCategory) pCategory.value = '';
+    }
+    pName.focus();
+    document.addEventListener('focus', enforceFocus, true);
+  }
+
+  function closePromptModal() {
+    pModal.style.display = 'none';
+    pModal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('focus', enforceFocus, true);
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    }
+  }
+
+  function savePrompt() {
+    const item = {
+      name: pName.value.trim(),
+      desc: pDesc.value.trim(),
+      link: validateLink(pLink.value),
+      order: (prompts.length ? Math.max(...prompts.map(t => t.order || 1)) + 1 : 1)
+    };
+    const cat2 = (pCategory?.value || '').trim();
+    if (cat2) item.category = cat2;
+    if (!item.name) { alert('請輸入名稱'); pName.focus(); return; }
+
+    if (promptEditIndex !== null) prompts[promptEditIndex] = { ...prompts[promptEditIndex], ...item }; else prompts.push(item);
+    try { localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts)); } catch(e) {}
+    renderPrompts();
+    closePromptModal();
+  }
+
+  function deletePrompt(index) {
+    if (!confirm('確定刪除此 Prompt？')) return;
+    prompts.splice(index,1);
+    try { localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts)); } catch(e) {}
+    renderPrompts();
+  }
+
+  function enablePromptDragSort(container) {
+    let dragEl = null;
+    container.addEventListener('dragstart', (e) => {
+      const target = e.target.closest('.card');
+      if (!target) return;
+      dragEl = target;
+      target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    container.addEventListener('dragend', () => {
+      if (dragEl) dragEl.classList.remove('dragging');
+      dragEl = null;
+    });
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const after = getAfter(container, e.clientY);
+      const dragging = container.querySelector('.card.dragging');
+      if (!dragging) return;
+      if (after == null) container.appendChild(dragging); else container.insertBefore(dragging, after);
+    });
+    container.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const ordered = Array.from(container.querySelectorAll('.card'));
+      ordered.forEach((el, idx) => {
+        const oldIdx = Number(el.dataset.index || idx);
+        const item = prompts[oldIdx];
+        if (item) item.order = idx + 1;
+      });
+      prompts.sort((a,b) => (a.order||1) - (b.order||1));
+      try { localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts)); } catch(e) {}
+      renderPrompts();
+    });
+    function getAfter(container, y) {
+      const els = [...container.querySelectorAll('.card:not(.dragging)')];
+      return els.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height/2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        }
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+  }
+
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-hidden', 'true');
+
+  function openModal(editIdx = null) {
+    lastFocusedElement = document.activeElement;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    editIndex = editIdx;
+    if (editIndex !== null) {
+      modalTitle.textContent = '編輯工具';
+      const t = tools[editIndex];
+      nameInput.value = t.name || '';
+      descInput.value = t.desc || '';
+      linkInput.value = t.link || '';
+      if (categoryInput) categoryInput.value = t.category || '';
+      // order handled by drag-and-drop
+    } else {
+      modalTitle.textContent = '新增工具';
+      nameInput.value = '';
+      descInput.value = '';
+      linkInput.value = '';
+      if (categoryInput) categoryInput.value = '';
+      // order default handled later
+    }
+    nameInput.focus();
+    document.addEventListener('focus', enforceFocus, true);
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('focus', enforceFocus, true);
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    }
+  }
+
+  function enforceFocus(e) {
+    if (!modal.contains(e.target)) {
+      e.stopPropagation();
+      modal.focus();
+    }
+  }
+
+  function validateLink(raw) {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    return s;
+  }
+
+  function saveTool() {
+    const newTool = {
+      name: nameInput.value.trim(),
+      desc: descInput.value.trim(),
+      link: validateLink(linkInput.value),
+      order: (tools.length ? Math.max(...tools.map(t => t.order || 1)) + 1 : 1)
+    };
+    const cat = (categoryInput?.value || '').trim();
+    if (cat) newTool.category = cat;
+    if (!newTool.name) {
+      alert('請輸入工具名稱');
+      nameInput.focus();
+      return;
+    }
+    if (editIndex !== null) {
+      tools[editIndex] = { ...tools[editIndex], ...newTool };
+    } else {
+      tools.push(newTool);
+    }
+    // 依 order 排序後再儲存
+    tools.sort((a,b) => (a.order||1) - (b.order||1));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+    } catch (e) {
+      console.warn('localStorage write failed', e);
+    }
+    renderTools();
+    closeModal();
+  }
+
+  function editTool(index) {
+    openModal(index);
+  }
+
+  function deleteTool(index) {
+    if (confirm('確定刪除這個工具嗎？')) {
+      tools.splice(index, 1);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+      } catch (e) { console.warn(e); }
+      renderTools();
+    }
+  }
+
+  function exportData() {
+    try {
+      const payload = JSON.stringify(tools, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'personal_tools.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('匯出失敗', e);
+      alert('匯出失敗');
+    }
+  }
+
+  function importDataFile() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json,application/json';
+    inp.addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed)) throw new Error('格式錯誤：不是陣列');
+          tools = parsed.map(t => {
+            if (!t || typeof t !== 'object') return { name: '', desc: '', link: '', categories: ['web'] };
+            if (!Array.isArray(t.categories)) {
+              t.categories = t.categories ? (Array.isArray(t.categories) ? t.categories : [t.categories]) : ['web'];
+            }
+            return t;
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+          renderTools();
+          alert('匯入完成');
+        } catch (err) {
+          console.error('匯入失敗', err);
+          alert('匯入失敗：檔案格式不正確');
+        }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+    inp.click();
+  }
+
+  // Settings: export/import ALL (tools + prompts + investment + health)
+  function exportAll() {
+    try {
+      // 收集投資與健康資料（若存在於 localStorage）
+      const investment = (()=>{ try{ return JSON.parse(localStorage.getItem('pfv1')||'{}'); }catch{ return {}; } })();
+      const healthProfile = (()=>{ try{ return JSON.parse(localStorage.getItem('weight_bmi_profile_v1')||'{}'); }catch{ return {}; } })();
+      const healthRecords = (()=>{ try{ return JSON.parse(localStorage.getItem('weight_bmi_v1')||'[]'); }catch{ return []; } })();
+      const payload = JSON.stringify({ tools, prompts, investment, health:{ profile: healthProfile, records: healthRecords } }, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vibe_data.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      try { localStorage.setItem(ABOUT_LAST_BACKUP_AT_KEY, String(Date.now())); } catch(e) {}
+      renderAbout();
+    } catch (e) {
+      alert('匯出失敗');
+    }
+  }
+
+  function importAll() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json,application/json';
+    inp.addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!parsed || typeof parsed !== 'object') throw new Error('格式錯誤');
+          const nextTools = Array.isArray(parsed.tools) ? parsed.tools : [];
+          const nextPrompts = Array.isArray(parsed.prompts) ? parsed.prompts : [];
+          const nextInvestment = parsed.investment && typeof parsed.investment==='object' ? parsed.investment : {};
+          const nextHealth = parsed.health && typeof parsed.health==='object' ? parsed.health : {};
+
+          tools = nextTools.map(t => ({
+            name: t?.name || '',
+            desc: t?.desc || '',
+            link: t?.link || '',
+            order: Math.max(1, parseInt(t?.order, 10) || 1)
+          })).sort((a,b) => (a.order||1)-(b.order||1));
+          prompts = nextPrompts.map(p => ({
+            name: p?.name || '',
+            desc: p?.desc || '',
+            link: p?.link || '',
+            order: Math.max(1, parseInt(p?.order, 10) || 1)
+          })).sort((a,b) => (a.order||1)-(b.order||1));
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+          localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts));
+          try{ localStorage.setItem('pfv1', JSON.stringify(nextInvestment)); }catch(e){}
+          try{ 
+            if(nextHealth && typeof nextHealth==='object'){
+              if(nextHealth.profile) localStorage.setItem('weight_bmi_profile_v1', JSON.stringify(nextHealth.profile));
+              if(Array.isArray(nextHealth.records)) localStorage.setItem('weight_bmi_v1', JSON.stringify(nextHealth.records));
+            }
+          }catch(e){}
+          renderTools();
+          renderPrompts();
+          alert('匯入完成');
+        } catch (err) {
+          alert('匯入失敗：檔案格式不正確');
+        }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+    inp.click();
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => openModal(null));
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  document.getElementById('saveBtn').addEventListener('click', saveTool);
+  // 匯入/匯出已移至 Settings
+  // 卡片內的執行按鈕
+  document.getElementById('exportAllRun').addEventListener('click', (e)=>{ e.preventDefault(); exportAll(); });
+  document.getElementById('importAllRun').addEventListener('click', (e)=>{ e.preventDefault(); importAll(); });
+
+  // prompt actions
+  document.getElementById('promptAddBtn').addEventListener('click', () => openPromptModal(null));
+  document.getElementById('promptCancelBtn').addEventListener('click', closePromptModal);
+  document.getElementById('promptSaveBtn').addEventListener('click', savePrompt);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // 折疊/展開側欄狀態
+  const SIDEBAR_STATE_KEY = 'personal_tools_sidebar_collapsed';
+  const appLayout = document.querySelector('.app-layout');
+  const collapseBtn = document.getElementById('collapseBtn');
+  const expandBtn = document.getElementById('expandBtn');
+  try {
+    const collapsed = localStorage.getItem(SIDEBAR_STATE_KEY) === '1';
+    if (collapsed) appLayout.classList.add('collapsed');
+  } catch (e) {}
+  function saveSidebarState() {
+    try { localStorage.setItem(SIDEBAR_STATE_KEY, appLayout.classList.contains('collapsed') ? '1' : '0'); } catch(e) {}
+  }
+  function toggleSidebar(forceCollapse) {
+    const shouldCollapse = typeof forceCollapse === 'boolean' ? forceCollapse : !appLayout.classList.contains('collapsed');
+    appLayout.classList.toggle('collapsed', shouldCollapse);
+    saveSidebarState();
+  }
+  collapseBtn.addEventListener('click', () => toggleSidebar());
+  expandBtn.addEventListener('click', () => toggleSidebar(false));
+
+  // 側欄導航捲動
+  function makeActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+  document.getElementById('navTools').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    document.getElementById('toolsView').classList.remove('view-hidden');
+    document.getElementById('promptsView').classList.add('view-hidden');
+    document.getElementById('settingsView').classList.add('view-hidden');
+    document.getElementById('externalView').classList.add('view-hidden');
+    document.getElementById('aboutView').classList.add('view-hidden');
+    // 清空 Investment iframe 來源，釋放資源並避免殘影
+    const frame = document.getElementById('externalFrame');
+    if(frame){ frame.src = 'about:blank'; }
+    document.querySelector('.content-title').innerHTML = '<span>Tools</span>';
+    document.getElementById('toolsActions').style.display = '';
+    document.getElementById('promptsActions').style.display = 'none';
+    document.getElementById('workTitle')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+  document.getElementById('navPrompts').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    document.getElementById('toolsView').classList.add('view-hidden');
+    document.getElementById('promptsView').classList.remove('view-hidden');
+    document.getElementById('settingsView').classList.add('view-hidden');
+    document.getElementById('externalView').classList.add('view-hidden');
+    document.getElementById('aboutView').classList.add('view-hidden');
+    const frame2 = document.getElementById('externalFrame');
+    if(frame2){ frame2.src = 'about:blank'; }
+    document.querySelector('.content-title').innerHTML = '<span>My GPT</span>';
+    document.getElementById('toolsActions').style.display = 'none';
+    document.getElementById('promptsActions').style.display = '';
+    document.getElementById('allPromptsContainer')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+  // 額外分類：目前先僅切換視圖為 My GPT，未分頁
+  document.getElementById('navHealth').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    // 顯示外部頁面視圖並載入 pages/health.html
+    document.getElementById('toolsView').classList.add('view-hidden');
+    document.getElementById('promptsView').classList.add('view-hidden');
+    document.getElementById('settingsView').classList.add('view-hidden');
+    document.getElementById('externalView').classList.remove('view-hidden');
+    document.getElementById('aboutView').classList.add('view-hidden');
+    document.getElementById('toolsActions').style.display = 'none';
+    document.getElementById('promptsActions').style.display = 'none';
+    const frame = document.getElementById('externalFrame');
+    // 若目前為空白或非 health，則載入 pages/health.html
+    if(frame && (frame.src.endsWith('about:blank') || !frame.src || !frame.src.includes('pages/health.html'))){
+      frame.src = 'pages/health.html';
+    }
+    document.querySelector('.content-title').innerHTML = '<span>Health</span>';
+  });
+  document.getElementById('navInvestment').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    // 切換到 iframe 外部頁面視圖並載入 investments.html
+    document.getElementById('toolsView').classList.add('view-hidden');
+    document.getElementById('promptsView').classList.add('view-hidden');
+    document.getElementById('settingsView').classList.add('view-hidden');
+    document.getElementById('externalView').classList.remove('view-hidden');
+    document.getElementById('aboutView').classList.add('view-hidden');
+    document.getElementById('toolsActions').style.display = 'none';
+    document.getElementById('promptsActions').style.display = 'none';
+    const frame = document.getElementById('externalFrame');
+    // 每次點擊皆設定來源，確保立即顯示投資內容
+    if(frame){ frame.src = 'pages/investments.html'; }
+    document.querySelector('.content-title').innerHTML = '<span>Investment</span>';
+  });
+  document.getElementById('navSettings').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    document.getElementById('toolsView').classList.add('view-hidden');
+    document.getElementById('promptsView').classList.add('view-hidden');
+    document.getElementById('settingsView').classList.remove('view-hidden');
+    document.getElementById('externalView').classList.add('view-hidden');
+    document.getElementById('aboutView').classList.add('view-hidden');
+    const frame4 = document.getElementById('externalFrame');
+    if(frame4){ frame4.src = 'about:blank'; }
+    document.querySelector('.content-title').innerHTML = '<span>Settings</span>';
+    document.getElementById('toolsActions').style.display = 'none';
+    document.getElementById('promptsActions').style.display = 'none';
+  });
+  document.getElementById('navAbout').addEventListener('click', (e) => {
+    e.preventDefault();
+    makeActive(e.currentTarget);
+    document.getElementById('toolsView').classList.add('view-hidden');
+    document.getElementById('promptsView').classList.add('view-hidden');
+    document.getElementById('settingsView').classList.add('view-hidden');
+    document.getElementById('externalView').classList.add('view-hidden');
+    document.getElementById('aboutView').classList.remove('view-hidden');
+    const frame = document.getElementById('externalFrame');
+    if(frame){ frame.src = 'about:blank'; }
+    document.querySelector('.content-title').innerHTML = '<span>About</span>';
+    document.getElementById('toolsActions').style.display = 'none';
+    document.getElementById('promptsActions').style.display = 'none';
+    renderAbout();
+  });
+
+  renderTools();
+  renderPrompts();
+  
+  // ----- About: 動態渲染與提醒 -----
+  function formatBytes(bytes){
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+    const kb = bytes/1024;
+    if (kb < 1024) return kb.toFixed(1) + ' KB';
+    const mb = kb/1024;
+    return mb.toFixed(2) + ' MB';
+  }
+  function estimateLocalStorageBytes(){
+    try {
+      let total = 0;
+      for (let i=0; i<localStorage.length; i++){
+        const k = localStorage.key(i);
+        const v = localStorage.getItem(k) || '';
+        total += (k.length + v.length) * 2; // 以 UTF-16 roughly 2 bytes/char
+      }
+      return total;
+    } catch { return 0; }
+  }
+  function formatDateTime(ts){
+    if (!ts) return '—';
+    const d = new Date(Number(ts));
+    if (isNaN(d.getTime())) return '—';
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return `${y}-${m}-${dd} ${hh}:${mm}`;
+  }
+  function getLatestNameByOrder(list){
+    if (!Array.isArray(list) || list.length===0) return '—';
+    const sorted = [...list].sort((a,b)=> (b.order||1)-(a.order||1));
+    return (sorted[0]?.name || '—');
+  }
+  function renderAbout(){
+    // 計數
+    const toolsCount = Array.isArray(tools) ? tools.length : 0;
+    const promptsCount = Array.isArray(prompts) ? prompts.length : 0;
+    const latestTool = getLatestNameByOrder(tools);
+    const latestPrompt = getLatestNameByOrder(prompts);
+    const lastBackup = (()=>{ try{ return localStorage.getItem(ABOUT_LAST_BACKUP_AT_KEY) || ''; }catch{ return ''; } })();
+    const bytes = estimateLocalStorageBytes();
+    const percent = Math.min(100, Math.round(bytes / (5*1024*1024) * 100));
+
+    const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = String(text); };
+    setText('aboutToolsCount', toolsCount);
+    setText('aboutLatestTool', latestTool);
+    setText('aboutPromptsCount', promptsCount);
+    setText('aboutLatestPrompt', latestPrompt);
+    setText('aboutLastBackup', formatDateTime(lastBackup));
+    setText('aboutStorageBytes', formatBytes(bytes));
+    setText('aboutStoragePercent', `${percent}%`);
+    setText('aboutVersion', ABOUT_VERSION);
+
+    // 健康摘要
+    let records = [];
+    try { records = JSON.parse(localStorage.getItem('weight_bmi_v1')||'[]'); } catch {}
+    const healthCount = Array.isArray(records) ? records.length : 0;
+    let healthLastDate = '—';
+    if (Array.isArray(records) && records.length){
+      const latest = records[records.length-1];
+      const ts = latest?.date || latest?.ts || '';
+      healthLastDate = ts ? String(ts).slice(0,16).replace('T',' ') : '—';
+    }
+    setText('aboutHealthCount', healthCount);
+    setText('aboutHealthLastDate', healthLastDate);
+
+    // 投資摘要
+    let investment = {};
+    try { investment = JSON.parse(localStorage.getItem('pfv1')||'{}'); } catch {}
+    const hasInvestment = investment && typeof investment==='object' && Object.keys(investment).length>0;
+    const invStateEl = document.getElementById('aboutInvestmentState');
+    if (invStateEl) invStateEl.textContent = hasInvestment ? '已載入' : '未載入';
+    const invUpdatedAtEl = document.getElementById('aboutInvestmentUpdatedAt');
+    if (invUpdatedAtEl) invUpdatedAtEl.textContent = hasInvestment && investment.updatedAt ? `（更新於 ${formatDateTime(investment.updatedAt)}）` : '';
+
+    // 備份提醒：超過 14 天未備份
+    const reminder = document.getElementById('aboutBackupReminder');
+    if (reminder){
+      const now = Date.now();
+      const last = Number(lastBackup||0);
+      const need = !last || (now - last) > 14*24*60*60*1000;
+      reminder.style.display = need ? 'block' : 'none';
+    }
+  }
+  // About 一鍵匯出
+  const aboutBackupBtn = document.getElementById('aboutBackupNowBtn');
+  if (aboutBackupBtn){
+    aboutBackupBtn.addEventListener('click', (e)=>{ e.preventDefault(); exportAll(); });
+  }
+  
+  // 初次渲染 About
+  renderAbout();
+  </script>
+</body>
+</html>
