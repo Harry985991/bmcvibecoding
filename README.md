@@ -59,13 +59,13 @@ git push origin main
 
 查看 [CHANGELOG.md](CHANGELOG.md) 了解詳細的更新記錄。
 
-### 最新更新（v1.2.0）
+### 最新更新（v1.3.0）
 
-- 📌 導航 Banner 固定置頂
-- 🌟 新增 ALL 標籤顯示所有作品
-- 📏 優化 Showcase 版面間距
-- 🔄 每次點選 Showcase 自動重置到 ALL
-- 🎨 介面簡化，移除多餘標題文字
+- 🎴 Showcase 卡片全面改版為圖片卡片
+- 🎭 新增浮動視窗互動功能
+- 🎯 首個實際案例：會議 Agenda 網頁（Harry Chao）
+- 📸 支援專案截圖展示
+- 🔗 整合影片、Demo、文字三種連結
 
 ## 🎨 設計特色
 

@@ -377,14 +377,18 @@
             margin-bottom: 40px;
         }
 
+        /* 新版圖片卡片樣式 */
         .command-card {
-            background: white;
-            border-radius: 24px;
-            padding: 32px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            border-radius: 16px;
+            height: 300px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             animation: fadeInUp 0.6s ease-out;
             animation-fill-mode: both;
+            background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
         }
 
         .command-card:nth-child(1) { animation-delay: 0.1s; }
@@ -394,49 +398,253 @@
 
         .command-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(157, 78, 221, 0.2);
+            box-shadow: 0 12px 40px rgba(157, 78, 221, 0.3);
         }
 
-        .card-number {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            line-height: 40px;
-            text-align: center;
-            background: linear-gradient(135deg, #9D4EDD 0%, #C77DFF 100%);
-            color: white;
-            border-radius: 50%;
-            font-weight: 700;
-            font-size: 18px;
-            margin-bottom: 16px;
+        .command-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            padding: 30px 20px 20px 20px;
         }
 
         .card-title {
             font-size: 24px;
             font-weight: 700;
-            color: #333;
-            margin-bottom: 12px;
+            color: white;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .card-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.6;
+        /* 佔位圖樣式（無圖片時顯示） */
+        .card-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
         }
 
+        /* 隱藏舊樣式元素 */
+        .card-number,
+        .card-description,
         .code-block {
-            background: #F8F9FA;
-            border: 2px solid #E9ECEF;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+            display: none;
+        }
+
+        /* Modal 浮動視窗樣式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
             position: relative;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 13px;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
             color: #333;
-            line-height: 1.6;
-            overflow-x: auto;
+        }
+
+        .modal-close:hover {
+            background: white;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 40px;
+        }
+
+        .modal-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #9D4EDD 0%, #C77DFF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-category {
+            background: #F0E7FF;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: #9D4EDD;
+            font-weight: 600;
+        }
+
+        .modal-description {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .modal-links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .modal-link-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .modal-link-btn.video {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+        }
+
+        .modal-link-btn.demo {
+            background: linear-gradient(135deg, #9D4EDD 0%, #C77DFF 100%);
+            color: white;
+        }
+
+        .modal-link-btn.article {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: white;
+        }
+
+        .modal-link-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-link-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+
+            .modal-image {
+                height: 250px;
+            }
+
+            .modal-body {
+                padding: 30px 20px;
+            }
+
+            .modal-title {
+                font-size: 28px;
+            }
+
+            .modal-links {
+                flex-direction: column;
+            }
+
+            .modal-link-btn {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .command-card {
+                height: 250px;
+            }
         }
 
         .copy-btn {
@@ -645,107 +853,77 @@
             <div class="tab-content active" id="showcase-all">
                 <div class="cards-grid">
                     <!-- 資料轉換 -->
-                    <div class="command-card">
-                        <div class="card-number">📊</div>
-                        <h3 class="card-title">CSV 轉 JSON 轉換器</h3>
-                        <p class="card-description">快速將 CSV 檔案轉換為 JSON 格式，方便資料處理和 API 使用。</p>
-                        <div class="code-block">資料轉換工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('csv-converter')">
+                        <div class="card-placeholder">📊</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">會議 Agenda 網頁</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🔄</div>
-                        <h3 class="card-title">Excel 資料清理工具</h3>
-                        <p class="card-description">自動清理和標準化 Excel 資料，節省人工處理時間。</p>
-                        <div class="code-block">資料轉換工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('excel-cleaner')">
+                        <div class="card-placeholder">🔄</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">Excel 資料清理工具</h3>
+                        </div>
                     </div>
 
                     <!-- 報表儀表板 -->
-                    <div class="command-card">
-                        <div class="card-number">📈</div>
-                        <h3 class="card-title">銷售數據儀表板</h3>
-                        <p class="card-description">即時顯示銷售數據，支援多維度分析和互動式圖表。</p>
-                        <div class="code-block">數據視覺化</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('sales-dashboard')">
+                        <div class="card-placeholder">📈</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">銷售數據儀表板</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">💹</div>
-                        <h3 class="card-title">財務分析報表</h3>
-                        <p class="card-description">自動生成財務報表和趨勢分析圖表。</p>
-                        <div class="code-block">數據視覺化</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('finance-report')">
+                        <div class="card-placeholder">💹</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">財務分析報表</h3>
+                        </div>
                     </div>
 
                     <!-- 生產力工具 -->
-                    <div class="command-card">
-                        <div class="card-number">✅</div>
-                        <h3 class="card-title">待辦事項管理 App</h3>
-                        <p class="card-description">簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('todo-app')">
+                        <div class="card-placeholder">✅</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">待辦事項管理 App</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">⏰</div>
-                        <h3 class="card-title">番茄鐘計時器</h3>
-                        <p class="card-description">幫助您專注工作，提升效率的番茄工作法計時器。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('pomodoro')">
+                        <div class="card-placeholder">⏰</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">番茄鐘計時器</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">📝</div>
-                        <h3 class="card-title">筆記應用</h3>
-                        <p class="card-description">支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('notes-app')">
+                        <div class="card-placeholder">📝</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">筆記應用</h3>
+                        </div>
                     </div>
 
                     <!-- 其他 -->
-                    <div class="command-card">
-                        <div class="card-number">🎮</div>
-                        <h3 class="card-title">互動式小遊戲</h3>
-                        <p class="card-description">使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('game')">
+                        <div class="card-placeholder">🎮</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">互動式小遊戲</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🎨</div>
-                        <h3 class="card-title">個人作品集網站</h3>
-                        <p class="card-description">展示您的技能和專案的精美作品集網站模板。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('portfolio')">
+                        <div class="card-placeholder">🎨</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">個人作品集網站</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🌐</div>
-                        <h3 class="card-title">登陸頁生成器</h3>
-                        <p class="card-description">快速創建專業的產品登陸頁面。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('landing-page')">
+                        <div class="card-placeholder">🌐</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">登陸頁生成器</h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -753,24 +931,18 @@
             <!-- Showcase Tab Content: 資料轉換 -->
             <div class="tab-content" id="showcase-data">
                 <div class="cards-grid">
-                    <div class="command-card">
-                        <div class="card-number">📊</div>
-                        <h3 class="card-title">CSV 轉 JSON 轉換器</h3>
-                        <p class="card-description">快速將 CSV 檔案轉換為 JSON 格式，方便資料處理和 API 使用。</p>
-                        <div class="code-block">資料轉換工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('csv-converter')">
+                        <div class="card-placeholder">📊</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">會議 Agenda 網頁</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🔄</div>
-                        <h3 class="card-title">Excel 資料清理工具</h3>
-                        <p class="card-description">自動清理和標準化 Excel 資料，節省人工處理時間。</p>
-                        <div class="code-block">資料轉換工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('excel-cleaner')">
+                        <div class="card-placeholder">🔄</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">Excel 資料清理工具</h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -778,24 +950,18 @@
             <!-- Showcase Tab Content: 報表儀表板 -->
             <div class="tab-content" id="showcase-dashboard">
                 <div class="cards-grid">
-                    <div class="command-card">
-                        <div class="card-number">📈</div>
-                        <h3 class="card-title">銷售數據儀表板</h3>
-                        <p class="card-description">即時顯示銷售數據，支援多維度分析和互動式圖表。</p>
-                        <div class="code-block">數據視覺化</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('sales-dashboard')">
+                        <div class="card-placeholder">📈</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">銷售數據儀表板</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">💹</div>
-                        <h3 class="card-title">財務分析報表</h3>
-                        <p class="card-description">自動生成財務報表和趨勢分析圖表。</p>
-                        <div class="code-block">數據視覺化</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('finance-report')">
+                        <div class="card-placeholder">💹</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">財務分析報表</h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -803,34 +969,25 @@
             <!-- Showcase Tab Content: 生產力工具 -->
             <div class="tab-content" id="showcase-productivity">
                 <div class="cards-grid">
-                    <div class="command-card">
-                        <div class="card-number">✅</div>
-                        <h3 class="card-title">待辦事項管理 App</h3>
-                        <p class="card-description">簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('todo-app')">
+                        <div class="card-placeholder">✅</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">待辦事項管理 App</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">⏰</div>
-                        <h3 class="card-title">番茄鐘計時器</h3>
-                        <p class="card-description">幫助您專注工作，提升效率的番茄工作法計時器。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('pomodoro')">
+                        <div class="card-placeholder">⏰</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">番茄鐘計時器</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">📝</div>
-                        <h3 class="card-title">筆記應用</h3>
-                        <p class="card-description">支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。</p>
-                        <div class="code-block">生產力工具</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('notes-app')">
+                        <div class="card-placeholder">📝</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">筆記應用</h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -838,40 +995,63 @@
             <!-- Showcase Tab Content: 其他 -->
             <div class="tab-content" id="showcase-other">
                 <div class="cards-grid">
-                    <div class="command-card">
-                        <div class="card-number">🎮</div>
-                        <h3 class="card-title">互動式小遊戲</h3>
-                        <p class="card-description">使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('game')">
+                        <div class="card-placeholder">🎮</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">互動式小遊戲</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🎨</div>
-                        <h3 class="card-title">個人作品集網站</h3>
-                        <p class="card-description">展示您的技能和專案的精美作品集網站模板。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('portfolio')">
+                        <div class="card-placeholder">🎨</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">個人作品集網站</h3>
+                        </div>
                     </div>
 
-                    <div class="command-card">
-                        <div class="card-number">🌐</div>
-                        <h3 class="card-title">登陸頁生成器</h3>
-                        <p class="card-description">快速創建專業的產品登陸頁面。</p>
-                        <div class="code-block">創意專案</div>
-                        <button class="copy-btn" onclick="alert('即將推出範例！')">
-                            🔗 查看作品
-                        </button>
+                    <div class="command-card" onclick="openModal('landing-page')">
+                        <div class="card-placeholder">🌐</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">登陸頁生成器</h3>
+                        </div>
                     </div>
                 </div>
             </div>
 
         </div>
 
+    </div>
+
+    <!-- Modal 浮動視窗 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <img id="modalImage" src="" alt="專案截圖" class="modal-image">
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta">
+                    <div class="modal-author">
+                        <span>👤</span>
+                        <span id="modalAuthor"></span>
+                    </div>
+                    <div class="modal-category" id="modalCategory"></div>
+                </div>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-links">
+                    <button class="modal-link-btn video" id="modalVideoBtn" onclick="window.open(this.dataset.url, '_blank')">
+                        🎥 影片
+                    </button>
+                    <button class="modal-link-btn demo" id="modalDemoBtn" onclick="window.open(this.dataset.url, '_blank')">
+                        🚀 Demo
+                    </button>
+                    <button class="modal-link-btn article" id="modalArticleBtn" onclick="window.open(this.dataset.url, '_blank')">
+                        📝 文字
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->
@@ -1092,6 +1272,235 @@
 
         document.addEventListener('mouseup', () => {
             cursor.classList.remove('click');
+        });
+
+        // ===== 浮動視窗控制 =====
+        
+        // 專案資料庫
+        const projectsData = {
+            'csv-converter': {
+                title: '會議 Agenda 網頁',
+                author: 'Harry Chao',
+                category: '資料轉換',
+                description: '其實 Vibe Coding 一點也不難，就算你是「程式小白」，只要用自然語言（講人話）下指令，AI 就能幫你快速生成網頁、程式或公式。',
+                image: '../assets/images/VibeCodingworkshop/meeting-agenda.png',
+                placeholder: '📊',
+                links: {
+                    video: 'https://youtu.be/AzZN_UXp3FM',
+                    demo: 'https://gemini.google.com/share/6e7035989cc7',
+                    article: 'https://engage.cloud.microsoft/main/org/benqmaterials.com/threads/eyJfdHlwZSI6IlRocmVhZCIsImlkIjoiMzUyMTE2Njc1Njc0OTMxMiJ9?trk_copy_link=V2'
+                }
+            },
+            'excel-cleaner': {
+                title: 'Excel 資料清理工具',
+                author: 'Anonymous',
+                category: '資料轉換',
+                description: '自動清理和標準化 Excel 資料，節省人工處理時間。可以批次處理多個工作表，自動偵測並修正常見的資料格式問題。',
+                image: '../assets/images/VibeCodingworkshop/excel-cleaner.png',
+                placeholder: '🔄',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'sales-dashboard': {
+                title: '銷售數據儀表板',
+                author: 'Anonymous',
+                category: '報表儀表板',
+                description: '即時顯示銷售數據，支援多維度分析和互動式圖表。提供多種視覺化圖表，包括折線圖、長條圖、圓餅圖等，讓數據分析更直覺。',
+                image: '../assets/images/VibeCodingworkshop/sales-dashboard.png',
+                placeholder: '📈',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'finance-report': {
+                title: '財務分析報表',
+                author: 'Anonymous',
+                category: '報表儀表板',
+                description: '自動生成財務報表和趨勢分析圖表。整合多個資料來源，自動計算財務指標，並產生專業的報表文件。',
+                image: '../assets/images/VibeCodingworkshop/finance-report.png',
+                placeholder: '💹',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'todo-app': {
+                title: '待辦事項管理 App',
+                author: 'Anonymous',
+                category: '生產力工具',
+                description: '簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。可以設定截止日期、重複任務，並與行事曆同步。',
+                image: '../assets/images/VibeCodingworkshop/todo-app.png',
+                placeholder: '✅',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'pomodoro': {
+                title: '番茄鐘計時器',
+                author: 'Anonymous',
+                category: '生產力工具',
+                description: '幫助您專注工作，提升效率的番茄工作法計時器。可自訂工作和休息時間，記錄每日完成的番茄鐘數量。',
+                image: '../assets/images/VibeCodingworkshop/pomodoro.png',
+                placeholder: '⏰',
+                links: {
+                    video: '',
+                    demo: '../pages/pomodoro.html',
+                    article: ''
+                }
+            },
+            'notes-app': {
+                title: '筆記應用',
+                author: 'Anonymous',
+                category: '生產力工具',
+                description: '支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。提供即時預覽、標籤分類、全文搜尋等功能。',
+                image: '../assets/images/VibeCodingworkshop/notes-app.png',
+                placeholder: '📝',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'game': {
+                title: '互動式小遊戲',
+                author: 'Anonymous',
+                category: '其他',
+                description: '使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。包含碰撞偵測、計分系統、音效等遊戲元素。',
+                image: '../assets/images/VibeCodingworkshop/game.png',
+                placeholder: '🎮',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'portfolio': {
+                title: '個人作品集網站',
+                author: 'Anonymous',
+                category: '其他',
+                description: '展示您的技能和專案的精美作品集網站模板。採用現代化設計，支援響應式排版，完美呈現在各種裝置上。',
+                image: '../assets/images/VibeCodingworkshop/portfolio.png',
+                placeholder: '🎨',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            },
+            'landing-page': {
+                title: '登陸頁生成器',
+                author: 'Anonymous',
+                category: '其他',
+                description: '快速創建專業的產品登陸頁面。提供多種精美模板，拖拉即可完成排版，內建表單和分析功能。',
+                image: '../assets/images/VibeCodingworkshop/landing-page.png',
+                placeholder: '🌐',
+                links: {
+                    video: '',
+                    demo: '',
+                    article: ''
+                }
+            }
+        };
+
+        // 開啟浮動視窗
+        function openModal(projectId) {
+            const project = projectsData[projectId];
+            if (!project) return;
+
+            const modal = document.getElementById('modalOverlay');
+            const modalImage = document.getElementById('modalImage');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalAuthor = document.getElementById('modalAuthor');
+            const modalCategory = document.getElementById('modalCategory');
+            const modalDescription = document.getElementById('modalDescription');
+            const videoBtn = document.getElementById('modalVideoBtn');
+            const demoBtn = document.getElementById('modalDemoBtn');
+            const articleBtn = document.getElementById('modalArticleBtn');
+
+            // 設定內容
+            modalTitle.textContent = project.title;
+            modalAuthor.textContent = project.author;
+            modalCategory.textContent = project.category;
+            modalDescription.textContent = project.description;
+
+            // 處理圖片 - 如果有圖片就顯示，沒有就用 emoji 佔位
+            modalImage.onerror = function() {
+                this.style.display = 'none';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'modal-image-placeholder';
+                placeholder.style.cssText = 'width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; font-size: 120px; background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%); border-radius: 24px 24px 0 0;';
+                placeholder.textContent = project.placeholder;
+                this.parentNode.insertBefore(placeholder, this);
+            };
+            modalImage.src = project.image;
+            modalImage.style.display = 'block';
+
+            // 設定連結按鈕
+            if (project.links.video) {
+                videoBtn.dataset.url = project.links.video;
+                videoBtn.disabled = false;
+                videoBtn.style.opacity = '1';
+            } else {
+                videoBtn.disabled = true;
+                videoBtn.style.opacity = '0.5';
+            }
+
+            if (project.links.demo) {
+                demoBtn.dataset.url = project.links.demo;
+                demoBtn.disabled = false;
+                demoBtn.style.opacity = '1';
+            } else {
+                demoBtn.disabled = true;
+                demoBtn.style.opacity = '0.5';
+            }
+
+            if (project.links.article) {
+                articleBtn.dataset.url = project.links.article;
+                articleBtn.disabled = false;
+                articleBtn.style.opacity = '1';
+            } else {
+                articleBtn.disabled = true;
+                articleBtn.style.opacity = '0.5';
+            }
+
+            // 顯示浮動視窗
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // 防止背景滾動
+        }
+
+        // 關閉浮動視窗
+        function closeModal() {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('active');
+            document.body.style.overflow = ''; // 恢復滾動
+
+            // 清理可能存在的圖片佔位元素
+            const placeholder = document.querySelector('.modal-image-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+        }
+
+        // 點擊背景關閉
+        function closeModalOnOverlay(event) {
+            if (event.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        }
+
+        // ESC 鍵關閉
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
         });
     </script>
 </body>

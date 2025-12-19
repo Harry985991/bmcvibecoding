@@ -488,7 +488,7 @@ main {
           <div class="grid" id="settingsGrid">
             <div class="card" id="exportAllCard">
               <div class="card-head"><h3>匯出全部</h3></div>
-              <p>將 Tools、My GPT、Investment、Health 一併匯出為單一 JSON 檔。</p>
+              <p>將本機所有資料（localStorage）匯出為單一 JSON 檔，檔名為 <code>vibe-coding-all-backup-yymmdd.json</code>。</p>
               <div class="card-actions">
                 <div><a href="#" class="visit-btn" id="exportAllRun">執行</a></div>
                 <div class="right"></div>
@@ -496,7 +496,7 @@ main {
             </div>
             <div class="card" id="importAllCard">
               <div class="card-head"><h3>匯入全部</h3></div>
-              <p>從匯出的 JSON 檔載入，覆寫目前的 Tools、My GPT、Investment、Health。</p>
+              <p>從匯出的 JSON 檔載入，覆寫目前的本機資料（localStorage）。</p>
               <div class="card-actions">
                 <div><a href="#" class="visit-btn" id="importAllRun">選擇檔案</a></div>
                 <div class="right"></div>
@@ -574,7 +574,7 @@ main {
             <div class="card" style="height:auto; min-height:auto;">
               <div class="card-head"><h3>匯入/匯出說明</h3></div>
               <p>
-                建議每 1-2 週備份一次。到 Settings 中使用「匯出全部」產生 <code>vibe_data.json</code>；
+                建議每 1-2 週備份一次。到 Settings 中使用「匯出全部」產生 <code>vibe-coding-all-backup-yymmdd.json</code>；
                 如需還原，於「匯入全部」選擇先前備份檔即可（注意：將覆寫目前資料）。
               </p>
             </div>
@@ -1281,19 +1281,68 @@ main {
     inp.click();
   }
 
-  // Settings: export/import ALL (tools + prompts + investment + health)
+  // Settings: export/import ALL (full localStorage snapshot)
+  function formatYYMMDD(date) {
+    const yy = String(date.getFullYear()).slice(-2);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yy}${mm}${dd}`;
+  }
+
+  function getLocalStorageSnapshot() {
+    const snapshot = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        snapshot[key] = localStorage.getItem(key);
+      }
+    } catch (e) {
+      console.warn('localStorage read failed', e);
+    }
+    return snapshot;
+  }
+
+  function normalizeTools(list) {
+    return (Array.isArray(list) ? list : []).map(t => ({
+      name: t?.name || '',
+      desc: t?.desc || '',
+      link: t?.link || '',
+      order: Math.max(1, parseInt(t?.order, 10) || 1)
+    })).sort((a,b) => (a.order||1)-(b.order||1));
+  }
+
+  function normalizePrompts(list) {
+    return (Array.isArray(list) ? list : []).map(p => ({
+      name: p?.name || '',
+      desc: p?.desc || '',
+      link: p?.link || '',
+      order: Math.max(1, parseInt(p?.order, 10) || 1)
+    })).sort((a,b) => (a.order||1)-(b.order||1));
+  }
+
   function exportAll() {
     try {
+      const now = new Date();
+      const yymmdd = formatYYMMDD(now);
+      const localStorageSnapshot = getLocalStorageSnapshot();
       // 收集投資與健康資料（若存在於 localStorage）
       const investment = (()=>{ try{ return JSON.parse(localStorage.getItem('pfv1')||'{}'); }catch{ return {}; } })();
       const healthProfile = (()=>{ try{ return JSON.parse(localStorage.getItem('weight_bmi_profile_v1')||'{}'); }catch{ return {}; } })();
       const healthRecords = (()=>{ try{ return JSON.parse(localStorage.getItem('weight_bmi_v1')||'[]'); }catch{ return []; } })();
-      const payload = JSON.stringify({ tools, prompts, investment, health:{ profile: healthProfile, records: healthRecords } }, null, 2);
+      const payload = JSON.stringify({
+        meta: { exportedAt: now.toISOString(), format: 'vibe-coding-all', version: 1 },
+        localStorage: localStorageSnapshot,
+        tools,
+        prompts,
+        investment,
+        health:{ profile: healthProfile, records: healthRecords }
+      }, null, 2);
       const blob = new Blob([payload], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'vibe_data.json';
+      a.download = `vibe-coding-all-backup-${yymmdd}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1317,33 +1366,40 @@ main {
         try {
           const parsed = JSON.parse(reader.result);
           if (!parsed || typeof parsed !== 'object') throw new Error('格式錯誤');
-          const nextTools = Array.isArray(parsed.tools) ? parsed.tools : [];
-          const nextPrompts = Array.isArray(parsed.prompts) ? parsed.prompts : [];
-          const nextInvestment = parsed.investment && typeof parsed.investment==='object' ? parsed.investment : {};
-          const nextHealth = parsed.health && typeof parsed.health==='object' ? parsed.health : {};
+          if (parsed.localStorage && typeof parsed.localStorage === 'object') {
+            Object.entries(parsed.localStorage).forEach(([key, value]) => {
+              if (!key) return;
+              try {
+                if (typeof value === 'string') {
+                  localStorage.setItem(key, value);
+                } else {
+                  localStorage.setItem(key, JSON.stringify(value));
+                }
+              } catch (e) {}
+            });
+            const restoredTools = (()=>{ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch{ return []; } })();
+            const restoredPrompts = (()=>{ try{ return JSON.parse(localStorage.getItem(PROMPT_STORAGE_KEY)||'[]'); }catch{ return []; } })();
+            tools = normalizeTools(restoredTools);
+            prompts = normalizePrompts(restoredPrompts);
+          } else {
+            const nextTools = normalizeTools(parsed.tools);
+            const nextPrompts = normalizePrompts(parsed.prompts);
+            const nextInvestment = parsed.investment && typeof parsed.investment==='object' ? parsed.investment : {};
+            const nextHealth = parsed.health && typeof parsed.health==='object' ? parsed.health : {};
 
-          tools = nextTools.map(t => ({
-            name: t?.name || '',
-            desc: t?.desc || '',
-            link: t?.link || '',
-            order: Math.max(1, parseInt(t?.order, 10) || 1)
-          })).sort((a,b) => (a.order||1)-(b.order||1));
-          prompts = nextPrompts.map(p => ({
-            name: p?.name || '',
-            desc: p?.desc || '',
-            link: p?.link || '',
-            order: Math.max(1, parseInt(p?.order, 10) || 1)
-          })).sort((a,b) => (a.order||1)-(b.order||1));
+            tools = nextTools;
+            prompts = nextPrompts;
 
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
-          localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts));
-          try{ localStorage.setItem('pfv1', JSON.stringify(nextInvestment)); }catch(e){}
-          try{ 
-            if(nextHealth && typeof nextHealth==='object'){
-              if(nextHealth.profile) localStorage.setItem('weight_bmi_profile_v1', JSON.stringify(nextHealth.profile));
-              if(Array.isArray(nextHealth.records)) localStorage.setItem('weight_bmi_v1', JSON.stringify(nextHealth.records));
-            }
-          }catch(e){}
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
+            localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(prompts));
+            try{ localStorage.setItem('pfv1', JSON.stringify(nextInvestment)); }catch(e){}
+            try{ 
+              if(nextHealth && typeof nextHealth==='object'){
+                if(nextHealth.profile) localStorage.setItem('weight_bmi_profile_v1', JSON.stringify(nextHealth.profile));
+                if(Array.isArray(nextHealth.records)) localStorage.setItem('weight_bmi_v1', JSON.stringify(nextHealth.records));
+              }
+            }catch(e){}
+          }
           renderTools();
           renderPrompts();
           alert('匯入完成');
