@@ -28,7 +28,7 @@
             background: #C77DFF;
             pointer-events: none;
             z-index: 10000;
-            transform: translate(-50%, -50%);
+            transform: translate(-10px, -10px);
             transition: width 0.2s, height 0.2s;
             box-shadow: 0 0 15px rgba(199, 125, 255, 0.6);
         }
@@ -36,6 +36,7 @@
         .custom-cursor.click {
             width: 32px;
             height: 32px;
+            transform: translate(-16px, -16px);
         }
 
         /* Magic Cursor Effect */
@@ -121,12 +122,20 @@
             text-decoration: none;
             font-size: 20px;
             font-weight: 600;
-            transition: color 0.3s;
+            transition: all 0.3s;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            padding: 8px 16px;
+            border-radius: 8px;
         }
 
         .nav-link:hover {
+            color: #9D4EDD;
+            background: rgba(157, 78, 221, 0.1);
+        }
+
+        .nav-link.active {
+            background: rgba(157, 78, 221, 0.15);
             color: #9D4EDD;
         }
 
@@ -174,6 +183,171 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 60px 0 40px 0;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            font-weight: 400;
+            color: #999;
+            cursor: pointer;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: #666;
+        }
+
+        .tab-btn.active {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: linear-gradient(90deg, #9D4EDD 0%, #C77DFF 100%);
+            border-radius: 2px;
+        }
+
+        /* Page Content */
+        .page-content {
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        /* Tab Content (for Showcase categories) */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Showcase Section Title */
+        .showcase-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .showcase-title {
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #FF6B35 0%, #FF8C61 50%, #FFB088 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .showcase-subtitle {
+            font-size: 20px;
+            color: #666;
+        }
+
+        /* Main Page Content */
+        .main-intro {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin: 40px 0;
+        }
+
+        .intro-text h2 {
+            font-size: 48px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.3;
+        }
+
+        .intro-text h3 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .intro-text h3 .highlight {
+            background: linear-gradient(90deg, #FF6B35 0%, #FF8C61 50%, #FFB088 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .intro-text h4 {
+            font-size: 32px;
+            font-weight: 400;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .intro-text p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        /* Video Container */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 16px;
+        }
+
+        @media (max-width: 968px) {
+            .main-intro {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .intro-text h2 {
+                font-size: 36px;
+            }
+
+            .intro-text h3 {
+                font-size: 32px;
+            }
+
+            .intro-text h4 {
+                font-size: 24px;
+            }
         }
 
         /* Instructions Section */
@@ -379,6 +553,16 @@
                 width: 4px;
                 height: 4px;
             }
+
+            .tab-navigation {
+                gap: 15px;
+                margin: 40px 0 30px 0;
+            }
+
+            .tab-btn {
+                font-size: 18px;
+                padding: 8px 16px;
+            }
         }
     </style>
 </head>
@@ -390,9 +574,9 @@
                 <span class="highlight">EveryOne</span><br>Can Build.
             </div>
             <nav class="banner-nav">
-                <a href="#" class="nav-link">MAIN</a>
-                <a href="#" class="nav-link">WARM-UP</a>
-                <a href="#" class="nav-link">HAND-ON</a>
+                <a href="#" class="nav-link active" id="nav-main" onclick="navigateToMain(event)">MAIN</a>
+                <a href="#showcase" class="nav-link" id="nav-showcase" onclick="navigateToShowcase(event)">SHOWCASE</a>
+                <a href="#" class="nav-link" id="nav-handon">HAND-ON</a>
             </nav>
         </div>
     </div>
@@ -407,58 +591,238 @@
             <div class="tagline">in BMC</div>
         </div>
 
-        <!-- Cards Section -->
-        <div class="cards-grid">
-            <!-- Command Card 1 -->
-            <div class="command-card">
-                <div class="card-number">1</div>
-                <h3 class="card-title">建立專案資料夾</h3>
-                <p class="card-description">在您的電腦上建立一個新的專案資料夾，作為今天工作坊的工作目錄。</p>
-                <div class="code-block">mkdir bmc-vibe-project && cd bmc-vibe-project</div>
-                <button class="copy-btn" onclick="copyCommand(this, 'mkdir bmc-vibe-project && cd bmc-vibe-project')">
-                    📋 複製指令
-                </button>
-            </div>
-
-            <!-- Command Card 2 -->
-            <div class="command-card">
-                <div class="card-number">2</div>
-                <h3 class="card-title">初始化專案</h3>
-                <p class="card-description">建立基本的 HTML 檔案結構，這將是您的第一個網頁應用程式。</p>
-                <div class="code-block">touch index.html && echo "<!DOCTYPE html><html><head><title>My First App</title></head><body><h1>Hello Vibe Coding!</h1></body></html>" > index.html</div>
-                <button class="copy-btn" onclick='copyCommand(this, "touch index.html && echo \"&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;My First App&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;Hello Vibe Coding!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\" > index.html")'>
-                    📋 複製指令
-                </button>
-            </div>
-
-            <!-- Command Card 3 -->
-            <div class="command-card">
-                <div class="card-number">3</div>
-                <h3 class="card-title">啟動本地伺服器</h3>
-                <p class="card-description">使用 Python 快速啟動一個本地網頁伺服器，在瀏覽器中預覽您的作品。</p>
-                <div class="code-block">python3 -m http.server 8000</div>
-                <button class="copy-btn" onclick="copyCommand(this, 'python3 -m http.server 8000')">
-                    📋 複製指令
-                </button>
-            </div>
-
-            <!-- Command Card 4 -->
-            <div class="command-card">
-                <div class="card-number">4</div>
-                <h3 class="card-title">開啟瀏覽器</h3>
-                <p class="card-description">在瀏覽器中開啟您的專案，查看即時效果。開啟後請瀏覽 localhost:8000。</p>
-                <div class="code-block">open http://localhost:8000</div>
-                <button class="copy-btn" onclick="copyCommand(this, 'open http://localhost:8000')">
-                    📋 複製指令
-                </button>
+        <!-- Main Page (Default) -->
+        <div class="page-content active" id="page-main">
+            <div class="main-intro">
+                <div class="intro-text">
+                    <h2>人人都能用 AI 寫程式</h2>
+                    <h3>什麼是 <span class="highlight">Vibe Coding</span>？</h3>
+                    <h4>一句話，一個 網站</h4>
+                    <p>
+                        Vibe Coding 是由前 Tesla AI 總監 Andrej Karpathy 提出的全新開發哲學。
+                        它顛覆了傳統寫程式的定義：你不需要精通複雜的語法，也不用逐行敲打代碼，
+                        只要告訴 AI 你的想法，就能生成出能跑的程式、網站，甚至是App。
+                    </p>
+                </div>
+                
+                <div class="video-container">
+                    <iframe 
+                        src="https://www.youtube.com/embed/GJtEJczA-9U" 
+                        title="Vibe Coding 介紹影片" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
             </div>
         </div>
+
+        <!-- Showcase Page -->
+        <div class="page-content" id="page-showcase">
+            <!-- Showcase Tab Navigation -->
+            <div class="tab-navigation" id="showcase">
+                <button class="tab-btn active" onclick="switchShowcaseTab('data')">資料轉換</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('dashboard')">報表儀表板</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('productivity')">生產力工具</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('other')">其他</button>
+            </div>
+
+            <!-- Showcase Tab Content: 資料轉換 -->
+            <div class="tab-content active" id="showcase-data">
+                <div class="cards-grid">
+                    <div class="command-card">
+                        <div class="card-number">📊</div>
+                        <h3 class="card-title">CSV 轉 JSON 轉換器</h3>
+                        <p class="card-description">快速將 CSV 檔案轉換為 JSON 格式，方便資料處理和 API 使用。</p>
+                        <div class="code-block">資料轉換工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🔄</div>
+                        <h3 class="card-title">Excel 資料清理工具</h3>
+                        <p class="card-description">自動清理和標準化 Excel 資料，節省人工處理時間。</p>
+                        <div class="code-block">資料轉換工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Showcase Tab Content: 報表儀表板 -->
+            <div class="tab-content" id="showcase-dashboard">
+                <div class="cards-grid">
+                    <div class="command-card">
+                        <div class="card-number">📈</div>
+                        <h3 class="card-title">銷售數據儀表板</h3>
+                        <p class="card-description">即時顯示銷售數據，支援多維度分析和互動式圖表。</p>
+                        <div class="code-block">數據視覺化</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">💹</div>
+                        <h3 class="card-title">財務分析報表</h3>
+                        <p class="card-description">自動生成財務報表和趨勢分析圖表。</p>
+                        <div class="code-block">數據視覺化</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Showcase Tab Content: 生產力工具 -->
+            <div class="tab-content" id="showcase-productivity">
+                <div class="cards-grid">
+                    <div class="command-card">
+                        <div class="card-number">✅</div>
+                        <h3 class="card-title">待辦事項管理 App</h3>
+                        <p class="card-description">簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">⏰</div>
+                        <h3 class="card-title">番茄鐘計時器</h3>
+                        <p class="card-description">幫助您專注工作，提升效率的番茄工作法計時器。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">📝</div>
+                        <h3 class="card-title">筆記應用</h3>
+                        <p class="card-description">支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。</p>
+                        <div class="code-block">生產力工具</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Showcase Tab Content: 其他 -->
+            <div class="tab-content" id="showcase-other">
+                <div class="cards-grid">
+                    <div class="command-card">
+                        <div class="card-number">🎮</div>
+                        <h3 class="card-title">互動式小遊戲</h3>
+                        <p class="card-description">使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🎨</div>
+                        <h3 class="card-title">個人作品集網站</h3>
+                        <p class="card-description">展示您的技能和專案的精美作品集網站模板。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+
+                    <div class="command-card">
+                        <div class="card-number">🌐</div>
+                        <h3 class="card-title">登陸頁生成器</h3>
+                        <p class="card-description">快速創建專業的產品登陸頁面。</p>
+                        <div class="code-block">創意專案</div>
+                        <button class="copy-btn" onclick="alert('即將推出範例！')">
+                            🔗 查看作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
     <!-- Toast Notification -->
     <div class="toast" id="toast">✓ 指令已複製到剪貼簿！</div>
 
     <script>
+        // Navigate to Main from top navigation
+        function navigateToMain(event) {
+            event.preventDefault();
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to Main nav link
+            document.getElementById('nav-main').classList.add('active');
+            
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show main page
+            document.getElementById('page-main').classList.add('active');
+            
+            // Scroll to top to keep banner fully visible
+            window.scrollTo({ 
+                top: 0, 
+                behavior: 'smooth' 
+            });
+        }
+
+        // Navigate to Showcase from top navigation
+        function navigateToShowcase(event) {
+            event.preventDefault();
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to Showcase nav link
+            document.getElementById('nav-showcase').classList.add('active');
+            
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show showcase page
+            document.getElementById('page-showcase').classList.add('active');
+            
+            // Scroll to top to keep banner fully visible
+            window.scrollTo({ 
+                top: 0, 
+                behavior: 'smooth' 
+            });
+        }
+
+        // Showcase Tab Switching Function
+        function switchShowcaseTab(category) {
+            // Remove active class from all tabs and contents in showcase
+            const tabBtns = document.querySelectorAll('#page-showcase .tab-btn');
+            const tabContents = document.querySelectorAll('#page-showcase .tab-content');
+            
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab and content
+            event.target.classList.add('active');
+            document.getElementById('showcase-' + category).classList.add('active');
+        }
+
         function copyCommand(button, command) {
             // Copy to clipboard
             navigator.clipboard.writeText(command).then(() => {
