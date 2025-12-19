@@ -389,17 +389,20 @@
             animation: fadeInUp 0.6s ease-out;
             animation-fill-mode: both;
             background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        .command-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(157, 78, 221, 0.3);
         }
 
         .command-card:nth-child(1) { animation-delay: 0.1s; }
         .command-card:nth-child(2) { animation-delay: 0.2s; }
         .command-card:nth-child(3) { animation-delay: 0.3s; }
         .command-card:nth-child(4) { animation-delay: 0.4s; }
-
-        .command-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(157, 78, 221, 0.3);
-        }
 
         .command-card:hover .card-image {
             transform: scale(1.05);
@@ -853,14 +856,14 @@
             <div class="tab-content active" id="showcase-all">
                 <div class="cards-grid">
                     <!-- 資料轉換 -->
-                    <div class="command-card" onclick="openModal('csv-converter')">
+                    <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
                         <div class="card-placeholder">📊</div>
                         <div class="card-overlay">
                             <h3 class="card-title">會議 Agenda 網頁</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('excel-cleaner')">
+                    <div class="command-card" onclick="openModal('excel-cleaner')" style="background-image: url('../assets/images/VibeCodingworkshop/excel-cleaner.png');">
                         <div class="card-placeholder">🔄</div>
                         <div class="card-overlay">
                             <h3 class="card-title">Excel 資料清理工具</h3>
@@ -868,14 +871,14 @@
                     </div>
 
                     <!-- 報表儀表板 -->
-                    <div class="command-card" onclick="openModal('sales-dashboard')">
+                    <div class="command-card" onclick="openModal('sales-dashboard')" style="background-image: url('../assets/images/VibeCodingworkshop/sales-dashboard.png');">
                         <div class="card-placeholder">📈</div>
                         <div class="card-overlay">
                             <h3 class="card-title">銷售數據儀表板</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('finance-report')">
+                    <div class="command-card" onclick="openModal('finance-report')" style="background-image: url('../assets/images/VibeCodingworkshop/finance-report.png');">
                         <div class="card-placeholder">💹</div>
                         <div class="card-overlay">
                             <h3 class="card-title">財務分析報表</h3>
@@ -883,21 +886,21 @@
                     </div>
 
                     <!-- 生產力工具 -->
-                    <div class="command-card" onclick="openModal('todo-app')">
+                    <div class="command-card" onclick="openModal('todo-app')" style="background-image: url('../assets/images/VibeCodingworkshop/todo-app.png');">
                         <div class="card-placeholder">✅</div>
                         <div class="card-overlay">
                             <h3 class="card-title">待辦事項管理 App</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('pomodoro')">
+                    <div class="command-card" onclick="openModal('pomodoro')" style="background-image: url('../assets/images/VibeCodingworkshop/pomodoro.png');">
                         <div class="card-placeholder">⏰</div>
                         <div class="card-overlay">
                             <h3 class="card-title">番茄鐘計時器</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('notes-app')">
+                    <div class="command-card" onclick="openModal('notes-app')" style="background-image: url('../assets/images/VibeCodingworkshop/notes-app.png');">
                         <div class="card-placeholder">📝</div>
                         <div class="card-overlay">
                             <h3 class="card-title">筆記應用</h3>
@@ -905,21 +908,21 @@
                     </div>
 
                     <!-- 其他 -->
-                    <div class="command-card" onclick="openModal('game')">
+                    <div class="command-card" onclick="openModal('game')" style="background-image: url('../assets/images/VibeCodingworkshop/game.png');">
                         <div class="card-placeholder">🎮</div>
                         <div class="card-overlay">
                             <h3 class="card-title">互動式小遊戲</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('portfolio')">
+                    <div class="command-card" onclick="openModal('portfolio')" style="background-image: url('../assets/images/VibeCodingworkshop/portfolio.png');">
                         <div class="card-placeholder">🎨</div>
                         <div class="card-overlay">
                             <h3 class="card-title">個人作品集網站</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('landing-page')">
+                    <div class="command-card" onclick="openModal('landing-page')" style="background-image: url('../assets/images/VibeCodingworkshop/landing-page.png');">
                         <div class="card-placeholder">🌐</div>
                         <div class="card-overlay">
                             <h3 class="card-title">登陸頁生成器</h3>
@@ -931,14 +934,14 @@
             <!-- Showcase Tab Content: 資料轉換 -->
             <div class="tab-content" id="showcase-data">
                 <div class="cards-grid">
-                    <div class="command-card" onclick="openModal('csv-converter')">
+                    <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
                         <div class="card-placeholder">📊</div>
                         <div class="card-overlay">
                             <h3 class="card-title">會議 Agenda 網頁</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('excel-cleaner')">
+                    <div class="command-card" onclick="openModal('excel-cleaner')" style="background-image: url('../assets/images/VibeCodingworkshop/excel-cleaner.png');">
                         <div class="card-placeholder">🔄</div>
                         <div class="card-overlay">
                             <h3 class="card-title">Excel 資料清理工具</h3>
@@ -950,14 +953,14 @@
             <!-- Showcase Tab Content: 報表儀表板 -->
             <div class="tab-content" id="showcase-dashboard">
                 <div class="cards-grid">
-                    <div class="command-card" onclick="openModal('sales-dashboard')">
+                    <div class="command-card" onclick="openModal('sales-dashboard')" style="background-image: url('../assets/images/VibeCodingworkshop/sales-dashboard.png');">
                         <div class="card-placeholder">📈</div>
                         <div class="card-overlay">
                             <h3 class="card-title">銷售數據儀表板</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('finance-report')">
+                    <div class="command-card" onclick="openModal('finance-report')" style="background-image: url('../assets/images/VibeCodingworkshop/finance-report.png');">
                         <div class="card-placeholder">💹</div>
                         <div class="card-overlay">
                             <h3 class="card-title">財務分析報表</h3>
@@ -969,21 +972,21 @@
             <!-- Showcase Tab Content: 生產力工具 -->
             <div class="tab-content" id="showcase-productivity">
                 <div class="cards-grid">
-                    <div class="command-card" onclick="openModal('todo-app')">
+                    <div class="command-card" onclick="openModal('todo-app')" style="background-image: url('../assets/images/VibeCodingworkshop/todo-app.png');">
                         <div class="card-placeholder">✅</div>
                         <div class="card-overlay">
                             <h3 class="card-title">待辦事項管理 App</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('pomodoro')">
+                    <div class="command-card" onclick="openModal('pomodoro')" style="background-image: url('../assets/images/VibeCodingworkshop/pomodoro.png');">
                         <div class="card-placeholder">⏰</div>
                         <div class="card-overlay">
                             <h3 class="card-title">番茄鐘計時器</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('notes-app')">
+                    <div class="command-card" onclick="openModal('notes-app')" style="background-image: url('../assets/images/VibeCodingworkshop/notes-app.png');">
                         <div class="card-placeholder">📝</div>
                         <div class="card-overlay">
                             <h3 class="card-title">筆記應用</h3>
@@ -995,21 +998,21 @@
             <!-- Showcase Tab Content: 其他 -->
             <div class="tab-content" id="showcase-other">
                 <div class="cards-grid">
-                    <div class="command-card" onclick="openModal('game')">
+                    <div class="command-card" onclick="openModal('game')" style="background-image: url('../assets/images/VibeCodingworkshop/game.png');">
                         <div class="card-placeholder">🎮</div>
                         <div class="card-overlay">
                             <h3 class="card-title">互動式小遊戲</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('portfolio')">
+                    <div class="command-card" onclick="openModal('portfolio')" style="background-image: url('../assets/images/VibeCodingworkshop/portfolio.png');">
                         <div class="card-placeholder">🎨</div>
                         <div class="card-overlay">
                             <h3 class="card-title">個人作品集網站</h3>
                         </div>
                     </div>
 
-                    <div class="command-card" onclick="openModal('landing-page')">
+                    <div class="command-card" onclick="openModal('landing-page')" style="background-image: url('../assets/images/VibeCodingworkshop/landing-page.png');">
                         <div class="card-placeholder">🌐</div>
                         <div class="card-overlay">
                             <h3 class="card-title">登陸頁生成器</h3>
