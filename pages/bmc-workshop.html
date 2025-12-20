@@ -388,11 +388,11 @@
         .command-card {
             position: relative;
             border-radius: 16px;
-            height: 300px;
+            aspect-ratio: 4 / 3; /* 固定比例 4:3 */
             overflow: hidden;
             cursor: pointer;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             animation: fadeInUp 0.6s ease-out;
             animation-fill-mode: both;
             background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
@@ -402,8 +402,8 @@
         }
         
         .command-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 12px 40px rgba(157, 78, 221, 0.3);
+            transform: translateY(-12px) scale(1.03);
+            box-shadow: 0 20px 50px rgba(157, 78, 221, 0.4);
         }
 
         .command-card:nth-child(1) { animation-delay: 0.1s; }
@@ -427,16 +427,30 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.3) 70%, transparent);
             padding: 30px 20px 20px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .command-card:hover .card-overlay {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.5) 70%, transparent);
         }
 
         .card-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: white;
+            margin: 0 0 8px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            line-height: 1.3;
+        }
+
+        .card-author {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.7);
             margin: 0;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         /* 佔位圖樣式（無圖片時顯示） */
@@ -658,8 +672,12 @@
                 min-width: unset;
             }
 
-            .command-card {
-                height: 250px;
+            .card-title {
+                font-size: 18px;
+            }
+
+            .card-author {
+                font-size: 12px;
             }
         }
 
@@ -868,26 +886,30 @@
             <!-- Showcase Tab Content: ALL -->
             <div class="tab-content active" id="showcase-all">
                 <div class="cards-grid">
-                    <!-- 資料轉換 -->
+                    <!-- Web -->
                     <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
                         <div class="card-placeholder">📊</div>
                         <div class="card-overlay">
-                            <h3 class="card-title">會議 Agenda 網頁</h3>
+                            <h3 class="card-title">Workshop Agenda 頁面</h3>
+                            <p class="card-author">By Harry Chao</p>
                         </div>
                     </div>
 
+                    <!-- Automation -->
                     <div class="command-card" onclick="openModal('excel-cleaner')" style="background-image: url('../assets/images/VibeCodingworkshop/excel-cleaner.png');">
                         <div class="card-placeholder">🔄</div>
                         <div class="card-overlay">
                             <h3 class="card-title">Excel 資料清理工具</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
-                    <!-- 報表儀表板 -->
+                    <!-- Analytics -->
                     <div class="command-card" onclick="openModal('sales-dashboard')" style="background-image: url('../assets/images/VibeCodingworkshop/sales-dashboard.png');">
                         <div class="card-placeholder">📈</div>
                         <div class="card-overlay">
                             <h3 class="card-title">銷售數據儀表板</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -895,14 +917,16 @@
                         <div class="card-placeholder">💹</div>
                         <div class="card-overlay">
                             <h3 class="card-title">財務分析報表</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
-                    <!-- 生產力工具 -->
+                    <!-- Productivity -->
                     <div class="command-card" onclick="openModal('todo-app')" style="background-image: url('../assets/images/VibeCodingworkshop/todo-app.png');">
                         <div class="card-placeholder">✅</div>
                         <div class="card-overlay">
                             <h3 class="card-title">待辦事項管理 App</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -910,6 +934,7 @@
                         <div class="card-placeholder">⏰</div>
                         <div class="card-overlay">
                             <h3 class="card-title">番茄鐘計時器</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -917,14 +942,16 @@
                         <div class="card-placeholder">📝</div>
                         <div class="card-overlay">
                             <h3 class="card-title">筆記應用</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
-                    <!-- 其他 -->
+                    <!-- Web -->
                     <div class="command-card" onclick="openModal('game')" style="background-image: url('../assets/images/VibeCodingworkshop/game.png');">
                         <div class="card-placeholder">🎮</div>
                         <div class="card-overlay">
                             <h3 class="card-title">互動式小遊戲</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -932,6 +959,7 @@
                         <div class="card-placeholder">🎨</div>
                         <div class="card-overlay">
                             <h3 class="card-title">個人作品集網站</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -939,6 +967,7 @@
                         <div class="card-placeholder">🌐</div>
                         <div class="card-overlay">
                             <h3 class="card-title">登陸頁生成器</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
                 </div>
@@ -951,6 +980,7 @@
                         <div class="card-placeholder">🔄</div>
                         <div class="card-overlay">
                             <h3 class="card-title">Excel 資料清理工具</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
                 </div>
@@ -963,6 +993,7 @@
                         <div class="card-placeholder">📈</div>
                         <div class="card-overlay">
                             <h3 class="card-title">銷售數據儀表板</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -970,6 +1001,7 @@
                         <div class="card-placeholder">💹</div>
                         <div class="card-overlay">
                             <h3 class="card-title">財務分析報表</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
                 </div>
@@ -982,6 +1014,7 @@
                         <div class="card-placeholder">✅</div>
                         <div class="card-overlay">
                             <h3 class="card-title">待辦事項管理 App</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -989,6 +1022,7 @@
                         <div class="card-placeholder">⏰</div>
                         <div class="card-overlay">
                             <h3 class="card-title">番茄鐘計時器</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -996,6 +1030,7 @@
                         <div class="card-placeholder">📝</div>
                         <div class="card-overlay">
                             <h3 class="card-title">筆記應用</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
                 </div>
@@ -1007,7 +1042,8 @@
                     <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
                         <div class="card-placeholder">📊</div>
                         <div class="card-overlay">
-                            <h3 class="card-title">會議 Agenda 網頁</h3>
+                            <h3 class="card-title">Workshop Agenda 頁面</h3>
+                            <p class="card-author">By Harry Chao</p>
                         </div>
                     </div>
 
@@ -1015,6 +1051,7 @@
                         <div class="card-placeholder">🎮</div>
                         <div class="card-overlay">
                             <h3 class="card-title">互動式小遊戲</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -1022,6 +1059,7 @@
                         <div class="card-placeholder">🎨</div>
                         <div class="card-overlay">
                             <h3 class="card-title">個人作品集網站</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
 
@@ -1029,6 +1067,7 @@
                         <div class="card-placeholder">🌐</div>
                         <div class="card-overlay">
                             <h3 class="card-title">登陸頁生成器</h3>
+                            <p class="card-author">By Anonymous</p>
                         </div>
                     </div>
                 </div>
@@ -1295,10 +1334,10 @@
         // 專案資料庫
         const projectsData = {
             'csv-converter': {
-                title: '會議 Agenda 網頁',
+                title: 'Workshop Agenda 頁面',
                 author: 'Harry Chao',
                 category: 'Web',
-                description: '其實 Vibe Coding 一點也不難，就算你是「程式小白」，只要用自然語言（講人話）下指令，AI 就能幫你快速生成網頁、程式或公式。',
+                description: '這是一個用來整理 workshop 會議 Agenda 的網頁。每個議程都做成一張卡片，點一下就能看到該環節的簡介，還有相關的檔案或參考連結，讓你不用翻資料，也能快速掌握會議流程和重點內容。',
                 image: '../assets/images/VibeCodingworkshop/meeting-agenda.png',
                 placeholder: '📊',
                 links: {
