@@ -541,12 +541,12 @@
             font-size: 36px;
             font-weight: 700;
             color: #333;
-            margin-bottom: 20px;
             background: linear-gradient(90deg, #9D4EDD 0%, #C77DFF 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             display: inline;
+            line-height: 1.3;
         }
 
         .modal-title-row {
@@ -557,30 +557,23 @@
             margin-bottom: 20px;
         }
 
-        .modal-badge {
+        .modal-category-badge {
             display: inline-flex;
             align-items: center;
             padding: 6px 14px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .modal-category-badge {
             background: #F0E7FF;
             color: #7B2CBF;
-        }
-
-        .modal-tool-badge {
-            background: #E8E8E8;
-            color: #555;
+            white-space: nowrap;
         }
 
         .modal-meta {
             display: flex;
             align-items: center;
             gap: 15px;
+            flex-wrap: wrap;
             margin-bottom: 30px;
             color: #666;
             font-size: 14px;
@@ -590,6 +583,18 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .modal-tool-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #E8E8E8;
+            color: #666;
+            white-space: nowrap;
         }
 
         .modal-description {
@@ -676,9 +681,14 @@
                 font-size: 28px;
             }
 
-            .modal-badge {
-                font-size: 12px;
+            .modal-category-badge {
+                font-size: 13px;
                 padding: 4px 10px;
+            }
+
+            .modal-tool-badge {
+                font-size: 12px;
+                padding: 3px 10px;
             }
 
             .modal-links {
@@ -1105,14 +1115,14 @@
             <div class="modal-body">
                 <div class="modal-title-row">
                     <h2 class="modal-title" id="modalTitle"></h2>
-                    <span class="modal-badge modal-category-badge" id="modalCategoryBadge"></span>
-                    <span class="modal-badge modal-tool-badge" id="modalToolBadge"></span>
+                    <span class="modal-category-badge" id="modalCategoryBadge"></span>
                 </div>
                 <div class="modal-meta">
                     <div class="modal-author">
                         <span>👤</span>
                         <span id="modalAuthor"></span>
                     </div>
+                    <span class="modal-tool-badge" id="modalToolBadge"></span>
                 </div>
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-links">
@@ -1516,7 +1526,8 @@
             modalTitle.textContent = project.title;
             modalAuthor.textContent = project.author;
             modalCategoryBadge.textContent = project.category;
-            
+            modalDescription.textContent = project.description;
+
             // 顯示或隱藏工具標籤
             if (project.tool) {
                 modalToolBadge.textContent = project.tool;
@@ -1524,15 +1535,13 @@
             } else {
                 modalToolBadge.style.display = 'none';
             }
-            
-            modalDescription.textContent = project.description;
 
             // 處理圖片 - 如果有圖片就顯示，沒有就用 emoji 佔位
             modalImage.onerror = function() {
                 this.style.display = 'none';
                 const placeholder = document.createElement('div');
                 placeholder.className = 'modal-image-placeholder';
-                placeholder.style.cssText = 'width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; font-size: 120px; background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%); border-radius: 24px 24px 0 0;';
+                placeholder.style.cssText = 'width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; font-size: 120px; background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);';
                 placeholder.textContent = project.placeholder;
                 this.parentNode.insertBefore(placeholder, this);
             };
