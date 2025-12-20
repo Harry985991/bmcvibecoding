@@ -453,27 +453,11 @@
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
-        /* 佔位圖樣式（無圖片時顯示） */
-        .card-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 80px;
-            /* 移除背景，讓卡片的背景圖片可以顯示 */
-            pointer-events: none; /* 讓點擊事件穿透 */
-        }
-
-        /* 當沒有背景圖片時，顯示漸層背景 */
-        .command-card:not([style*="background-image"]) .card-placeholder {
-            background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
-        }
-
         /* 隱藏舊樣式元素 */
         .card-number,
         .card-description,
-        .code-block {
+        .code-block,
+        .card-placeholder {
             display: none;
         }
 
