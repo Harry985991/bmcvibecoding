@@ -373,7 +373,7 @@
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr); /* 桌機版：每行 4 張卡片 */
-            gap: 30px;
+            gap: 40px; /* 加大間距：30px → 40px */
             margin-bottom: 40px;
         }
 
@@ -381,6 +381,7 @@
         @media (max-width: 1200px) {
             .cards-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 30px; /* 平板版間距 */
             }
         }
 
@@ -831,6 +832,7 @@
             }
             .cards-grid {
                 grid-template-columns: 1fr;
+                gap: 25px; /* 手機版間距 */
             }
             
             .magic-particle {
@@ -1127,13 +1129,13 @@
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-links">
                     <button class="modal-link-btn video" id="modalVideoBtn" onclick="window.open(this.dataset.url, '_blank')">
-                        🎥 影片
+                        🎥 Watch Video
                     </button>
                     <button class="modal-link-btn demo" id="modalDemoBtn" onclick="window.open(this.dataset.url, '_blank')">
-                        🚀 Demo
+                        🚀 View Demo
                     </button>
                     <button class="modal-link-btn article" id="modalArticleBtn" onclick="window.open(this.dataset.url, '_blank')">
-                        📝 文字
+                        📝 Read Post
                     </button>
                 </div>
             </div>
