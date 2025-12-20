@@ -14,12 +14,14 @@
 ## ✨ 主要特色
 
 - 🎯 **Main 頁面**：Vibe Coding 概念介紹 + YouTube 影片（自動播放、循環）
-- 🎨 **Showcase 頁面**：作品展示（5 大分類）
+- 🎨 **Showcase 頁面**：作品展示（4 大分類）
   - 🌟 ALL（全部作品）
-  - 📊 資料轉換
-  - 📈 報表儀表板
-  - ✅ 生產力工具
-  - 🎮 其他創意專案
+  - 🤖 Automation（自動化工具）
+  - 📊 Analytics（數據分析）
+  - ✅ Productivity（生產力工具）
+  - 🌐 Web（網站應用）
+- 🎴 **圖片卡片設計**：專案卡片採用圖片背景，4:3 固定比例
+- 🎭 **浮動視窗**：點擊卡片開啟詳細介紹（含影片、Demo、文字連結）
 - 📌 **固定導航欄**：滾動時 Banner 始終置頂
 - 💜 **魔法游標**：粉紫色圓點 + 彩色粒子特效
 - 📱 **響應式設計**：完美支援手機、平板、電腦
@@ -59,13 +61,15 @@ git push origin main
 
 查看 [CHANGELOG.md](CHANGELOG.md) 了解詳細的更新記錄。
 
-### 最新更新（v1.3.0）
+### 最新更新（v1.6.1）
 
-- 🎴 Showcase 卡片全面改版為圖片卡片
-- 🎭 新增浮動視窗互動功能
-- 🎯 首個實際案例：會議 Agenda 網頁（Harry Chao）
-- 📸 支援專案截圖展示
-- 🔗 整合影片、Demo、文字三種連結
+- 🎯 優化浮動視窗行動按鈕文字（Watch Video、View Demo、Read Post）
+- 📐 調整專案卡片間距（桌機版 gap: 40px）
+- 🎴 移除卡片圖示，視覺更簡潔
+- 🏷️ 新增專案分類與工具標籤（膠囊型色塊設計）
+- 🐛 修正 Modal 滾動條圓角問題
+- 📊 專案卡片固定比例 4:3，桌機版每行 4 張
+- ✨ 新增卡片 Hover 動畫效果
 
 ## 🎨 設計特色
 
@@ -85,10 +89,13 @@ git push origin main
 ```
 VibeCoding/
 ├── pages/
-│   └── bmc-workshop.html    # 主要網頁
-├── CHANGELOG.md             # 更新日誌
-├── README.md                # 專案說明
-└── LICENSE                  # 授權文件
+│   └── bmc-workshop.html       # 主要網頁
+├── assets/
+│   └── images/
+│       └── VibeCodingworkshop/ # 專案截圖
+├── CHANGELOG.md                # 更新日誌
+├── README.md                   # 專案說明
+└── LICENSE                     # 授權文件
 ```
 
 ## 🛠️ 技術棧
