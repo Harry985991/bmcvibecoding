@@ -546,6 +546,35 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            display: inline;
+        }
+
+        .modal-title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .modal-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .modal-category-badge {
+            background: #F0E7FF;
+            color: #7B2CBF;
+        }
+
+        .modal-tool-badge {
+            background: #E8E8E8;
+            color: #555;
         }
 
         .modal-meta {
@@ -561,14 +590,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .modal-category {
-            background: #F0E7FF;
-            padding: 4px 12px;
-            border-radius: 12px;
-            color: #9D4EDD;
-            font-weight: 600;
         }
 
         .modal-description {
@@ -653,6 +674,11 @@
 
             .modal-title {
                 font-size: 28px;
+            }
+
+            .modal-badge {
+                font-size: 12px;
+                padding: 4px 10px;
             }
 
             .modal-links {
@@ -1077,13 +1103,16 @@
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body">
-                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-title-row">
+                    <h2 class="modal-title" id="modalTitle"></h2>
+                    <span class="modal-badge modal-category-badge" id="modalCategoryBadge"></span>
+                    <span class="modal-badge modal-tool-badge" id="modalToolBadge"></span>
+                </div>
                 <div class="modal-meta">
                     <div class="modal-author">
                         <span>👤</span>
                         <span id="modalAuthor"></span>
                     </div>
-                    <div class="modal-category" id="modalCategory"></div>
                 </div>
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-links">
@@ -1329,6 +1358,7 @@
                 title: 'Workshop Agenda 頁面',
                 author: 'Harry Chao',
                 category: 'Web',
+                tool: 'Cursor',
                 description: '這是一個用來整理 workshop 會議 Agenda 的網頁。每個議程都做成一張卡片，點一下就能看到該環節的簡介，還有相關的檔案或參考連結，讓你不用翻資料，也能快速掌握會議流程和重點內容。',
                 image: '../assets/images/VibeCodingworkshop/meeting-agenda.png',
                 placeholder: '📊',
@@ -1342,6 +1372,7 @@
                 title: 'Excel 資料清理工具',
                 author: 'Anonymous',
                 category: 'Automation',
+                tool: '',
                 description: '自動清理和標準化 Excel 資料，節省人工處理時間。可以批次處理多個工作表，自動偵測並修正常見的資料格式問題。',
                 image: '../assets/images/VibeCodingworkshop/excel-cleaner.png',
                 placeholder: '🔄',
@@ -1355,6 +1386,7 @@
                 title: '銷售數據儀表板',
                 author: 'Anonymous',
                 category: 'Analytics',
+                tool: '',
                 description: '即時顯示銷售數據，支援多維度分析和互動式圖表。提供多種視覺化圖表，包括折線圖、長條圖、圓餅圖等，讓數據分析更直覺。',
                 image: '../assets/images/VibeCodingworkshop/sales-dashboard.png',
                 placeholder: '📈',
@@ -1368,6 +1400,7 @@
                 title: '財務分析報表',
                 author: 'Anonymous',
                 category: 'Analytics',
+                tool: '',
                 description: '自動生成財務報表和趨勢分析圖表。整合多個資料來源，自動計算財務指標，並產生專業的報表文件。',
                 image: '../assets/images/VibeCodingworkshop/finance-report.png',
                 placeholder: '💹',
@@ -1381,6 +1414,7 @@
                 title: '待辦事項管理 App',
                 author: 'Anonymous',
                 category: 'Productivity',
+                tool: '',
                 description: '簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。可以設定截止日期、重複任務，並與行事曆同步。',
                 image: '../assets/images/VibeCodingworkshop/todo-app.png',
                 placeholder: '✅',
@@ -1394,6 +1428,7 @@
                 title: '番茄鐘計時器',
                 author: 'Anonymous',
                 category: 'Productivity',
+                tool: '',
                 description: '幫助您專注工作，提升效率的番茄工作法計時器。可自訂工作和休息時間，記錄每日完成的番茄鐘數量。',
                 image: '../assets/images/VibeCodingworkshop/pomodoro.png',
                 placeholder: '⏰',
@@ -1407,6 +1442,7 @@
                 title: '筆記應用',
                 author: 'Anonymous',
                 category: 'Productivity',
+                tool: '',
                 description: '支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。提供即時預覽、標籤分類、全文搜尋等功能。',
                 image: '../assets/images/VibeCodingworkshop/notes-app.png',
                 placeholder: '📝',
@@ -1420,6 +1456,7 @@
                 title: '互動式小遊戲',
                 author: 'Anonymous',
                 category: 'Web',
+                tool: '',
                 description: '使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。包含碰撞偵測、計分系統、音效等遊戲元素。',
                 image: '../assets/images/VibeCodingworkshop/game.png',
                 placeholder: '🎮',
@@ -1433,6 +1470,7 @@
                 title: '個人作品集網站',
                 author: 'Anonymous',
                 category: 'Web',
+                tool: '',
                 description: '展示您的技能和專案的精美作品集網站模板。採用現代化設計，支援響應式排版，完美呈現在各種裝置上。',
                 image: '../assets/images/VibeCodingworkshop/portfolio.png',
                 placeholder: '🎨',
@@ -1446,6 +1484,7 @@
                 title: '登陸頁生成器',
                 author: 'Anonymous',
                 category: 'Web',
+                tool: '',
                 description: '快速創建專業的產品登陸頁面。提供多種精美模板，拖拉即可完成排版，內建表單和分析功能。',
                 image: '../assets/images/VibeCodingworkshop/landing-page.png',
                 placeholder: '🌐',
@@ -1466,7 +1505,8 @@
             const modalImage = document.getElementById('modalImage');
             const modalTitle = document.getElementById('modalTitle');
             const modalAuthor = document.getElementById('modalAuthor');
-            const modalCategory = document.getElementById('modalCategory');
+            const modalCategoryBadge = document.getElementById('modalCategoryBadge');
+            const modalToolBadge = document.getElementById('modalToolBadge');
             const modalDescription = document.getElementById('modalDescription');
             const videoBtn = document.getElementById('modalVideoBtn');
             const demoBtn = document.getElementById('modalDemoBtn');
@@ -1475,7 +1515,16 @@
             // 設定內容
             modalTitle.textContent = project.title;
             modalAuthor.textContent = project.author;
-            modalCategory.textContent = project.category;
+            modalCategoryBadge.textContent = project.category;
+            
+            // 顯示或隱藏工具標籤
+            if (project.tool) {
+                modalToolBadge.textContent = project.tool;
+                modalToolBadge.style.display = 'inline-flex';
+            } else {
+                modalToolBadge.style.display = 'none';
+            }
+            
             modalDescription.textContent = project.description;
 
             // 處理圖片 - 如果有圖片就顯示，沒有就用 emoji 佔位
