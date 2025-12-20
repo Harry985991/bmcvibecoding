@@ -372,9 +372,16 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(4, 1fr); /* 桌機版：每行 4 張卡片 */
             gap: 30px;
             margin-bottom: 40px;
+        }
+
+        /* 平板版：每行 2 張卡片 */
+        @media (max-width: 1200px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         /* 新版圖片卡片樣式 */
@@ -852,10 +859,10 @@
             <!-- Showcase Tab Navigation -->
             <div class="tab-navigation" id="showcase">
                 <button class="tab-btn active" onclick="switchShowcaseTab('all')">ALL</button>
-                <button class="tab-btn" onclick="switchShowcaseTab('data')">資料轉換</button>
-                <button class="tab-btn" onclick="switchShowcaseTab('dashboard')">報表儀表板</button>
-                <button class="tab-btn" onclick="switchShowcaseTab('productivity')">生產力工具</button>
-                <button class="tab-btn" onclick="switchShowcaseTab('other')">其他</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('automation')">Automation</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('analytics')">Analytics</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('productivity')">Productivity</button>
+                <button class="tab-btn" onclick="switchShowcaseTab('web')">Web</button>
             </div>
 
             <!-- Showcase Tab Content: ALL -->
@@ -937,16 +944,9 @@
                 </div>
             </div>
 
-            <!-- Showcase Tab Content: 資料轉換 -->
-            <div class="tab-content" id="showcase-data">
+            <!-- Showcase Tab Content: Automation -->
+            <div class="tab-content" id="showcase-automation">
                 <div class="cards-grid">
-                    <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
-                        <div class="card-placeholder">📊</div>
-                        <div class="card-overlay">
-                            <h3 class="card-title">會議 Agenda 網頁</h3>
-                        </div>
-                    </div>
-
                     <div class="command-card" onclick="openModal('excel-cleaner')" style="background-image: url('../assets/images/VibeCodingworkshop/excel-cleaner.png');">
                         <div class="card-placeholder">🔄</div>
                         <div class="card-overlay">
@@ -956,8 +956,8 @@
                 </div>
             </div>
 
-            <!-- Showcase Tab Content: 報表儀表板 -->
-            <div class="tab-content" id="showcase-dashboard">
+            <!-- Showcase Tab Content: Analytics -->
+            <div class="tab-content" id="showcase-analytics">
                 <div class="cards-grid">
                     <div class="command-card" onclick="openModal('sales-dashboard')" style="background-image: url('../assets/images/VibeCodingworkshop/sales-dashboard.png');">
                         <div class="card-placeholder">📈</div>
@@ -1001,9 +1001,16 @@
                 </div>
             </div>
 
-            <!-- Showcase Tab Content: 其他 -->
-            <div class="tab-content" id="showcase-other">
+            <!-- Showcase Tab Content: Web -->
+            <div class="tab-content" id="showcase-web">
                 <div class="cards-grid">
+                    <div class="command-card" onclick="openModal('csv-converter')" style="background-image: url('../assets/images/VibeCodingworkshop/meeting-agenda.png');">
+                        <div class="card-placeholder">📊</div>
+                        <div class="card-overlay">
+                            <h3 class="card-title">會議 Agenda 網頁</h3>
+                        </div>
+                    </div>
+
                     <div class="command-card" onclick="openModal('game')" style="background-image: url('../assets/images/VibeCodingworkshop/game.png');">
                         <div class="card-placeholder">🎮</div>
                         <div class="card-overlay">
@@ -1290,7 +1297,7 @@
             'csv-converter': {
                 title: '會議 Agenda 網頁',
                 author: 'Harry Chao',
-                category: '資料轉換',
+                category: 'Web',
                 description: '其實 Vibe Coding 一點也不難，就算你是「程式小白」，只要用自然語言（講人話）下指令，AI 就能幫你快速生成網頁、程式或公式。',
                 image: '../assets/images/VibeCodingworkshop/meeting-agenda.png',
                 placeholder: '📊',
@@ -1303,7 +1310,7 @@
             'excel-cleaner': {
                 title: 'Excel 資料清理工具',
                 author: 'Anonymous',
-                category: '資料轉換',
+                category: 'Automation',
                 description: '自動清理和標準化 Excel 資料，節省人工處理時間。可以批次處理多個工作表，自動偵測並修正常見的資料格式問題。',
                 image: '../assets/images/VibeCodingworkshop/excel-cleaner.png',
                 placeholder: '🔄',
@@ -1316,7 +1323,7 @@
             'sales-dashboard': {
                 title: '銷售數據儀表板',
                 author: 'Anonymous',
-                category: '報表儀表板',
+                category: 'Analytics',
                 description: '即時顯示銷售數據，支援多維度分析和互動式圖表。提供多種視覺化圖表，包括折線圖、長條圖、圓餅圖等，讓數據分析更直覺。',
                 image: '../assets/images/VibeCodingworkshop/sales-dashboard.png',
                 placeholder: '📈',
@@ -1329,7 +1336,7 @@
             'finance-report': {
                 title: '財務分析報表',
                 author: 'Anonymous',
-                category: '報表儀表板',
+                category: 'Analytics',
                 description: '自動生成財務報表和趨勢分析圖表。整合多個資料來源，自動計算財務指標，並產生專業的報表文件。',
                 image: '../assets/images/VibeCodingworkshop/finance-report.png',
                 placeholder: '💹',
@@ -1342,7 +1349,7 @@
             'todo-app': {
                 title: '待辦事項管理 App',
                 author: 'Anonymous',
-                category: '生產力工具',
+                category: 'Productivity',
                 description: '簡潔易用的待辦事項工具，支援分類、優先級和提醒功能。可以設定截止日期、重複任務，並與行事曆同步。',
                 image: '../assets/images/VibeCodingworkshop/todo-app.png',
                 placeholder: '✅',
@@ -1355,7 +1362,7 @@
             'pomodoro': {
                 title: '番茄鐘計時器',
                 author: 'Anonymous',
-                category: '生產力工具',
+                category: 'Productivity',
                 description: '幫助您專注工作，提升效率的番茄工作法計時器。可自訂工作和休息時間，記錄每日完成的番茄鐘數量。',
                 image: '../assets/images/VibeCodingworkshop/pomodoro.png',
                 placeholder: '⏰',
@@ -1368,7 +1375,7 @@
             'notes-app': {
                 title: '筆記應用',
                 author: 'Anonymous',
-                category: '生產力工具',
+                category: 'Productivity',
                 description: '支援 Markdown 的雲端筆記應用，隨時隨地記錄想法。提供即時預覽、標籤分類、全文搜尋等功能。',
                 image: '../assets/images/VibeCodingworkshop/notes-app.png',
                 placeholder: '📝',
@@ -1381,7 +1388,7 @@
             'game': {
                 title: '互動式小遊戲',
                 author: 'Anonymous',
-                category: '其他',
+                category: 'Web',
                 description: '使用 JavaScript 創建的趣味小遊戲，適合學習遊戲開發基礎。包含碰撞偵測、計分系統、音效等遊戲元素。',
                 image: '../assets/images/VibeCodingworkshop/game.png',
                 placeholder: '🎮',
@@ -1394,7 +1401,7 @@
             'portfolio': {
                 title: '個人作品集網站',
                 author: 'Anonymous',
-                category: '其他',
+                category: 'Web',
                 description: '展示您的技能和專案的精美作品集網站模板。採用現代化設計，支援響應式排版，完美呈現在各種裝置上。',
                 image: '../assets/images/VibeCodingworkshop/portfolio.png',
                 placeholder: '🎨',
@@ -1407,7 +1414,7 @@
             'landing-page': {
                 title: '登陸頁生成器',
                 author: 'Anonymous',
-                category: '其他',
+                category: 'Web',
                 description: '快速創建專業的產品登陸頁面。提供多種精美模板，拖拉即可完成排版，內建表單和分析功能。',
                 image: '../assets/images/VibeCodingworkshop/landing-page.png',
                 placeholder: '🌐',
