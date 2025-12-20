@@ -440,6 +440,12 @@
             align-items: center;
             justify-content: center;
             font-size: 80px;
+            /* 移除背景，讓卡片的背景圖片可以顯示 */
+            pointer-events: none; /* 讓點擊事件穿透 */
+        }
+
+        /* 當沒有背景圖片時，顯示漸層背景 */
+        .command-card:not([style*="background-image"]) .card-placeholder {
             background: linear-gradient(135deg, #E8E3F3 0%, #FFF5F0 100%);
         }
 

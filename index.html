@@ -777,6 +777,7 @@ main {
   const categoryInput = document.getElementById('toolCategory');
   // order input removed; order managed via drag-and-drop only
   const modalTitle = document.getElementById('modalTitle');
+  const deleteBtn = document.getElementById('deleteBtn');
   let lastFocusedElement = null;
 
   // prompt refs
@@ -785,6 +786,7 @@ main {
   const pDesc = document.getElementById('promptDesc');
   const pLink = document.getElementById('promptLink');
   const pCategory = document.getElementById('promptCategory');
+  const promptDeleteBtn = document.getElementById('promptDeleteBtn');
   const allPromptsContainer = document.getElementById('allPromptsContainer');
   // category -> color mapping (Chinese labels)
   const CATEGORY_COLORS = {
@@ -1047,12 +1049,14 @@ main {
       pDesc.value = t.desc || '';
       pLink.value = t.link || '';
       if (pCategory) pCategory.value = t.category || '';
+      if (promptDeleteBtn) promptDeleteBtn.style.display = '';
     } else {
       title.textContent = '新增 Prompt';
       pName.value = '';
       pDesc.value = '';
       pLink.value = '';
       if (pCategory) pCategory.value = '';
+      if (promptDeleteBtn) promptDeleteBtn.style.display = 'none';
     }
     pName.focus();
     document.addEventListener('focus', enforceFocus, true);
@@ -1152,6 +1156,7 @@ main {
       descInput.value = t.desc || '';
       linkInput.value = t.link || '';
       if (categoryInput) categoryInput.value = t.category || '';
+      if (deleteBtn) deleteBtn.style.display = '';
       // order handled by drag-and-drop
     } else {
       modalTitle.textContent = '新增工具';
@@ -1159,6 +1164,7 @@ main {
       descInput.value = '';
       linkInput.value = '';
       if (categoryInput) categoryInput.value = '';
+      if (deleteBtn) deleteBtn.style.display = 'none';
       // order default handled later
     }
     nameInput.focus();
@@ -1415,6 +1421,13 @@ main {
   document.getElementById('addBtn').addEventListener('click', () => openModal(null));
   document.getElementById('cancelBtn').addEventListener('click', closeModal);
   document.getElementById('saveBtn').addEventListener('click', saveTool);
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      if (editIndex === null) return;
+      deleteTool(editIndex);
+      closeModal();
+    });
+  }
   // 匯入/匯出已移至 Settings
   // 卡片內的執行按鈕
   document.getElementById('exportAllRun').addEventListener('click', (e)=>{ e.preventDefault(); exportAll(); });
@@ -1424,6 +1437,13 @@ main {
   document.getElementById('promptAddBtn').addEventListener('click', () => openPromptModal(null));
   document.getElementById('promptCancelBtn').addEventListener('click', closePromptModal);
   document.getElementById('promptSaveBtn').addEventListener('click', savePrompt);
+  if (promptDeleteBtn) {
+    promptDeleteBtn.addEventListener('click', () => {
+      if (promptEditIndex === null) return;
+      deletePrompt(promptEditIndex);
+      closePromptModal();
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
