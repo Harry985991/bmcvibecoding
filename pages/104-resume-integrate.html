@@ -1,0 +1,3110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>104匯出履歷整併工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .help-btn {
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .help-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .help-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .help-modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .help-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .help-modal-header h2 {
+            margin: 0;
+            color: #667eea;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .help-modal-body {
+            color: #333;
+            line-height: 1.8;
+        }
+
+        .help-modal-body p {
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            padding: 14px 24px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+        
+        .controls-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .controls-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .controls-status {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tabs {
+            display: flex;
+            background: #e9ecef;
+            padding: 0 30px;
+            overflow-x: auto;
+            flex: 0 0 auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: #495057;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 8px 20px 12px 20px;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            height: 100%;
+            min-height: 320px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .data-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .data-container .table-wrapper {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+            background: white;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        select.filter-input {
+            cursor: pointer;
+            padding: 5px 5px;
+        }
+
+        select.filter-input:hover {
+            border-color: #667eea;
+        }
+
+        th {
+            position: relative;
+            vertical-align: top;
+        }
+
+        .th-content {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: white;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .new-column {
+            background: #e8eaf6 !important;
+            font-weight: 600;
+        }
+        
+        th.new-column {
+            background: linear-gradient(135deg, #5e72e4 0%, #825ee4 100%) !important;
+            color: white;
+        }
+        
+        td.new-column {
+            background: #e8eaf6 !important;
+            color: #5e72e4;
+            border-left: 2px solid #c5cae9;
+        }
+
+        .new-job-row {
+            background: #ffe6e6 !important;
+        }
+
+        .editable-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .editable-cell:hover {
+            background: #e3f2fd !important;
+        }
+
+        .editable-cell input,
+        .editable-cell select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .editable-cell.missing-fresh-cell select {
+            border-color: #f0ad4e;
+            box-shadow: 0 0 0 2px rgba(240, 173, 78, 0.25);
+            background: #fff7e0;
+        }
+
+        .edu-add-row td {
+            background: #f8f9fa;
+            border-top: 2px dashed #dee2e6;
+        }
+        
+        .edu-add-row input {
+            width: 100%;
+            padding: 8px;
+            border: 2px dashed #17a2b8;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .edu-add-row button {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        
+        .wrap-cell {
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .editable-cell select {
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            color: #1976D2;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 104匯出履歷整併工具</h1>
+            <button class="help-btn" onclick="showHelpModal()">❓ 使用說明</button>
+        </div>
+
+        <!-- 幫助說明模態框 -->
+        <div id="helpModal" class="help-modal">
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h2>📖 使用說明</h2>
+                    <button class="close-btn" onclick="closeHelpModal()">&times;</button>
+                </div>
+                <div class="help-modal-body">
+                    <p><strong>📌 說明：</strong>此工作表會自動在「姓名」左側新增「月份」欄位，並在「應徵日期」右側新增多個分析欄位。</p>
+                    <p><strong>💡 提示：</strong>先匯入歷史資料（選填），再匯入新履歷資料，系統會自動合併並保留所有設定。</p>
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e9ecef;">
+                    <p><strong>📋 自動填充欄位說明：</strong></p>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>月份</strong>：從應徵日期自動提取</li>
+                        <li><strong>IDL</strong>：從「#職缺分類」比對填入</li>
+                        <li><strong>新鮮人（2y內）</strong>：根據工作經驗自動判斷</li>
+                        <li><strong>學校NEW</strong>：從「學歷對照」比對填入</li>
+                        <li><strong>目標學校</strong>：比對「#目標學校」清單</li>
+                        <li><strong>新鮮人職缺</strong>：從「#職缺分類」比對填入</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-inner">
+                <div class="controls-actions">
+                    <div class="file-input-wrapper">
+                        <label for="historyFileInput" class="btn btn-primary" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            📂 匯入歷史資料（含設定）
+                        </label>
+                        <input type="file" id="historyFileInput" accept=".xlsx,.xls">
+                    </div>
+                    <div class="file-input-wrapper">
+                        <label for="newFileInput" class="btn btn-primary">
+                            📄 匯入新履歷資料
+                        </label>
+                        <input type="file" id="newFileInput" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <button id="exportBtn" class="btn btn-success" disabled>
+                        💾 匯出 XLSX
+                    </button>
+                    <button id="clearFilterBtn" class="btn btn-primary" onclick="clearAllFilters()">
+                        🔄 清除所有篩選
+                    </button>
+                </div>
+                <div class="controls-status">
+                    <div id="historyInfo" class="status status-info" style="display: none;"></div>
+                    <div id="newFileInfo" class="status status-success" style="display: none;"></div>
+                    <div id="totalCountInfo" class="status status-info" style="display: none;"></div>
+                    <div id="dedupeInfo" class="status status-info" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="tab1">#履歷匯出資料</button>
+            <button class="tab" data-tab="tab2">#職缺分類</button>
+            <button class="tab" data-tab="tab3">#目標學校</button>
+            <button class="tab" data-tab="tab4">學歷對照</button>
+        </div>
+
+        <div id="tab1" class="tab-content active">
+            <div id="mainTableContainer" class="empty-state data-container">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3>尚未匯入資料</h3>
+                <p>請先匯入歷史資料（選填），再匯入新履歷資料</p>
+            </div>
+        </div>
+
+        <div id="tab2" class="tab-content">
+            <div class="info-box">
+                <strong>📌 說明：</strong>職缺分類工作表 - 自動提取職務名稱並設定屬性。<strong style="color: #dc3545;">紅色標示</strong>為新增職務，請確認並填寫資料。<strong>除A欄外，其他欄位皆可點選編輯。</strong>
+                <div id="jobConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
+            </div>
+            <div id="classifyTableContainer" class="empty-state data-container">
+                <h3>職缺分類</h3>
+                <p>匯入履歷資料後，此工作表會自動產生職務分類</p>
+            </div>
+        </div>
+
+        <div id="tab3" class="tab-content">
+            <div class="info-box">
+                <strong>📌 說明：</strong>目標學校工作表 - 用於管理目標學校列表。可以新增、編輯或刪除學校。
+            </div>
+            <div style="margin-bottom: 15px;">
+                <button id="addSchoolBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    ➕ 新增學校
+                </button>
+            </div>
+            <div id="schoolTableContainer" class="empty-state data-container">
+                <h3>目標學校</h3>
+                <p>此工作表預留給目標學校資料</p>
+            </div>
+        </div>
+
+        <div id="tab4" class="tab-content">
+            <div class="info-box">
+                <strong>📌 說明：</strong>學歷對照工作表 - 用於學歷資料的對照與轉換。可以新增、編輯或刪除學校對照。
+            </div>
+            <div style="margin-bottom: 15px;">
+                <button id="addEduBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    ➕ 新增對照
+                </button>
+                <button id="copyEduCompareBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #17a2b8 0%, #2ecc71 100%); margin-left: 8px;">
+                    📋 複製比斷
+                </button>
+            </div>
+            <div id="eduTableContainer" class="empty-state data-container">
+                <h3>學歷對照</h3>
+                <p>此工作表預留給學歷對照資料</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 應用程式封裝（IIFE） ==========
+        (function() {
+            'use strict';
+            
+            // ========== 常數定義 ==========
+            const Constants = {
+                // Excel 相關常數
+                EXCEL_DATE_EPOCH: 40000,
+                
+                // 工作表名稱
+                SHEET_NAMES: {
+                    RESUME: '#履歷匯出資料',
+                    JOB_CLASS: '#職缺分類',
+                    TARGET_SCHOOL: '#目標學校',
+                    EDU_MAPPING: '學歷對照'
+                },
+                
+                // 欄位名稱
+                COLUMNS: {
+                    MONTH: '月份',
+                    ID_104: '104代碼',
+                    NAME: '姓名',
+                    JOB_NAME: '應徵職務名稱',
+                    APPLY_DATE: '應徵日期',
+                    WORK_EXP: '工作經驗',
+                    IDL: 'IDL',
+                    FRESH_GRAD: '新鮮人（2y內）',
+                    TARGET_SCHOOL: '目標學校',
+                    FRESH_JOB: '新鮮人職缺',
+                    SCHOOL_NEW: '學校NEW',
+                    EDU_SCHOOL: '學歷學校名稱一'
+                },
+                
+                // 驗證規則
+                VALIDATION: {
+                    MAX_SCHOOL_NAME_LENGTH: 100,
+                    FRESH_GRADUATE_YEARS: 2
+                },
+                
+                // UI 相關
+                UI: {
+                    DEBOUNCE_DELAY: 300,
+                    DEFAULT_PAGE_SIZE: 100,
+                    LARGE_DATA_THRESHOLD: 500
+                },
+                
+                // 月份對應
+                MONTHS: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                
+                // 職系判斷關鍵字
+                DL_KEYWORDS: ['技術員', '倉管員', '品管員', '檢驗員', '助理', '作業員', '操機'],
+                
+                // 新鮮人判斷條件
+                FRESH_GRAD_PATTERNS: [
+                    '1~2年', '1-2年', '1到2年', '1至2年',
+                    '一年以下', '1年以下',
+                    '無', '無經驗', '無工作經驗',
+                    '0-1年', '0~1年', '0年'
+                ]
+            };
+            
+            // ========== 應用程式狀態 ==========
+            const AppState = {
+                workbookData: {
+                    '#履歷匯出資料': [],
+                    '#職缺分類': [],
+                    '#目標學校': [],
+                    '學歷對照': []
+                },
+                existingJobs: new Set(),
+                existingJobSettings: new Map(),
+                historyLoaded: false
+            };
+            
+            // 為了向後兼容，將狀態映射到全域變數
+            let workbookData = AppState.workbookData;
+            let existingJobs = AppState.existingJobs;
+            let existingJobSettings = AppState.existingJobSettings;
+            let historyLoaded = AppState.historyLoaded;
+
+            // ========== 錯誤處理 ==========
+            const ErrorHandler = {
+                /**
+                 * 統一錯誤處理函數
+                 * @param {string} operation - 操作名稱
+                 * @param {Error} error - 錯誤對象
+                 * @param {boolean} showAlert - 是否顯示警告框
+                 */
+                handle(operation, error, showAlert = true) {
+                    console.error(`[錯誤] ${operation}:`, error);
+                    
+                    if (showAlert) {
+                        const userMessage = this.getUserMessage(operation, error);
+                        alert(userMessage);
+                    }
+                    
+                    this.logError(operation, error);
+                },
+                
+                /**
+                 * 獲取用戶友好的錯誤訊息
+                 */
+                getUserMessage(operation, error) {
+                    const errorMessages = {
+                        '檔案上傳': '檔案上傳失敗，請確認檔案格式是否正確（需為 .xlsx 檔案）',
+                        '資料處理': '資料處理失敗，請檢查檔案內容是否符合要求',
+                        '資料儲存': '資料儲存失敗，請重試',
+                        '資料載入': '資料載入失敗，請重新整理頁面',
+                        '檔案匯出': '檔案匯出失敗，請重試',
+                        '篩選處理': '篩選處理失敗，請重試'
+                    };
+                    
+                    return errorMessages[operation] || `操作失敗：${operation}。錯誤訊息：${error.message}`;
+                },
+                
+                /**
+                 * 記錄錯誤
+                 */
+                logError(operation, error) {
+                    const errorLog = {
+                        timestamp: new Date().toISOString(),
+                        operation: operation,
+                        message: error.message,
+                        stack: error.stack
+                    };
+                    console.log('Error logged:', errorLog);
+                }
+            };
+            
+            // ========== 工具函數 ==========
+            const Utils = {
+                /**
+                 * 防抖函數
+                 */
+                debounce(func, wait) {
+                    let timeout;
+                    return function executedFunction(...args) {
+                        const later = () => {
+                            clearTimeout(timeout);
+                            func(...args);
+                        };
+                        clearTimeout(timeout);
+                        timeout = setTimeout(later, wait);
+                    };
+                },
+                
+                /**
+                 * 驗證輸入
+                 */
+                validateInput(value, maxLength) {
+                    if (!value || value.trim() === '') {
+                        return { valid: false, message: '輸入不可為空' };
+                    }
+                    
+                    if (maxLength && value.length > maxLength) {
+                        return { valid: false, message: `輸入長度不可超過 ${maxLength} 個字元` };
+                    }
+                    
+                    return { valid: true };
+                },
+                
+                /**
+                 * 驗證檔案類型
+                 */
+                validateFile(file, allowedExtensions = ['.xlsx', '.xls']) {
+                    if (!file) {
+                        return { valid: false, message: '請選擇檔案' };
+                    }
+                    
+                    const fileName = file.name.toLowerCase();
+                    const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+                    
+                    if (!isValid) {
+                        return { 
+                            valid: false, 
+                            message: `檔案格式不正確，請上傳 ${allowedExtensions.join(' 或 ')} 格式的檔案` 
+                        };
+                    }
+                    
+                    // 檢查檔案大小（限制 10MB）
+                    const maxSize = 10 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        return { 
+                            valid: false, 
+                            message: '檔案大小超過限制（最大 10MB）' 
+                        };
+                    }
+                    
+                    return { valid: true };
+                },
+                
+                /**
+                 * 驗證學校名稱
+                 */
+                validateSchoolName(name) {
+                    const validation = this.validateInput(name, Constants.VALIDATION.MAX_SCHOOL_NAME_LENGTH);
+                    if (!validation.valid) {
+                        return validation;
+                    }
+                    
+                    // 檢查是否包含特殊字元（但允許中文、英文、數字、空格、括號）
+                    const invalidChars = /[<>'"&;]/;
+                    if (invalidChars.test(name)) {
+                        return { 
+                            valid: false, 
+                            message: '學校名稱不可包含特殊字元（<>\'\"&;）' 
+                        };
+                    }
+                    
+                    return { valid: true };
+                },
+                
+                /**
+                 * 驗證工作表資料
+                 */
+                validateWorksheetData(data, requiredHeaders = []) {
+                    if (!data || !Array.isArray(data) || data.length === 0) {
+                        return { 
+                            valid: false, 
+                            message: '工作表資料為空' 
+                        };
+                    }
+                    
+                    if (requiredHeaders.length > 0) {
+                        const headers = data[0];
+                        const missingHeaders = [];
+                        
+                        requiredHeaders.forEach(required => {
+                            if (!headers.includes(required)) {
+                                missingHeaders.push(required);
+                            }
+                        });
+                        
+                        if (missingHeaders.length > 0) {
+                            return { 
+                                valid: false, 
+                                message: `缺少必要欄位：${missingHeaders.join('、')}` 
+                            };
+                        }
+                    }
+                    
+                    return { valid: true };
+                },
+                
+                /**
+                 * 清理和驗證文字輸入（防止 XSS）
+                 */
+                sanitizeInput(input) {
+                    if (!input) return '';
+                    
+                    return String(input)
+                        .trim()
+                        .replace(/[<>]/g, '') // 移除可能的 HTML 標籤
+                        .substring(0, 500); // 限制最大長度
+                },
+                
+                /**
+                 * 判斷是否為 Excel 日期格式
+                 */
+                isExcelDate(value) {
+                    return typeof value === 'number' && value > Constants.EXCEL_DATE_EPOCH;
+                },
+                
+                /**
+                 * 格式化 Excel 日期
+                 */
+                formatExcelDate(dateValue) {
+                    if (!this.isExcelDate(dateValue)) {
+                        return dateValue;
+                    }
+                    
+                    const date = new Date((dateValue - 25569) * 86400 * 1000);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}/${month}/${day}`;
+                },
+                
+                /**
+                 * 安全的 localStorage 操作
+                 */
+                safeLocalStorage: {
+                    setItem(key, value) {
+                        try {
+                            localStorage.setItem(key, JSON.stringify(value));
+                            return true;
+                        } catch (error) {
+                            ErrorHandler.handle('資料儲存', error);
+                            return false;
+                        }
+                    },
+                    
+                    getItem(key, defaultValue = null) {
+                        try {
+                            const item = localStorage.getItem(key);
+                            return item ? JSON.parse(item) : defaultValue;
+                        } catch (error) {
+                            ErrorHandler.handle('資料載入', error, false);
+                            return defaultValue;
+                        }
+                    }
+                },
+                
+                /**
+                 * 判斷是否為 DL 職缺
+                 */
+                isDLJob(jobName) {
+                    return Constants.DL_KEYWORDS.some(keyword => 
+                        jobName && jobName.includes(keyword)
+                    );
+                },
+                
+                /**
+                 * 判斷是否為新鮮人
+                 */
+                isFreshGraduate(workExp) {
+                    if (!workExp) return true;
+                    
+                    const expStr = String(workExp);
+                    return Constants.FRESH_GRAD_PATTERNS.some(pattern => 
+                        expStr.includes(pattern)
+                    );
+                }
+            };
+
+
+        // 初始化預設學校列表（預設為空）
+        function initDefaultSchools() {
+            // 預設為空，不自動填入資料
+            // 僅在需要時初始化標題行
+        }
+
+        // 初始化學歷對照列表（預設為空）
+        function initEducationMapping() {
+            // 預設為空，不自動填入資料
+            // 僅在需要時初始化標題行
+        }
+
+        // Tab 切換功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // 移除所有 active
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // 添加 active
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // 檔案匯入
+        document.getElementById('historyFileInput').addEventListener('change', handleHistoryFileUpload);
+        document.getElementById('newFileInput').addEventListener('change', handleNewFileUpload);
+        
+        // 新增學校按鈕
+        document.getElementById('addSchoolBtn').addEventListener('click', addNewSchool);
+        
+        // 新增學歷對照按鈕
+        document.getElementById('addEduBtn').addEventListener('click', addNewEduMapping);
+        
+        // 複製比對指令
+        document.getElementById('copyEduCompareBtn').addEventListener('click', copyEduComparePrompt);
+
+        // ========== 檔案處理模組 ==========
+        const FileProcessor = {
+            /**
+             * 讀取工作表資料
+             */
+            readWorkbook(data) {
+                return XLSX.read(data, { type: 'array' });
+            },
+            
+            /**
+             * 匯入所有工作表
+             */
+            importAllSheets(workbook) {
+                workbook.SheetNames.forEach(sheetName => {
+                    const targetKey = mapHistorySheetName(sheetName);
+                    if (!targetKey) return;
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    workbookData[targetKey] = jsonData;
+                });
+            },
+            
+            /**
+             * 處理履歷資料
+             */
+            processResumeData() {
+                if (workbookData['#履歷匯出資料'].length === 0) return 0;
+                
+                // 正規化欄位名稱
+                workbookData['#履歷匯出資料'] = normalizeResumeHeaders(workbookData['#履歷匯出資料']);
+                workbookData['#履歷匯出資料'] = ensureAnalysisColumns(workbookData['#履歷匯出資料']);
+                
+                // 去重
+                const dedupeResult = dedupeBy104Key(workbookData['#履歷匯出資料']);
+                workbookData['#履歷匯出資料'] = dedupeResult.data;
+                
+                return dedupeResult.removedCount;
+            },
+            
+            /**
+             * 載入職缺設定
+             */
+            loadJobSettings() {
+                if (workbookData['#職缺分類'].length <= 1) return 0;
+                
+                const classifyData = workbookData['#職缺分類'];
+                const headers = classifyData[0];
+                const rows = classifyData.slice(1);
+                
+                rows.forEach(row => {
+                    const jobName = row[0];
+                    if (jobName) {
+                        existingJobs.add(jobName);
+                        existingJobSettings.set(jobName, {
+                            category: row[1] || 'IDL',
+                            openToFreshGrad: row[2] || '',
+                            month: row[3] || ''
+                        });
+                    }
+                });
+                
+                return existingJobs.size;
+            },
+            
+            /**
+             * 顯示所有資料表
+             */
+            displayAllTables() {
+                if (workbookData['#履歷匯出資料'].length > 0) {
+                    displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                }
+                
+                if (workbookData['#職缺分類'].length > 0) {
+                    displayJobClassificationTable(workbookData['#職缺分類']);
+                }
+                
+                if (workbookData['#目標學校'].length > 0) {
+                    displaySchoolTable(workbookData['#目標學校']);
+                }
+                
+                if (workbookData['學歷對照'].length > 0) {
+                    displayEduMappingTable(workbookData['學歷對照']);
+                }
+            },
+            
+            /**
+             * 更新狀態資訊
+             */
+            updateStatusInfo(jobCount, resumeCount) {
+                const historyInfo = document.getElementById('historyInfo');
+                historyInfo.textContent = `📂 已載入歷史資料：${jobCount} 個職務，${resumeCount} 筆履歷`;
+                historyInfo.style.display = 'block';
+                historyInfo.className = 'status status-info';
+                
+                document.getElementById('exportBtn').disabled = false;
+            }
+        };
+
+        // 匯入歷史資料（含所有工作表設定）
+        function handleHistoryFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 驗證檔案
+            const fileValidation = Utils.validateFile(file);
+            if (!fileValidation.valid) {
+                alert(fileValidation.message);
+                e.target.value = ''; // 清空檔案選擇
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = FileProcessor.readWorkbook(data);
+                    
+                    // 驗證工作表是否存在
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('檔案中沒有找到任何工作表');
+                    }
+                    
+                    // 匯入所有工作表
+                    FileProcessor.importAllSheets(workbook);
+                    
+                    // 驗證履歷資料
+                    if (workbookData['#履歷匯出資料'].length > 0) {
+                        const dataValidation = Utils.validateWorksheetData(
+                            workbookData['#履歷匯出資料']
+                        );
+                        if (!dataValidation.valid) {
+                            console.warn('履歷資料驗證警告：', dataValidation.message);
+                        }
+                    }
+                    
+                    // 處理履歷資料
+                    const removedCount = FileProcessor.processResumeData();
+                    if (removedCount > 0) {
+                        showDedupeInfo(removedCount, '歷史資料');
+                    }
+                    
+                    // 載入職缺設定
+                    const jobCount = FileProcessor.loadJobSettings();
+                    
+                    // 依規則更新四個欄位
+                    applyDerivedFieldUpdates();
+                    
+                    // 顯示所有資料表
+                    FileProcessor.displayAllTables();
+                    
+                    historyLoaded = true;
+                    
+                    // 更新狀態資訊
+                    const resumeCount = workbookData['#履歷匯出資料'].length - 1;
+                    FileProcessor.updateStatusInfo(jobCount, resumeCount);
+                    
+                } catch (error) {
+                    ErrorHandler.handle('檔案上傳', error);
+                    e.target.value = ''; // 清空檔案選擇
+                }
+            };
+            
+            reader.onerror = function() {
+                ErrorHandler.handle('檔案讀取', new Error('無法讀取檔案'));
+                e.target.value = '';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 匯入新履歷資料
+        function handleNewFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 驗證檔案
+            const fileValidation = Utils.validateFile(file);
+            if (!fileValidation.valid) {
+                alert(fileValidation.message);
+                e.target.value = ''; // 清空檔案選擇
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = FileProcessor.readWorkbook(data);
+                    
+                    // 驗證工作表是否存在
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('檔案中沒有找到任何工作表');
+                    }
+                    
+                    // 處理新檔案資料
+                    let processedData = processNewFileData(workbook);
+                    
+                    // 驗證處理後的資料
+                    const dataValidation = Utils.validateWorksheetData(processedData);
+                    if (!dataValidation.valid) {
+                        throw new Error(dataValidation.message);
+                    }
+                    
+                    // 合併資料
+                    mergeWithExistingData(processedData);
+                    
+                    // 正規化和去重
+                    const removedCount = normalizeAndDedupe();
+                    showDedupeInfo(removedCount, '新履歷資料');
+                    
+                    // 生成職缺分類並更新衍生欄位
+                    generateJobClassification(workbookData['#履歷匯出資料']);
+                    applyDerivedFieldUpdates();
+                    
+                    // 顯示資料
+                    displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                    
+                    // 更新介面狀態
+                    updateNewFileStatus(file.name, processedData.length - 1);
+                    
+                } catch (error) {
+                    ErrorHandler.handle('檔案上傳', error);
+                    e.target.value = ''; // 清空檔案選擇
+                }
+            };
+            
+            reader.onerror = function() {
+                ErrorHandler.handle('檔案讀取', new Error('無法讀取檔案'));
+                e.target.value = '';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        /**
+         * 處理新檔案資料
+         */
+        function processNewFileData(workbook) {
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            let jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            // 清理和正規化資料
+            jsonData = cleanData(jsonData);
+            jsonData = normalizeHeaderRow(jsonData);
+            jsonData = expandMultiApplyRecords(jsonData);
+            
+            return processData(jsonData);
+        }
+        
+        /**
+         * 合併新資料與現有資料
+         */
+        function mergeWithExistingData(processedData) {
+            if (historyLoaded && workbookData['#履歷匯出資料'].length > 0) {
+                const existingHeaders = workbookData['#履歷匯出資料'][0];
+                const newHeaders = processedData[0];
+                
+                // 檢查標題是否一致
+                const headersMatch = JSON.stringify(existingHeaders) === JSON.stringify(newHeaders);
+                
+                if (headersMatch) {
+                    // 合併資料（跳過新資料的標題行）
+                    const newRows = processedData.slice(1);
+                    workbookData['#履歷匯出資料'].push(...newRows);
+                } else {
+                    // 標題不一致，覆蓋（使用新格式）
+                    workbookData['#履歷匯出資料'] = processedData;
+                }
+            } else {
+                // 沒有歷史資料，直接使用
+                workbookData['#履歷匯出資料'] = processedData;
+            }
+        }
+        
+        /**
+         * 正規化欄位名稱並去重
+         */
+        function normalizeAndDedupe() {
+            workbookData['#履歷匯出資料'] = normalizeResumeHeaders(workbookData['#履歷匯出資料']);
+            workbookData['#履歷匯出資料'] = ensureAnalysisColumns(workbookData['#履歷匯出資料']);
+            
+            const dedupeResult = dedupeBy104Key(workbookData['#履歷匯出資料']);
+            workbookData['#履歷匯出資料'] = dedupeResult.data;
+            
+            return dedupeResult.removedCount;
+        }
+        
+        /**
+         * 更新新檔案狀態資訊
+         */
+        function updateNewFileStatus(fileName, resumeCount) {
+            const newFileInfo = document.getElementById('newFileInfo');
+            newFileInfo.textContent = `✅ 已載入新資料：${fileName} (${resumeCount} 筆履歷)`;
+            newFileInfo.style.display = 'block';
+            newFileInfo.className = 'status status-success';
+            
+            document.getElementById('exportBtn').disabled = false;
+        }
+
+        // 資料清理函數
+        function cleanData(data) {
+            // 移除空行
+            data = data.filter(row => {
+                return row.some(cell => cell !== null && cell !== undefined && cell !== '');
+            });
+            
+            // 確保至少有標題行
+            if (data.length === 0) {
+                return [[]];
+            }
+            
+            return data;
+        }
+        
+        // 判斷日期年份是否為目標年份
+        function isYear(dateValue, targetYear) {
+            if (!dateValue) return false;
+            
+            // Excel 日期數字格式
+            if (Utils.isExcelDate(dateValue)) {
+                const date = XLSX.SSF.parse_date_code(dateValue);
+                return date && date.y === targetYear;
+            }
+            
+            const dateStr = dateValue.toString().trim();
+            if (!dateStr) return false;
+            
+            // 格式：2026/01/14 或 2026-01-14
+            let match = dateStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (match) {
+                return parseInt(match[1], 10) === targetYear;
+            }
+            
+            // 格式：01/14/2026
+            match = dateStr.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+            if (match) {
+                return parseInt(match[3], 10) === targetYear;
+            }
+            
+            return false;
+        }
+
+        function parseIndexToken(token) {
+            if (!token) return null;
+            const digit = token.match(/\d+/);
+            if (digit) return parseInt(digit[0], 10);
+            
+            const map = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+            if (token.length === 1 && map[token]) return map[token];
+            if (token === '十') return 10;
+            return null;
+        }
+
+        function extractIndexByKeyword(text, keyword) {
+            const regex = new RegExp(keyword + '([一二三四五六七八九十\\d]+)');
+            const match = text.match(regex);
+            if (!match) return null;
+            return parseIndexToken(match[1]);
+        }
+
+        // 針對「一列多筆應徵」格式，展開為「一筆應徵一列」並只保留 2026 年
+        function expandMultiApplyRecords(data) {
+            if (!data || data.length < 2) return data;
+            
+            const headers = data[0].map(h => (h !== null && h !== undefined) ? h.toString() : '');
+            const normalized = headers.map(h => h.replace(/\s+/g, ''));
+            
+            const jobNameCols = new Map();   // index -> column
+            const applyDateCols = new Map(); // index -> column
+            
+            normalized.forEach((text, colIndex) => {
+                if (text.includes('職務名稱')) {
+                    const idx = extractIndexByKeyword(text, '職務名稱');
+                    if (idx !== null) jobNameCols.set(idx, colIndex);
+                }
+                if (text.includes('應徵日期')) {
+                    let idx = extractIndexByKeyword(text, '應徵職務');
+                    if (idx === null) idx = extractIndexByKeyword(text, '應徵日期');
+                    if (idx !== null) applyDateCols.set(idx, colIndex);
+                }
+            });
+            
+            const pairIndices = Array.from(jobNameCols.keys()).filter(idx => applyDateCols.has(idx)).sort((a, b) => a - b);
+            const isMulti = pairIndices.length > 1;
+            if (!isMulti) return data;
+            
+            // 基礎欄位：排除所有職務名稱與應徵日期欄
+            const excluded = new Set([...jobNameCols.values(), ...applyDateCols.values()]);
+            const baseColIndexes = headers.map((_, i) => i).filter(i => !excluded.has(i));
+            const baseHeaders = baseColIndexes.map(i => headers[i]);
+            
+            // 使用第一組作為標準欄位名稱
+            const jobHeader = '應徵職務名稱';
+            const dateHeader = '應徵日期';
+            const newHeaders = [...baseHeaders, jobHeader, dateHeader];
+            
+            const rows = data.slice(1);
+            const outputRows = [];
+            
+            rows.forEach(row => {
+                pairIndices.forEach(idx => {
+                    const jobCol = jobNameCols.get(idx);
+                    const dateCol = applyDateCols.get(idx);
+                    const jobValue = row[jobCol];
+                    const dateValue = row[dateCol];
+                    
+                    if (!dateValue) return;
+                    if (!isYear(dateValue, 2026)) return;
+                    
+                    const baseValues = baseColIndexes.map(i => row[i]);
+                    outputRows.push([...baseValues, jobValue, dateValue]);
+                });
+            });
+            
+            if (outputRows.length === 0) {
+                alert('⚠️ 未找到 2026 年的應徵紀錄，請確認資料內容或年份篩選。');
+            }
+            
+            return [newHeaders, ...outputRows];
+        }
+
+        // 檢查是否需要跳過第一列提醒資訊
+        function normalizeHeaderRow(data) {
+            if (!data || data.length < 2) return data;
+            
+            const row0 = data[0] || [];
+            const row1 = data[1] || [];
+            
+            const nonEmpty0 = row0.filter(cell => cell !== null && cell !== undefined && cell.toString().trim() !== '');
+            const nonEmpty1 = row1.filter(cell => cell !== null && cell !== undefined && cell.toString().trim() !== '');
+            
+            const row0Text = nonEmpty0.map(c => c.toString().trim()).join(' ');
+            const headerHints = ['姓名', '性別', '手機', '電話', '通訊地址', 'email', '工作經驗', '國籍', '學歷', '職務名稱', '應徵日期'];
+            const row1HasHint = row1.some(cell => {
+                if (!cell) return false;
+                const text = cell.toString();
+                return headerHints.some(h => text.includes(h));
+            });
+            
+            const row0LooksLikeNote = nonEmpty0.length === 1 &&
+                row0Text.length > 10 &&
+                (row0Text.includes('提醒') || row0Text.includes('個人資料保護') || row0Text.includes('求職者') || row0Text.includes('履歷'));
+            
+            if (row0LooksLikeNote && (row1HasHint || nonEmpty1.length >= 3)) {
+                return data.slice(1);
+            }
+            
+            return data;
+        }
+        
+        // 將歷史檔活頁簿名稱對應到系統內部鍵值
+        function mapHistorySheetName(sheetName) {
+            if (!sheetName) return null;
+            const normalized = sheetName.toString().replace(/\s+/g, '').replace(/#/g, '');
+            const mapping = {
+                '履歷匯出資料': '#履歷匯出資料',
+                '職缺分類': '#職缺分類',
+                '目標學校': '#目標學校',
+                '學歷對照': '學歷對照'
+            };
+            return mapping[normalized] || null;
+        }
+        
+        // 正規化履歷匯出資料欄位名稱
+        function normalizeResumeHeaders(data) {
+            if (!data || data.length === 0) return data;
+            const headers = data[0];
+            let changed = false;
+            
+            for (let i = 0; i < headers.length; i++) {
+                const headerStr = headers[i] ? headers[i].toString().trim() : '';
+                if (headerStr === '職務名稱一') {
+                    headers[i] = '應徵職務名稱';
+                    changed = true;
+                } else if (headerStr === '應徵職務一應徵日期') {
+                    headers[i] = '應徵日期';
+                    changed = true;
+                } else if (headerStr.includes('新鮮人') && headerStr.includes('2') && headerStr.includes('內')) {
+                    headers[i] = '新鮮人（2y內）';
+                    changed = true;
+                }
+            }
+            
+            if (changed) {
+                data[0] = headers;
+            }
+            
+            return data;
+        }
+        
+        // 確保四個分析欄位存在
+        function ensureAnalysisColumns(data) {
+            if (!data || data.length === 0) return data;
+            const headers = data[0];
+            const required = ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW'];
+            const existing = new Set(headers.map(h => h ? h.toString() : ''));
+            
+            let insertIndex = headers.findIndex(h => h && h.toString().includes('應徵日期'));
+            if (insertIndex === -1) insertIndex = headers.length - 1;
+            let currentIndex = insertIndex + 1;
+            
+            required.forEach(col => {
+                if (!existing.has(col)) {
+                    headers.splice(currentIndex, 0, col);
+                    data.slice(1).forEach(row => {
+                        row.splice(currentIndex, 0, '');
+                    });
+                    currentIndex++;
+                }
+            });
+            
+            data[0] = headers;
+            return data;
+        }
+        
+        // 依規則更新四個欄位
+        function applyDerivedFieldUpdates() {
+            updateResumeDataWithJobInfo();
+            updateResumeDataWithSchoolInfo();
+            
+            const freshGradResult = updateFreshGraduateStatus();
+            if (!freshGradResult.success) {
+                console.warn('新鮮人狀態更新失敗：', freshGradResult.message);
+            }
+        }
+
+        // 處理資料並添加新欄位
+        function processData(data) {
+            if (data.length === 0) return [[]];
+            
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            // 找到「應徵日期」欄位的索引（通常是最後一欄）
+            let dateColumnIndex = headers.length - 1;
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i] && headers[i].toString().includes('應徵日期')) {
+                    dateColumnIndex = i;
+                    break;
+                }
+            }
+            
+            // 建立新的標題行
+            // 在第一欄插入「月份」
+            const newHeaders = ['月份', ...headers];
+            
+            // 確保有「104代碼」欄位（若無，插在「姓名」之後）
+            let idColumnIndex = -1;
+            let insertedIdColumn = false;
+            for (let i = 0; i < newHeaders.length; i++) {
+                if (newHeaders[i] && newHeaders[i].toString() === '104代碼') {
+                    idColumnIndex = i;
+                    break;
+                }
+            }
+            
+            if (idColumnIndex === -1) {
+                let nameIndex = -1;
+                for (let i = 0; i < newHeaders.length; i++) {
+                    if (newHeaders[i] && newHeaders[i].toString().includes('姓名')) {
+                        nameIndex = i;
+                        break;
+                    }
+                }
+                
+                const insertIdIndex = nameIndex !== -1 ? nameIndex + 1 : 1;
+                newHeaders.splice(insertIdIndex, 0, '104代碼');
+                idColumnIndex = insertIdIndex;
+                insertedIdColumn = true;
+            }
+            
+            // 重新命名職務與日期欄位
+            for (let i = 0; i < newHeaders.length; i++) {
+                if (newHeaders[i] === '職務名稱一') {
+                    newHeaders[i] = '應徵職務名稱';
+                } else if (newHeaders[i] === '應徵職務一應徵日期') {
+                    newHeaders[i] = '應徵日期';
+                }
+            }
+            
+            // 在應徵日期後插入新欄位
+            const monthOffset = 1; // 前面加了「月份」
+            const idOffset = insertedIdColumn && (idColumnIndex <= (dateColumnIndex + monthOffset)) ? 1 : 0; // 104代碼若在日期前，需位移
+            const insertIndex = dateColumnIndex + monthOffset + idOffset + 1; // 在日期之後插入
+            newHeaders.splice(insertIndex, 0, 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW');
+            
+            // 處理每一行資料
+            const newRows = rows.map(row => {
+                // 提取月份
+                const dateValue = row[dateColumnIndex];
+                const month = extractMonth(dateValue);
+                
+                // 建立新行
+                const newRow = [month, ...row];
+                
+                // 若原始沒有 104 代碼欄位，補空值
+                if (insertedIdColumn) {
+                    newRow.splice(idColumnIndex, 0, '');
+                }
+                
+                // 在應徵日期後插入空白欄位
+                newRow.splice(insertIndex, 0, '', '', '', '', '');
+                
+                return newRow;
+            });
+            
+            return [newHeaders, ...newRows];
+        }
+
+        // 依「104代碼 + 應徵職務 + 應徵日期」去重
+        function dedupeBy104Key(data) {
+            if (!data || data.length <= 1) {
+                return { data: data, removedCount: 0 };
+            }
+            
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            let idIndex = -1;
+            let jobIndex = -1;
+            let dateIndex = -1;
+            let jobIndexByApply = -1;
+            let jobIndexByName = -1;
+            
+            for (let i = 0; i < headers.length; i++) {
+                const header = headers[i];
+                if (!header) continue;
+                const headerStr = header.toString();
+                
+                if (headerStr === '104代碼') {
+                    idIndex = i;
+                } else if (jobIndexByApply === -1 && headerStr.includes('應徵職務')) {
+                    jobIndexByApply = i;
+                } else if (jobIndexByName === -1 && headerStr.includes('職務名稱')) {
+                    jobIndexByName = i;
+                } else if (dateIndex === -1 && headerStr.includes('應徵日期')) {
+                    dateIndex = i;
+                }
+            }
+            
+            jobIndex = jobIndexByApply !== -1 ? jobIndexByApply : jobIndexByName;
+            
+            if (idIndex === -1 || jobIndex === -1 || dateIndex === -1) {
+                return { data: data, removedCount: 0 };
+            }
+            
+            const seen = new Set();
+            const output = [headers];
+            let removedCount = 0;
+            
+            rows.forEach(row => {
+                const idVal = row[idIndex] !== undefined && row[idIndex] !== null ? row[idIndex].toString().trim() : '';
+                const jobVal = row[jobIndex] !== undefined && row[jobIndex] !== null ? row[jobIndex].toString().trim() : '';
+                const dateVal = row[dateIndex] !== undefined && row[dateIndex] !== null ? row[dateIndex].toString().trim() : '';
+                
+                if (!idVal || !jobVal || !dateVal) {
+                    output.push(row);
+                    return;
+                }
+                
+                const key = `${idVal}||${jobVal}||${dateVal}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    output.push(row);
+                } else {
+                    removedCount++;
+                }
+            });
+            
+            return { data: output, removedCount: removedCount };
+        }
+
+        // 從日期字串提取月份
+        function extractMonth(dateValue) {
+            if (!dateValue) return '';
+            
+            const dateStr = dateValue.toString();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            // 嘗試各種日期格式
+            let date = null;
+            
+            // 格式：2026/01/14 或 2026-01-14
+            const match1 = dateStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (match1) {
+                const monthNum = parseInt(match1[2]) - 1;
+                return months[monthNum] || '';
+            }
+            
+            // 格式：01/14/2026
+            const match2 = dateStr.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+            if (match2) {
+                const monthNum = parseInt(match2[1]) - 1;
+                return months[monthNum] || '';
+            }
+            
+            // Excel 日期數字格式
+            if (Utils.isExcelDate(dateValue)) {
+                date = XLSX.SSF.parse_date_code(dateValue);
+                if (date && date.m) {
+                    return months[date.m - 1] || '';
+                }
+            }
+            
+            return '';
+        }
+
+        // 判斷職系（IDL 或 DL）
+        function determineJobCategory(jobName) {
+            return Utils.isDLJob(jobName) ? 'DL' : 'IDL';
+        }
+        
+        function getJobConfirmStatus(row) {
+            const category = row[1] ? row[1].toString().trim() : '';
+            const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
+            const isNew = row[4] === 'NEW';
+            const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
+            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsConfirm: isNew || needsFreshGrad };
+        }
+        
+        function sortJobClassificationData(data) {
+            if (!data || data.length <= 1) return data;
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            rows.sort((a, b) => {
+                const aInfo = getJobConfirmStatus(a);
+                const bInfo = getJobConfirmStatus(b);
+                
+                if (aInfo.needsConfirm !== bInfo.needsConfirm) {
+                    return aInfo.needsConfirm ? -1 : 1;
+                }
+                if (aInfo.isNew !== bInfo.isNew) {
+                    return aInfo.isNew ? -1 : 1;
+                }
+                
+                const aName = a[0] ? a[0].toString() : '';
+                const bName = b[0] ? b[0].toString() : '';
+                return aName.localeCompare(bName, 'zh-TW');
+            });
+            
+            return [headers, ...rows];
+        }
+        
+        function updateJobConfirmInfo(count) {
+            const el = document.getElementById('jobConfirmInfo');
+            if (!el) return;
+            el.textContent = `需確認筆數：${count}`;
+        }
+
+        // 生成職缺分類工作表
+        function generateJobClassification(mainData) {
+            if (mainData.length === 0) return;
+            
+            const headers = mainData[0];
+            const rows = mainData.slice(1);
+            
+            // 找到職務名稱和月份的欄位索引
+            let jobNameIndex = -1;
+            let monthIndex = 0; // 月份在第一欄
+            
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i] && (headers[i].toString() === '應徵職務名稱' || headers[i].toString().includes('職務名稱一'))) {
+                    jobNameIndex = i;
+                    break;
+                }
+            }
+            
+            if (jobNameIndex === -1) {
+                console.warn('找不到職務名稱欄位');
+                return;
+            }
+            
+            // 收集職務資訊（職務名稱 -> {第一次出現的月份, 是否為新增}）
+            const jobMap = new Map();
+            
+            rows.forEach(row => {
+                const jobName = row[jobNameIndex];
+                const month = row[monthIndex];
+                
+                if (jobName && jobName.toString().trim() !== '') {
+                    const jobKey = jobName.toString().trim();
+                    
+                    if (!jobMap.has(jobKey)) {
+                        // 判斷是否為新增職務（不在歷史資料中）
+                        const isNew = !existingJobs.has(jobKey);
+                        
+                        // 如果有歷史設定，使用歷史設定；否則自動判斷
+                        let category, openToFreshGrad, jobMonth;
+                        
+                        if (existingJobSettings.has(jobKey)) {
+                            const settings = existingJobSettings.get(jobKey);
+                            category = settings.category;
+                            openToFreshGrad = settings.openToFreshGrad;
+                            jobMonth = settings.month;
+                        } else {
+                            category = determineJobCategory(jobKey);
+                            openToFreshGrad = '';
+                            jobMonth = month || '';
+                        }
+                        
+                        jobMap.set(jobKey, {
+                            month: jobMonth,
+                            isNew: isNew,
+                            category: category,
+                            openToFreshGrad: openToFreshGrad
+                        });
+                        
+                        // 將此職務加入已存在集合
+                        existingJobs.add(jobKey);
+                        if (!existingJobSettings.has(jobKey)) {
+                            existingJobSettings.set(jobKey, {
+                                category: category,
+                                openToFreshGrad: openToFreshGrad,
+                                month: jobMonth
+                            });
+                        }
+                    }
+                }
+            });
+            
+            // 建立職缺分類工作表資料
+            const classifyData = [
+                ['職務名稱', '職系', '開放新鮮人', '月份']
+            ];
+            
+            // 按照職務名稱排序
+            const sortedJobs = Array.from(jobMap.entries()).sort((a, b) => 
+                a[0].localeCompare(b[0], 'zh-TW')
+            );
+            
+            sortedJobs.forEach(([jobName, info]) => {
+                classifyData.push([
+                    jobName,
+                    info.category,
+                    info.openToFreshGrad,
+                    info.month,
+                    info.isNew ? 'NEW' : '' // 標記是否為新增（用於標示顏色）
+                ]);
+            });
+            const sortedClassifyData = sortJobClassificationData(classifyData);
+            
+            // 儲存到全域變數
+            workbookData['#職缺分類'] = sortedClassifyData;
+            
+            // 顯示職缺分類表格
+            displayJobClassificationTable(sortedClassifyData);
+        }
+
+        // 顯示職缺分類表格（支援編輯）
+        function displayJobClassificationTable(data) {
+            const container = document.getElementById('classifyTableContainer');
+            
+            if (data.length === 0) {
+                container.classList.add('empty-state');
+                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
+                updateJobConfirmInfo(0);
+                return;
+            }
+            
+            const sortedData = sortJobClassificationData(data);
+            workbookData['#職缺分類'] = sortedData;
+            
+            container.classList.remove('empty-state');
+            
+            const headers = sortedData[0];
+            const rows = sortedData.slice(1);
+            const confirmCount = rows.filter(row => getJobConfirmStatus(row).needsConfirm).length;
+            updateJobConfirmInfo(confirmCount);
+            
+            // 建立表格
+            let html = '<div class="table-wrapper"><table><thead><tr>';
+            
+            // 添加標題（不顯示最後的 NEW 標記欄）
+            for (let i = 0; i < headers.length; i++) {
+                html += `<th>${headers[i] || ''}</th>`;
+            }
+            
+            html += '</tr></thead><tbody>';
+            
+            // 添加資料行
+            rows.forEach((row, rowIndex) => {
+                const isNew = row[4] === 'NEW'; // 檢查是否為新增
+                const rowClass = isNew ? 'new-job-row' : '';
+                const category = row[1] ? row[1].toString().trim() : '';
+                const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
+                const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
+                
+                html += `<tr class="${rowClass}">`;
+                
+                // A欄：職務名稱（不可編輯）
+                html += `<td>${row[0] || ''}</td>`;
+                
+                // B欄：職系（可編輯，下拉選單）
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="1" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 1, this.value)">`;
+                html += `<option value="IDL" ${row[1] === 'IDL' ? 'selected' : ''}>IDL</option>`;
+                html += `<option value="DL" ${row[1] === 'DL' ? 'selected' : ''}>DL</option>`;
+                html += `</select>`;
+                html += `</td>`;
+                
+                // C欄：開放新鮮人（可編輯，下拉選單）
+                const missingClass = needsFreshGrad ? ' missing-fresh-cell' : '';
+                html += `<td class="editable-cell${missingClass}" data-row="${rowIndex}" data-col="2" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 2, this.value)">`;
+                html += `<option value="" ${row[2] === '' ? 'selected' : ''}>請選擇</option>`;
+                html += `<option value="Y" ${row[2] === 'Y' ? 'selected' : ''}>Y</option>`;
+                html += `<option value="N" ${row[2] === 'N' ? 'selected' : ''}>N</option>`;
+                html += `</select>`;
+                html += `</td>`;
+                
+                // D欄：月份（可編輯，文字輸入）
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="3" data-type="input">`;
+                html += `<input type="text" value="${row[3] || ''}" onchange="updateJobClassificationCell(${rowIndex}, 3, this.value)" placeholder="Jan/Feb/Mar..." style="width: 80px;">`;
+                html += `</td>`;
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            
+            if (rows.some(row => row[4] === 'NEW')) {
+                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增，請確認並填寫「職系」、「開放新鮮人」等資訊。</div>' + html;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // 更新職缺分類儲存格
+        function updateJobClassificationCell(rowIndex, colIndex, value) {
+            try {
+                // 驗證輸入值
+                const trimmedValue = Utils.sanitizeInput(value);
+                
+                // 驗證特定欄位的值
+                if (colIndex === 1) { // 職系欄位
+                    if (!['IDL', 'DL'].includes(trimmedValue)) {
+                        alert('職系只能是 IDL 或 DL');
+                        displayJobClassificationTable(workbookData['#職缺分類']);
+                        return;
+                    }
+                } else if (colIndex === 2) { // 開放新鮮人欄位
+                    if (trimmedValue && !['Y', 'N', ''].includes(trimmedValue)) {
+                        alert('開放新鮮人只能是 Y、N 或空白');
+                        displayJobClassificationTable(workbookData['#職缺分類']);
+                        return;
+                    }
+                } else if (colIndex === 3) { // 月份欄位
+                    if (trimmedValue) {
+                        // 驗證月份格式（例如：Jan, Feb, Mar）
+                        const validMonths = Constants.MONTHS;
+                        const inputMonths = trimmedValue.split(/[,/\s]+/).filter(m => m);
+                        const invalidMonths = inputMonths.filter(m => !validMonths.includes(m));
+                        
+                        if (invalidMonths.length > 0) {
+                            alert(`無效的月份：${invalidMonths.join(', ')}。\n有效月份：${validMonths.join(', ')}`);
+                            displayJobClassificationTable(workbookData['#職缺分類']);
+                            return;
+                        }
+                    }
+                }
+                
+                const data = workbookData['#職缺分類'];
+                if (data && data[rowIndex + 1]) {
+                    data[rowIndex + 1][colIndex] = trimmedValue;
+                    
+                    // 如果更新的是職系（B欄）或開放新鮮人（C欄），同步更新履歷資料
+                    if (colIndex === 1 || colIndex === 2) {
+                        updateResumeDataWithJobInfo();
+                        
+                        // 重新顯示履歷資料（如果當前在該標籤）
+                        if (workbookData['#履歷匯出資料'].length > 0) {
+                            displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                        }
+                        
+                        // 重新顯示職缺分類表格，以更新提醒樣式
+                        if (workbookData['#職缺分類'].length > 0) {
+                            displayJobClassificationTable(workbookData['#職缺分類']);
+                        }
+                    }
+                }
+            } catch (error) {
+                ErrorHandler.handle('更新職缺分類', error);
+            }
+        }
+
+        // 更新履歷資料中的 IDL 和新鮮人職缺欄位（從職缺分類比對）
+        function updateResumeDataWithJobInfo() {
+            const resumeData = workbookData['#履歷匯出資料'];
+            const classifyData = workbookData['#職缺分類'];
+            
+            if (resumeData.length === 0 || classifyData.length === 0) return;
+            
+            const resumeHeaders = resumeData[0];
+            const classifyHeaders = classifyData[0];
+            
+            // 找到履歷資料中的欄位索引
+            let jobNameIndex = -1;
+            let idlIndex = -1;
+            let freshGradJobIndex = -1;
+            
+            for (let i = 0; i < resumeHeaders.length; i++) {
+                const header = resumeHeaders[i];
+                if (header && (header.toString() === '應徵職務名稱' || header.toString().includes('職務名稱一'))) {
+                    jobNameIndex = i;
+                } else if (header === 'IDL') {
+                    idlIndex = i;
+                } else if (header === '新鮮人職缺') {
+                    freshGradJobIndex = i;
+                }
+            }
+            
+            if (jobNameIndex === -1 || idlIndex === -1 || freshGradJobIndex === -1) {
+                console.warn('找不到必要欄位', { jobNameIndex, idlIndex, freshGradJobIndex });
+                return;
+            }
+            
+            // 建立職缺分類的查找表（職務名稱 -> {職系, 開放新鮮人}）
+            const jobLookup = new Map();
+            const classifyRows = classifyData.slice(1);
+            
+            classifyRows.forEach(row => {
+                const jobName = row[0]; // A欄：職務名稱
+                const category = row[1]; // B欄：職系
+                const openToFreshGrad = row[2]; // C欄：開放新鮮人
+                
+                if (jobName) {
+                    jobLookup.set(jobName.toString().trim(), {
+                        category: category || '',
+                        openToFreshGrad: openToFreshGrad || ''
+                    });
+                }
+            });
+            
+            // 更新履歷資料的每一行
+            const resumeRows = resumeData.slice(1);
+            
+            resumeRows.forEach(row => {
+                const jobName = row[jobNameIndex];
+                
+                if (jobName) {
+                    const jobKey = jobName.toString().trim();
+                    
+                    if (jobLookup.has(jobKey)) {
+                        const jobInfo = jobLookup.get(jobKey);
+                        
+                        // 更新 IDL 欄位
+                        row[idlIndex] = jobInfo.category;
+                        
+                        // 更新 新鮮人職缺 欄位
+                        row[freshGradJobIndex] = jobInfo.openToFreshGrad;
+                    }
+                }
+            });
+        }
+
+        // 更新履歷資料中的學校相關欄位（學校NEW 和 目標學校）
+        function updateResumeDataWithSchoolInfo() {
+            const resumeData = workbookData['#履歷匯出資料'];
+            const eduMappingData = workbookData['學歷對照'];
+            const targetSchoolData = workbookData['#目標學校'];
+            
+            if (resumeData.length === 0) return;
+            
+            const resumeHeaders = resumeData[0];
+            
+            // 找到履歷資料中的欄位索引
+            let eduSchoolIndex = -1;  // 學歷學校名稱一
+            let schoolNewIndex = -1;   // 學校NEW
+            let targetSchoolIndex = -1; // 目標學校
+            
+            for (let i = 0; i < resumeHeaders.length; i++) {
+                const header = resumeHeaders[i];
+                if (header && header.toString().includes('學歷學校名稱一')) {
+                    eduSchoolIndex = i;
+                } else if (header === '學校NEW') {
+                    schoolNewIndex = i;
+                } else if (header === '目標學校') {
+                    targetSchoolIndex = i;
+                }
+            }
+            
+            if (eduSchoolIndex === -1 || schoolNewIndex === -1 || targetSchoolIndex === -1) {
+                console.warn('找不到學校相關欄位', { eduSchoolIndex, schoolNewIndex, targetSchoolIndex });
+                return;
+            }
+            
+            // 建立學歷對照的查找表（原學校名稱 -> 調整後學校名稱）
+            const eduMappingLookup = new Map();
+            if (eduMappingData && eduMappingData.length > 1) {
+                const eduMappingRows = eduMappingData.slice(1);
+                eduMappingRows.forEach(row => {
+                    const originalName = row[0]; // 原學校名稱
+                    const adjustedName = row[1]; // 調整後學校名稱
+                    
+                    if (originalName && adjustedName) {
+                        eduMappingLookup.set(originalName.toString().trim(), adjustedName.toString().trim());
+                    }
+                });
+            }
+            
+            // 建立目標學校的集合
+            const targetSchoolSet = new Set();
+            if (targetSchoolData && targetSchoolData.length > 1) {
+                const targetSchoolRows = targetSchoolData.slice(1);
+                targetSchoolRows.forEach(row => {
+                    const schoolName = row[0];
+                    if (schoolName) {
+                        targetSchoolSet.add(schoolName.toString().trim());
+                    }
+                });
+            }
+            
+            // 更新履歷資料的每一行
+            const resumeRows = resumeData.slice(1);
+            
+            resumeRows.forEach(row => {
+                const originalSchool = row[eduSchoolIndex];
+                
+                // 步驟1：根據學歷學校名稱一，查找學歷對照表，填入學校NEW
+                if (originalSchool) {
+                    const originalSchoolKey = originalSchool.toString().trim();
+                    
+                    if (eduMappingLookup.has(originalSchoolKey)) {
+                        // 在學歷對照表中找到對應
+                        row[schoolNewIndex] = eduMappingLookup.get(originalSchoolKey);
+                    } else {
+                        // 沒找到就使用原始值
+                        row[schoolNewIndex] = originalSchoolKey;
+                    }
+                }
+                
+                // 步驟2：根據學校NEW，比對目標學校清單，填入目標學校欄位
+                const schoolNew = row[schoolNewIndex];
+                if (schoolNew) {
+                    const schoolNewKey = schoolNew.toString().trim();
+                    
+                    if (targetSchoolSet.has(schoolNewKey)) {
+                        row[targetSchoolIndex] = 'Y';
+                    } else {
+                        row[targetSchoolIndex] = 'N';
+                    }
+                } else {
+                    row[targetSchoolIndex] = 'N';
+                }
+            });
+        }
+
+        // 更新履歷資料中的「新鮮人（2y內）」欄位
+        function updateFreshGraduateStatus() {
+            const resumeData = workbookData['#履歷匯出資料'];
+            
+            if (resumeData.length === 0) {
+                return { success: false, message: '沒有履歷資料' };
+            }
+            
+            const resumeHeaders = resumeData[0];
+            
+            // 找到履歷資料中的欄位索引
+            let workExpIndex = -1;        // 工作經驗
+            let freshGraduateIndex = -1;  // 新鮮人（2y內）
+            
+            let workExpIndexExact = -1;
+            let workExpIndexFiltered = -1;
+            let workExpIndexLoose = -1;
+            
+            for (let i = 0; i < resumeHeaders.length; i++) {
+                const header = resumeHeaders[i];
+                if (header) {
+                    const headerStr = header.toString().trim();
+                    
+                    // 優先找精確欄位名稱
+                    if (workExpIndexExact === -1 && (
+                        headerStr === '工作經驗' ||
+                        headerStr === '工作經驗(年)' ||
+                        headerStr === '工作經驗（年）' ||
+                        headerStr === '工作經驗年資'
+                    )) {
+                        workExpIndexExact = i;
+                    }
+                    
+                    // 次優先：包含工作經驗，但排除明顯不是年資欄位
+                    if (workExpIndexFiltered === -1 && headerStr.includes('工作經驗')) {
+                        const excluded = ['公司', '職務', '任職', '部門', '產業', '職稱', '名稱'];
+                        const isExcluded = excluded.some(token => headerStr.includes(token));
+                        if (!isExcluded) {
+                            workExpIndexFiltered = i;
+                        }
+                    }
+                    
+                    // 最後：任何包含工作經驗
+                    if (workExpIndexLoose === -1 && headerStr.includes('工作經驗')) {
+                        workExpIndexLoose = i;
+                    }
+                    
+                    // 匹配「新鮮人（2y內）」與常見變體
+                    if (headerStr === '新鮮人（2y內）' || 
+                        (headerStr.includes('新鮮人') && headerStr.includes('2') && headerStr.includes('內'))) {
+                        freshGraduateIndex = i;
+                    }
+                }
+            }
+            
+            if (workExpIndexExact !== -1) {
+                workExpIndex = workExpIndexExact;
+            } else if (workExpIndexFiltered !== -1) {
+                workExpIndex = workExpIndexFiltered;
+            } else {
+                workExpIndex = workExpIndexLoose;
+            }
+            
+            if (workExpIndex === -1) {
+                console.warn('找不到工作經驗欄位，可用欄位：', resumeHeaders);
+                return { 
+                    success: false, 
+                    message: `找不到工作經驗欄位。可用欄位：${resumeHeaders.join(', ')}` 
+                };
+            }
+            
+            if (freshGraduateIndex === -1) {
+                console.warn('找不到新鮮人（2y內）欄位，可用欄位：', resumeHeaders);
+                return { 
+                    success: false, 
+                    message: `找不到新鮮人（2y內）欄位。可用欄位：${resumeHeaders.join(', ')}` 
+                };
+            }
+            
+            console.log('找到欄位索引：', { 
+                workExpIndex, 
+                workExpHeader: resumeHeaders[workExpIndex],
+                freshGraduateIndex,
+                freshGraduateHeader: resumeHeaders[freshGraduateIndex]
+            });
+            
+            // 更新履歷資料的每一行
+            const resumeRows = resumeData.slice(1);
+            let updateCount = 0;
+            
+            resumeRows.forEach(row => {
+                const workExp = row[workExpIndex];
+                
+                if (workExp) {
+                    let workExpStr = workExp.toString().trim();
+                    let normalized = workExpStr
+                        .replace(/\s+/g, '')
+                        .replace(/[～−—]/g, '-')
+                        .replace(/[\(\（].*?[\)\）]/g, '');
+                    
+                    // 若包含「以上」通常代表高於門檻，直接判 N
+                    if (normalized.includes('以上')) {
+                        row[freshGraduateIndex] = 'N';
+                        return;
+                    }
+                    
+                    const isFresh = Utils.isFreshGraduate(normalized);
+                    
+                    if (isFresh) {
+                        row[freshGraduateIndex] = 'Y';
+                        updateCount++;
+                    } else {
+                        row[freshGraduateIndex] = 'N';
+                    }
+                } else {
+                    // 如果工作經驗欄位為空，預設為 N
+                    row[freshGraduateIndex] = 'N';
+                }
+            });
+            
+            console.log(`已更新 ${updateCount}/${resumeRows.length} 筆資料的新鮮人狀態`);
+            return { 
+                success: true, 
+                message: `已更新 ${updateCount}/${resumeRows.length} 筆資料`,
+                workExpHeader: resumeHeaders[workExpIndex],
+                updateCount: updateCount,
+                totalCount: resumeRows.length
+            };
+        }
+
+        // 顯示表格
+        function displayTable(data, containerId) {
+            const container = document.getElementById(containerId);
+            
+            if (data.length === 0) {
+                container.classList.add('empty-state');
+                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
+                if (containerId === 'mainTableContainer') {
+                    updateTotalCount(0);
+                }
+                return;
+            }
+            
+            container.classList.remove('empty-state');
+            
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            if (containerId === 'mainTableContainer') {
+                updateTotalCount(rows.length);
+            }
+            
+            // 定義使用下拉式選單的欄位
+            const selectFilterFields = ['月份', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺'];
+            
+            // 定義使用關鍵字的欄位
+            const textFilterFields = ['姓名', '學校NEW'];
+            
+            // 建立表格
+            let html = '<div class="table-wrapper"><table><thead><tr>';
+            
+            // 添加標題和篩選控件
+            headers.forEach((header, index) => {
+                const isNewColumn = index === 0 || // 月份欄位
+                                   (header === 'IDL' || header === '新鮮人（2y內）' || 
+                                    header === '目標學校' || header === '新鮮人職缺' || header === '學校NEW');
+                const className = isNewColumn ? 'new-column' : '';
+                
+                // 設定欄位寬度
+                const headerStr = header ? header.toString() : '';
+                let widthStyle = '';
+                let headerClass = '';
+                if (headerStr.includes('email') || headerStr.includes('電子郵件')) {
+                    widthStyle = 'style="min-width: 120px; max-width: 150px;"';
+                } else if (headerStr.includes('學歷就學期間一')) {
+                    widthStyle = 'style="min-width: 100px; max-width: 140px;"';
+                    headerClass = 'wrap-cell';
+                } else if (headerStr.includes('應徵職務名稱') || headerStr.includes('職務名稱一')) {
+                    widthStyle = 'style="min-width: 200px; max-width: 300px;"';
+                }
+                
+                const thClass = [className, headerClass].filter(Boolean).join(' ');
+                html += `<th class="${thClass}" ${widthStyle}>`;
+                html += `<div class="th-content">${header || ''}</div>`;
+                
+                // 判斷使用哪種篩選方式
+                const useSelectFilter = selectFilterFields.some(field => headerStr.includes(field));
+                const useTextFilter = textFilterFields.some(field => headerStr.includes(field));
+                
+                if (useSelectFilter) {
+                    // 收集該欄位的所有不重複值
+                    const uniqueValues = new Set();
+                    rows.forEach(row => {
+                        const value = row[index];
+                        if (value !== null && value !== undefined && value !== '') {
+                            uniqueValues.add(value.toString());
+                        }
+                    });
+                    
+                    // 建立下拉選單，添加 data-column-index 屬性
+                    html += `<select class="filter-input" data-column-index="${index}" onchange="filterTable()" style="padding: 5px 5px;">`;
+                    html += `<option value="">全部</option>`;
+                    
+                    // 排序並添加選項
+                    Array.from(uniqueValues).sort().forEach(value => {
+                        html += `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`;
+                    });
+                    
+                    html += `</select>`;
+                } else if (useTextFilter) {
+                    // 使用文字輸入框，添加 data-column-index 屬性
+                    html += `<input type="text" class="filter-input" data-column-index="${index}" placeholder="篩選..." oninput="debouncedFilterTable()">`;
+                } else {
+                    // 不顯示篩選控件
+                    html += `<div style="height: 32px;"></div>`;
+                }
+                
+                html += `</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // 添加資料行
+            rows.forEach(row => {
+                html += '<tr>';
+                headers.forEach((header, index) => {
+                    const isNewColumn = index === 0 || 
+                                       (headers[index] === 'IDL' || headers[index] === '新鮮人（2y內）' || 
+                                        headers[index] === '目標學校' || headers[index] === '新鮮人職缺' || 
+                                        headers[index] === '學校NEW');
+                    const className = isNewColumn ? 'new-column' : '';
+                    
+                    // 設定欄位寬度（與標題一致）
+                    const headerStr = header ? header.toString() : '';
+                    let widthStyle = '';
+                    let cellClass = className;
+                    if (headerStr.includes('email') || headerStr.includes('電子郵件')) {
+                        widthStyle = 'style="min-width: 120px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"';
+                    } else if (headerStr.includes('學歷就學期間一')) {
+                        widthStyle = 'style="min-width: 100px; max-width: 140px;"';
+                        cellClass = `${className} wrap-cell`.trim();
+                    } else if (headerStr.includes('應徵職務名稱') || headerStr.includes('職務名稱一')) {
+                        widthStyle = 'style="min-width: 200px; max-width: 300px;"';
+                    }
+                    
+                    const cellValue = row[index] !== undefined && row[index] !== null ? row[index] : '';
+                    html += `<td class="${cellClass}" ${widthStyle}>${cellValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        // HTML轉義函數
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 顯示去重結果
+        function showDedupeInfo(removedCount, sourceLabel) {
+            const el = document.getElementById('dedupeInfo');
+            if (!el) return;
+            
+            const sourceText = sourceLabel ? `（來源：${sourceLabel}）` : '';
+            el.textContent = `🧹 去重完成，刪除 ${removedCount} 筆重複資料${sourceText}`;
+            el.style.display = 'block';
+            el.className = 'status status-info';
+        }
+        
+        // 更新履歷匯出資料筆數顯示
+        function updateTotalCount(count) {
+            const el = document.getElementById('totalCountInfo');
+            if (!el) return;
+            
+            el.textContent = `📊 履歷匯出資料共 ${count} 筆`;
+            el.style.display = 'block';
+            el.className = 'status status-info';
+        }
+
+        // 匯出 XLSX
+        document.getElementById('exportBtn').addEventListener('click', exportToXLSX);
+
+        function exportToXLSX() {
+            try {
+                // 驗證是否有資料可匯出
+                const hasData = Object.values(workbookData).some(data => data.length > 0);
+                if (!hasData) {
+                    alert('沒有資料可以匯出，請先上傳檔案');
+                    return;
+                }
+                
+                // 驗證必要的履歷資料
+                if (workbookData['#履歷匯出資料'].length <= 1) {
+                    if (!confirm('履歷資料為空或只有標題列，確定要匯出嗎？')) {
+                        return;
+                    }
+                }
+                
+                // 建立新的工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 添加所有工作表
+                Object.keys(workbookData).forEach(sheetName => {
+                    let data = workbookData[sheetName];
+                    
+                    // 特殊處理職缺分類：移除最後的 NEW 標記欄
+                    if (sheetName === '#職缺分類' && data.length > 0) {
+                        data = data.map(row => row.slice(0, 4)); // 只保留前4欄
+                    }
+                    
+                    // 如果是空的工作表，至少添加一個空陣列
+                    const sheetData = data.length > 0 ? data : [[]];
+                    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                    
+                    // 設定欄位寬度
+                    if (data.length > 0) {
+                        const colWidths = data[0].map((_, colIndex) => {
+                            const maxLength = Math.max(
+                                ...data.map(row => {
+                                    const cell = row[colIndex];
+                                    return cell ? cell.toString().length : 0;
+                                })
+                            );
+                            return { wch: Math.min(Math.max(maxLength + 2, 10), 50) };
+                        });
+                        ws['!cols'] = colWidths;
+                    }
+                    
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                });
+                
+                // 產生檔案名稱：2026 104應徵資料-日期
+                const today = new Date();
+                const dateStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+                const fileName = `2026 104應徵資料-${dateStr}.xlsx`;
+                
+                // 匯出檔案
+                XLSX.writeFile(wb, fileName);
+                
+                alert('✅ 檔案已成功匯出！\n檔案名稱：' + fileName);
+            } catch (error) {
+                ErrorHandler.handle('檔案匯出', error);
+            }
+        }
+
+        // 初始化空白工作表的顯示
+        function initEmptySheets() {
+            // 初始化預設學校列表
+            initDefaultSchools();
+            
+            // 初始化學歷對照列表
+            initEducationMapping();
+            
+            // 顯示學校列表
+            if (workbookData['#目標學校'].length > 0) {
+                displaySchoolTable(workbookData['#目標學校']);
+            }
+            
+            // 顯示學歷對照列表
+            if (workbookData['學歷對照'].length > 0) {
+                displayEduMappingTable(workbookData['學歷對照']);
+            }
+        }
+
+        // 顯示學校列表
+        function displaySchoolTable(data) {
+            const container = document.getElementById('schoolTableContainer');
+            
+            if (data.length === 0) {
+                container.classList.add('empty-state');
+                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
+                return;
+            }
+            
+            container.classList.remove('empty-state');
+            
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            // 建立表格
+            let html = '<div class="table-wrapper"><table><thead><tr>';
+            html += '<th>學校名稱</th>';
+            html += '<th style="width: 100px;">操作</th>';
+            html += '</tr></thead><tbody>';
+            
+            // 添加資料行
+            rows.forEach((row, rowIndex) => {
+                const schoolName = row[0] || '';
+                html += '<tr>';
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="0">`;
+                html += `<input type="text" value="${escapeHtml(schoolName)}" oninput="updateSchoolCell(${rowIndex}, 0, this.value)" style="width: 100%;">`;
+                html += `</td>`;
+                html += `<td style="text-align: center;">`;
+                html += `<button onclick="deleteSchool(${rowIndex})" class="btn" style="padding: 5px 15px; background: #dc3545; color: white; font-size: 12px;">刪除</button>`;
+                html += `</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // 新增學校
+        // ========== 資料更新通用函數 ==========
+        
+        /**
+         * 更新履歷資料並重新顯示
+         */
+        function refreshResumeDisplay() {
+            updateResumeDataWithSchoolInfo();
+            
+            if (workbookData['#履歷匯出資料'].length > 0) {
+                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+            }
+        }
+        
+        /**
+         * 啟用匯出功能
+         */
+        function enableExport() {
+            document.getElementById('exportBtn').disabled = false;
+        }
+        
+        /**
+         * 初始化工作表（如果不存在）
+         */
+        function initializeSheet(sheetKey, headers) {
+            if (workbookData[sheetKey].length === 0) {
+                workbookData[sheetKey] = [headers];
+            }
+        }
+
+        function addNewSchool() {
+            const schoolName = prompt('請輸入學校名稱：');
+            
+            // 用戶取消輸入
+            if (schoolName === null) return;
+            
+            // 驗證學校名稱
+            const validation = Utils.validateSchoolName(schoolName);
+            if (!validation.valid) {
+                alert(validation.message);
+                return;
+            }
+            
+            try {
+                // 檢查是否重複
+                const existingSchools = workbookData['#目標學校'].slice(1).map(row => row[0]);
+                if (existingSchools.includes(schoolName.trim())) {
+                    alert('此學校名稱已存在');
+                    return;
+                }
+                
+                initializeSheet('#目標學校', ['學校名稱']);
+                
+                workbookData['#目標學校'].push([schoolName.trim()]);
+                displaySchoolTable(workbookData['#目標學校']);
+                
+                refreshResumeDisplay();
+                enableExport();
+            } catch (error) {
+                ErrorHandler.handle('新增學校', error);
+            }
+        }
+
+        // 更新學校儲存格
+        function updateSchoolCell(rowIndex, colIndex, value) {
+            try {
+                // 驗證學校名稱
+                const validation = Utils.validateSchoolName(value);
+                if (!validation.valid) {
+                    alert(validation.message);
+                    // 恢復原值
+                    displaySchoolTable(workbookData['#目標學校']);
+                    return;
+                }
+                
+                const data = workbookData['#目標學校'];
+                if (data && data[rowIndex + 1]) {
+                    // 檢查是否重複
+                    const trimmedValue = value.trim();
+                    const existingSchools = data.slice(1)
+                        .map((row, idx) => ({ name: row[0], index: idx }))
+                        .filter(item => item.index !== rowIndex);
+                    
+                    if (existingSchools.some(item => item.name === trimmedValue)) {
+                        alert('此學校名稱已存在');
+                        displaySchoolTable(workbookData['#目標學校']);
+                        return;
+                    }
+                    
+                    data[rowIndex + 1][colIndex] = trimmedValue;
+                    refreshResumeDisplay();
+                }
+            } catch (error) {
+                ErrorHandler.handle('更新學校', error);
+            }
+        }
+
+        // 刪除學校
+        function deleteSchool(rowIndex) {
+            if (!confirm('確定要刪除這個學校嗎？')) return;
+            
+            try {
+                const data = workbookData['#目標學校'];
+                if (data && data[rowIndex + 1]) {
+                    data.splice(rowIndex + 1, 1);
+                    displaySchoolTable(workbookData['#目標學校']);
+                    refreshResumeDisplay();
+                }
+            } catch (error) {
+                ErrorHandler.handle('刪除學校', error);
+            }
+        }
+
+        // 顯示學歷對照列表
+        function displayEduMappingTable(data) {
+            const container = document.getElementById('eduTableContainer');
+            
+            if (data.length === 0) {
+                container.classList.add('empty-state');
+                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
+                return;
+            }
+            
+            container.classList.remove('empty-state');
+            
+            const headers = data[0];
+            const rows = data.slice(1);
+            
+            // 建立表格
+            let html = '<div class="table-wrapper"><table><thead><tr>';
+            html += '<th style="width: 40%;">原學校名稱</th>';
+            html += '<th style="width: 40%;">調整後學校名稱</th>';
+            html += '<th style="width: 100px;">操作</th>';
+            html += '</tr></thead><tbody>';
+            
+            // 添加資料行
+            rows.forEach((row, rowIndex) => {
+                const originalName = row[0] || '';
+                const adjustedName = row[1] || '';
+                html += '<tr>';
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="0">`;
+                html += `<input type="text" value="${escapeHtml(originalName)}" oninput="updateEduMappingCell(${rowIndex}, 0, this.value)" style="width: 100%;">`;
+                html += `</td>`;
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="1">`;
+                html += `<input type="text" value="${escapeHtml(adjustedName)}" oninput="updateEduMappingCell(${rowIndex}, 1, this.value)" style="width: 100%;">`;
+                html += `</td>`;
+                html += `<td style="text-align: center;">`;
+                html += `<button onclick="deleteEduMapping(${rowIndex})" class="btn" style="padding: 5px 15px; background: #dc3545; color: white; font-size: 12px;">刪除</button>`;
+                html += `</td>`;
+                html += '</tr>';
+            });
+            
+            // 新增欄位列（可貼上多筆）
+            html += '<tr class="edu-add-row">';
+            html += `<td><input id="eduAddOriginal" type="text" placeholder="貼上原學校名稱..." onpaste="handleEduPaste(event)"></td>`;
+            html += `<td><input id="eduAddAdjusted" type="text" placeholder="貼上調整後學校名稱..." onpaste="handleEduPaste(event)"></td>`;
+            html += `<td style="text-align: center;"><button onclick="addEduMappingFromInputs()" class="btn btn-primary">新增欄位</button></td>`;
+            html += '</tr>';
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        function buildEduComparePrompt() {
+            const resumeData = workbookData['#履歷匯出資料'];
+            if (!resumeData || resumeData.length <= 1) {
+                alert('尚未載入履歷匯出資料，無法產生比對指令。');
+                return null;
+            }
+            
+            const headers = resumeData[0];
+            let schoolIndex = -1;
+            for (let i = 0; i < headers.length; i++) {
+                if (!headers[i]) continue;
+                const headerStr = headers[i].toString();
+                if (headerStr.includes('學歷學校名稱一')) {
+                    schoolIndex = i;
+                    break;
+                }
+            }
+            
+            if (schoolIndex === -1) {
+                alert('找不到「學歷學校名稱一」欄位，無法產生比對指令。');
+                return null;
+            }
+            
+            const resumeRows = resumeData.slice(1);
+            const resumeSchools = resumeRows
+                .map(row => row[schoolIndex])
+                .filter(v => v !== null && v !== undefined && v.toString().trim() !== '')
+                .map(v => v.toString().trim());
+            
+            if (resumeSchools.length === 0) {
+                alert('「學歷學校名稱一」沒有資料，無法產生比對指令。');
+                return null;
+            }
+            
+            const eduData = workbookData['學歷對照'] || [];
+            const eduRows = eduData.length > 1 ? eduData.slice(1) : [];
+            const eduPairs = eduRows
+                .filter(row => row && (row[0] || row[1]))
+                .map(row => {
+                    const original = row[0] ? row[0].toString().trim() : '';
+                    const adjusted = row[1] ? row[1].toString().trim() : '';
+                    return { original, adjusted };
+                });
+            
+            const lines = [];
+            lines.push('你是資料清理助理，請協助比對以下「履歷學校清單」與「學歷對照」。');
+            lines.push('任務：找出履歷學校清單中尚未出現在學歷對照「原學校名稱」的項目，並建議應該新增的對照（含建議的調整後名稱）。');
+            lines.push('也請指出可能是同校異名或可合併的項目。');
+            lines.push('請用條列或表格輸出：原學校名稱 | 建議調整後名稱 | 理由/依據。');
+            lines.push('');
+            lines.push(`【履歷匯出資料 - 學歷學校名稱一】共 ${resumeSchools.length} 筆：`);
+            lines.push(resumeSchools.map((name, idx) => `${idx + 1}. ${name}`).join('\n'));
+            lines.push('');
+            lines.push(`【學歷對照 - 原 -> 調整】共 ${eduPairs.length} 筆：`);
+            lines.push(eduPairs.map((pair, idx) => `${idx + 1}. ${pair.original} -> ${pair.adjusted}`).join('\n'));
+            
+            return lines.join('\n');
+        }
+        
+        function copyEduComparePrompt() {
+            const promptText = buildEduComparePrompt();
+            if (!promptText) return;
+            
+            const onSuccess = () => alert('✅ 已複製比對指令，可直接貼到其他 AI chatbot。');
+            const onError = () => alert('❌ 複製失敗，請重試或改用手動複製。');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptText).then(onSuccess).catch(() => {
+                    fallbackCopyText(promptText) ? onSuccess() : onError();
+                });
+                return;
+            }
+            
+            if (!fallbackCopyText(promptText)) {
+                onError();
+            } else {
+                onSuccess();
+            }
+        }
+        
+        function fallbackCopyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-1000px';
+            textarea.style.left = '-1000px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            let success = false;
+            try {
+                success = document.execCommand('copy');
+            } catch (err) {
+                success = false;
+            }
+            document.body.removeChild(textarea);
+            return success;
+        }
+
+        // 新增學歷對照
+        function addNewEduMapping() {
+            const input = document.getElementById('eduAddOriginal');
+            if (input) {
+                input.focus();
+            }
+        }
+
+        // 更新學歷對照儲存格
+        function updateEduMappingCell(rowIndex, colIndex, value) {
+            try {
+                // 驗證學校名稱
+                const validation = Utils.validateSchoolName(value);
+                if (!validation.valid) {
+                    alert(validation.message);
+                    // 恢復原值
+                    displayEduMappingTable(workbookData['學歷對照']);
+                    return;
+                }
+                
+                const data = workbookData['學歷對照'];
+                if (data && data[rowIndex + 1]) {
+                    const trimmedValue = value.trim();
+                    
+                    // 如果是編輯原學校名稱（第0欄），檢查是否重複
+                    if (colIndex === 0) {
+                        const existingMappings = data.slice(1)
+                            .map((row, idx) => ({ name: row[0], index: idx }))
+                            .filter(item => item.index !== rowIndex);
+                        
+                        if (existingMappings.some(item => item.name === trimmedValue)) {
+                            alert('此原學校名稱已存在對照關係');
+                            displayEduMappingTable(workbookData['學歷對照']);
+                            return;
+                        }
+                    }
+                    
+                    data[rowIndex + 1][colIndex] = trimmedValue;
+                    refreshResumeDisplay();
+                }
+            } catch (error) {
+                ErrorHandler.handle('更新學歷對照', error);
+            }
+        }
+
+        // 刪除學歷對照
+        function deleteEduMapping(rowIndex) {
+            if (!confirm('確定要刪除這個學歷對照嗎？')) return;
+            
+            try {
+                const data = workbookData['學歷對照'];
+                if (data && data[rowIndex + 1]) {
+                    data.splice(rowIndex + 1, 1);
+                    displayEduMappingTable(workbookData['學歷對照']);
+                    refreshResumeDisplay();
+                }
+            } catch (error) {
+                ErrorHandler.handle('刪除學歷對照', error);
+            }
+        }
+        
+        function addEduMappingFromInputs() {
+            const originalInput = document.getElementById('eduAddOriginal');
+            const adjustedInput = document.getElementById('eduAddAdjusted');
+            if (!originalInput || !adjustedInput) return;
+            
+            const original = Utils.sanitizeInput(originalInput.value);
+            const adjusted = Utils.sanitizeInput(adjustedInput.value);
+            
+            // 驗證原學校名稱
+            const originalValidation = Utils.validateSchoolName(original);
+            if (!originalValidation.valid) {
+                alert(`原學校名稱：${originalValidation.message}`);
+                originalInput.focus();
+                return;
+            }
+            
+            // 驗證調整後學校名稱
+            const adjustedValidation = Utils.validateSchoolName(adjusted);
+            if (!adjustedValidation.valid) {
+                alert(`調整後學校名稱：${adjustedValidation.message}`);
+                adjustedInput.focus();
+                return;
+            }
+            
+            try {
+                // 檢查是否重複
+                if (workbookData['學歷對照'].length > 1) {
+                    const existingMappings = workbookData['學歷對照'].slice(1);
+                    const isDuplicate = existingMappings.some(row => row[0] === original);
+                    
+                    if (isDuplicate) {
+                        if (!confirm(`原學校名稱「${original}」已存在對照關係，是否要覆蓋？`)) {
+                            return;
+                        }
+                        // 移除舊的對照
+                        const index = existingMappings.findIndex(row => row[0] === original);
+                        if (index !== -1) {
+                            workbookData['學歷對照'].splice(index + 1, 1);
+                        }
+                    }
+                }
+                
+                initializeSheet('學歷對照', ['原學校名稱', '調整後學校名稱']);
+                
+                workbookData['學歷對照'].push([original, adjusted]);
+                displayEduMappingTable(workbookData['學歷對照']);
+                
+                // 清空輸入框
+                originalInput.value = '';
+                adjustedInput.value = '';
+                originalInput.focus();
+                
+                refreshResumeDisplay();
+                enableExport();
+            } catch (error) {
+                ErrorHandler.handle('新增學歷對照', error);
+            }
+        }
+        
+        function handleEduPaste(event) {
+            const clipboard = event.clipboardData || window.clipboardData;
+            if (!clipboard) return;
+            const text = clipboard.getData('text');
+            if (!text) return;
+            
+            if (text.includes('\n') || text.includes('\t')) {
+                event.preventDefault();
+                addEduMappingRowsFromPaste(text);
+            }
+        }
+        
+        function addEduMappingRowsFromPaste(text) {
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+            const rows = [];
+            
+            lines.forEach(line => {
+                let parts = line.split('\t');
+                if (parts.length < 2) {
+                    parts = line.split(',');
+                }
+                
+                const original = parts[0] ? parts[0].trim() : '';
+                const adjusted = parts[1] ? parts[1].trim() : '';
+                
+                if (original && adjusted) {
+                    rows.push([original, adjusted]);
+                }
+            });
+            
+            if (rows.length === 0) {
+                alert('貼上的內容格式不正確，請使用「原學校名稱<TAB>調整後學校名稱」。');
+                return;
+            }
+            
+            if (workbookData['學歷對照'].length === 0) {
+                workbookData['學歷對照'] = [['原學校名稱', '調整後學校名稱']];
+            }
+            
+            workbookData['學歷對照'].push(...rows);
+            displayEduMappingTable(workbookData['學歷對照']);
+            
+            // 更新履歷資料中的學校相關欄位
+            updateResumeDataWithSchoolInfo();
+            
+            // 重新顯示履歷資料
+            if (workbookData['#履歷匯出資料'].length > 0) {
+                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+            }
+            
+            // 啟用匯出按鈕
+            document.getElementById('exportBtn').disabled = false;
+        }
+
+        // 顯示幫助模態框
+        function showHelpModal() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        // 關閉幫助模態框
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // 點擊模態框外部關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target === modal) {
+                closeHelpModal();
+            }
+        }
+
+        // 表格篩選功能（支援多欄位同時篩選，支援下拉選單和文字輸入）
+        function filterTable() {
+            try {
+                const table = document.querySelector('.table-wrapper table');
+                if (!table) return;
+
+                const rows = table.querySelectorAll('tbody tr');
+                const filterInputs = document.querySelectorAll('.filter-input');
+                
+                // 收集所有篩選條件
+                const filters = [];
+                filterInputs.forEach((input) => {
+                    const value = input.value.trim();
+                    if (value !== '') {
+                        const isSelect = input.tagName === 'SELECT';
+                        const columnIndex = parseInt(input.getAttribute('data-column-index'));
+                        filters.push({
+                            columnIndex: columnIndex,
+                            value: value.toLowerCase(),
+                            isExact: isSelect
+                        });
+                    }
+                });
+
+                // 對每一行進行篩選
+                rows.forEach(row => {
+                    let showRow = true;
+                    
+                    // 檢查所有篩選條件
+                    for (let filter of filters) {
+                        const cell = row.cells[filter.columnIndex];
+                        if (cell) {
+                            const cellText = cell.textContent.trim();
+                            const cellTextLower = cellText.toLowerCase();
+                            
+                            if (filter.isExact) {
+                                // 下拉選單：精確匹配
+                                if (cellTextLower !== filter.value) {
+                                    showRow = false;
+                                    break;
+                                }
+                            } else {
+                                // 文字輸入：模糊匹配
+                                if (!cellTextLower.includes(filter.value)) {
+                                    showRow = false;
+                                    break;
+                                }
+                            }
+                        } else {
+                            showRow = false;
+                            break;
+                        }
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+            } catch (error) {
+                ErrorHandler.handle('篩選處理', error, false);
+            }
+        }
+        
+        // 創建帶防抖的篩選函數
+        const debouncedFilterTable = Utils.debounce(filterTable, Constants.UI.DEBOUNCE_DELAY);
+
+        // 清除所有篩選
+        function clearAllFilters() {
+            const table = document.querySelector('.table-wrapper table');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+
+            // 清空所有篩選控件
+            const filterInputs = document.querySelectorAll('.filter-input');
+            filterInputs.forEach(input => {
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = '';
+                }
+            });
+        }
+
+        // 頁面載入時初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initEmptySheets();
+        });
+        
+        // ========== 暴露必要函數到全局作用域 ==========
+        // 這些函數需要從 HTML inline 事件處理器中調用
+        window.handleHistoryFileUpload = handleHistoryFileUpload;
+        window.handleNewFileUpload = handleNewFileUpload;
+        window.addNewSchool = addNewSchool;
+        window.updateSchoolCell = updateSchoolCell;
+        window.deleteSchool = deleteSchool;
+        window.addNewEduMapping = addNewEduMapping;
+        window.updateEduMappingCell = updateEduMappingCell;
+        window.deleteEduMapping = deleteEduMapping;
+        window.addEduMappingFromInputs = addEduMappingFromInputs;
+        window.copyEduComparePrompt = copyEduComparePrompt;
+        window.exportToExcel = exportToXLSX;
+        window.exportToXLSX = exportToXLSX;
+        window.updateJobClassificationCell = updateJobClassificationCell;
+        window.filterTable = filterTable;
+        window.debouncedFilterTable = debouncedFilterTable;
+        window.clearAllFilters = clearAllFilters;
+        window.hideLoading = hideLoading;
+        window.showLoading = showLoading;
+        window.showHelpModal = showHelpModal;
+        window.closeHelpModal = closeHelpModal;
+        
+        })(); // IIFE 結束
+    </script>
+</body>
+</html>
