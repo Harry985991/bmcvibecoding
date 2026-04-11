@@ -6915,12 +6915,17 @@ function updateAllocationPlannerSummary(){
     let peak = -Infinity;
     const out = [];
     for (const s of sorted) {
-      const value = s.total ?? s.totalAsset ?? s.asset ?? s.value ?? 0;
+      const valueRaw = s.total ?? s.totalAsset ?? s.asset ?? s.value ?? 0;
+      const value = parseN(valueRaw);
+      const dateRaw = s.date || s.time;
+      const ts = new Date(dateRaw).getTime();
       if (!Number.isFinite(value) || value <= 0) continue;
+      if (!Number.isFinite(ts)) continue;
       if (value > peak) peak = value;
       const dd = peak > 0 ? (value - peak) / peak : 0;
+      const date = String(dateRaw).slice(0, 10);
       out.push({
-        date: s.date || s.time,
+        date,
         value: value,
         peak: peak,
         drawdownPct: dd
@@ -7014,13 +7019,22 @@ function updateAllocationPlannerSummary(){
     }
 
     // Highcharts not yet loaded or failed — use built-in SVG fallback.
-    // If Highcharts is being loaded by renderPerfChart in parallel, retry once it's ready.
-    const tryCount = renderDrawdownChart._retries = (renderDrawdownChart._retries || 0) + 1;
-    if (tryCount <= 8 && typeof Highcharts === 'undefined') {
-      setTimeout(() => { renderDrawdownChart._retries = 0; renderDrawdownChart(); }, 400);
-      return;
+    // If renderPerfChart is concurrently loading Highcharts, retry a few times first.
+    if (typeof Highcharts === 'undefined') {
+      const tryCount = (renderDrawdownChart._retries || 0) + 1;
+      renderDrawdownChart._retries = tryCount;
+      if (tryCount <= 8) {
+        if(msgEl){
+          msgEl.style.display = '';
+          msgEl.textContent = '載入回撤圖表中…';
+        }
+        setTimeout(() => renderDrawdownChart(), 400);
+        return;
+      }
     }
+
     renderDrawdownChart._retries = 0;
+    if(msgEl){ msgEl.style.display = 'none'; msgEl.textContent = ''; }
     renderDrawdownChartFallback(container, series);
     statsEl.innerHTML = `最大回撤 (MDD)：${mddPct}%（發生於 ${mddDate}）　|　${currentText}`;
   }

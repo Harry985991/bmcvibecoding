@@ -4,6 +4,12 @@ const cors = require('cors');
 const axios = require('axios');
 const app = express();
 const PORT = 3000;
+const historyCache = new Map(); // key: `${symbol}_${days}` => { data, source, fetchedAt }
+const inflightHistory = new Map(); // key => Promise
+const HISTORY_TTL_MS = 60 * 60 * 1000; // 1 hour
+const HISTORY_SYMBOL_RE = /^[0-9]{4,6}[A-Z]?$/;
+const TWSE_UA = 'Mozilla/5.0 (compatible; PortfolioTracker/1.0)';
+const YAHOO_UA = 'Mozilla/5.0';
 
 // 啟用 CORS
 app.use(cors());
@@ -51,6 +57,246 @@ app.get('/api/wantgoo/:symbol', async (req, res) => {
       message: error.message,
       details: error.response?.status || '未知錯誤'
     });
+  }
+});
+
+function logInfo(source, message) {
+  console.log(`[${new Date().toISOString()}] [${source}] ${message}`);
+}
+
+function logError(source, message, error) {
+  console.error(`[${new Date().toISOString()}] [${source}] ${message}`, error?.message || error);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseCloseValue(value) {
+  const n = Number(String(value ?? '').replace(/,/g, '').trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function rocToWestern(rocDate) {
+  const parts = String(rocDate || '').split('/');
+  if (parts.length !== 3) return null;
+  const year = Number.parseInt(parts[0], 10);
+  const month = Number.parseInt(parts[1], 10);
+  const day = Number.parseInt(parts[2], 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  const westernYear = year + 1911;
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${westernYear}-${mm}-${dd}`;
+}
+
+function getMonthStarts(monthCount) {
+  const now = new Date();
+  const out = [];
+  for (let i = monthCount - 1; i >= 0; i -= 1) {
+    out.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
+  }
+  return out;
+}
+
+function toTwseMonthCode(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  return `${y}${m}01`;
+}
+
+function dedupeAndSortHistory(rows) {
+  const byDate = new Map();
+  for (const row of rows) byDate.set(row.date, row.close);
+  return Array.from(byDate.entries())
+    .map(([date, close]) => ({ date, close }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+async function fetchFromTwse(symbol, days) {
+  const monthsToFetch = Math.ceil(days / 20) + 1;
+  const monthStarts = getMonthStarts(monthsToFetch);
+  const collected = [];
+
+  for (let i = 0; i < monthStarts.length; i += 1) {
+    if (i > 0) await sleep(600); // respect TWSE rate limit
+
+    const monthCode = toTwseMonthCode(monthStarts[i]);
+    const url = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${monthCode}&stockNo=${encodeURIComponent(symbol)}`;
+    logInfo('twse', `requesting ${symbol} ${monthCode}`);
+
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': TWSE_UA,
+        'Accept': 'application/json'
+      },
+      timeout: 15000,
+      validateStatus: (status) => status >= 200 && status < 500
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`HTTP ${response.status} for ${monthCode}`);
+    }
+
+    const payload = response.data;
+    if (!payload || typeof payload !== 'object') {
+      throw new Error(`invalid response body for ${monthCode}`);
+    }
+    if (payload.stat !== 'OK' || !Array.isArray(payload.data) || payload.data.length === 0) {
+      logInfo('twse', `no data for ${symbol} ${monthCode}, stat=${payload.stat || 'unknown'}`);
+      continue;
+    }
+
+    for (const row of payload.data) {
+      if (!Array.isArray(row) || row.length < 7) continue;
+      const date = rocToWestern(row[0]);
+      const close = parseCloseValue(row[6]);
+      if (!date || close === null) continue;
+      collected.push({ date, close });
+    }
+  }
+
+  if (collected.length === 0) return null;
+  const normalized = dedupeAndSortHistory(collected);
+  return normalized.slice(-days);
+}
+
+function parseYahooHistoryCsv(csvText) {
+  const text = String(csvText || '').trim();
+  if (!text) return [];
+
+  const lines = text.split(/\r?\n/);
+  if (lines.length <= 1) return [];
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = line.split(',');
+    if (cols.length < 5) continue;
+    const date = cols[0].trim();
+    const close = parseCloseValue(cols[4]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || close === null) continue;
+    rows.push({ date, close });
+  }
+
+  return dedupeAndSortHistory(rows);
+}
+
+async function fetchFromYahoo(symbol, days) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const period1 = nowSec - Math.floor(days * 1.5 * 24 * 60 * 60);
+  const period2 = nowSec;
+  const suffixes = ['TW', 'TWO']; // listed first, OTC fallback
+
+  for (const suffix of suffixes) {
+    const ticker = `${symbol}.${suffix}`;
+    const url = `https://query1.finance.yahoo.com/v7/finance/download/${encodeURIComponent(ticker)}?period1=${period1}&period2=${period2}&interval=1d&events=history`;
+    logInfo('yahoo', `requesting ${ticker}`);
+
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': YAHOO_UA,
+        'Accept': 'text/csv,*/*'
+      },
+      timeout: 15000,
+      responseType: 'text',
+      validateStatus: (status) => status >= 200 && status < 500
+    });
+
+    if (response.status === 404) {
+      logInfo('yahoo', `${ticker} not found (404), trying next suffix`);
+      continue;
+    }
+    if (response.status !== 200) {
+      logInfo('yahoo', `${ticker} returned HTTP ${response.status}`);
+      continue;
+    }
+
+    const parsed = parseYahooHistoryCsv(response.data);
+    if (parsed.length > 0) {
+      return parsed.slice(-days);
+    }
+  }
+
+  return null;
+}
+
+async function fetchHistory(symbol, days) {
+  // Try TWSE first
+  try {
+    const twseData = await fetchFromTwse(symbol, days);
+    if (twseData && twseData.length >= Math.min(days * 0.5, 50)) {
+      return { source: 'twse', data: twseData };
+    }
+    logInfo('history', `TWSE returned insufficient data for ${symbol}, trying Yahoo`);
+  } catch (e) {
+    logError('twse', `failed for ${symbol}`, e);
+  }
+
+  // Fallback to Yahoo
+  try {
+    const yahooData = await fetchFromYahoo(symbol, days);
+    if (yahooData && yahooData.length > 0) {
+      return { source: 'yahoo', data: yahooData };
+    }
+  } catch (e) {
+    logError('yahoo', `failed for ${symbol}`, e);
+  }
+
+  return null;
+}
+
+app.get('/api/history', async (req, res) => {
+  const symbol = String(req.query.symbol || '').trim().toUpperCase();
+  const daysRaw = req.query.days;
+
+  if (!symbol) return res.status(400).json({ error: 'missing symbol' });
+  if (!HISTORY_SYMBOL_RE.test(symbol)) {
+    return res.status(400).json({ error: 'invalid symbol format', symbol });
+  }
+
+  let days = 260;
+  if (daysRaw !== undefined) {
+    const parsedDays = Number.parseInt(String(daysRaw), 10);
+    if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+      return res.status(400).json({ error: 'invalid days parameter' });
+    }
+    days = Math.min(parsedDays, 500);
+  }
+
+  const key = `${symbol}_${days}`;
+  const cached = historyCache.get(key);
+  if (cached && (Date.now() - cached.fetchedAt) < HISTORY_TTL_MS) {
+    logInfo('history', `cache hit ${key}`);
+    return res.json({ symbol, source: cached.source, days, data: cached.data });
+  }
+  if (cached) historyCache.delete(key);
+
+  try {
+    let pending = inflightHistory.get(key);
+    if (!pending) {
+      logInfo('history', `cache miss ${key}, fetching`);
+      pending = (async () => {
+        const fetched = await fetchHistory(symbol, days);
+        if (!fetched || !Array.isArray(fetched.data) || fetched.data.length === 0) return null;
+        const entry = { data: fetched.data, source: fetched.source, fetchedAt: Date.now() };
+        historyCache.set(key, entry);
+        return entry;
+      })().finally(() => {
+        inflightHistory.delete(key);
+      });
+      inflightHistory.set(key, pending);
+    } else {
+      logInfo('history', `inflight join ${key}`);
+    }
+
+    const result = await pending;
+    if (!result) return res.status(502).json({ error: 'all sources failed', symbol });
+    return res.json({ symbol, source: result.source, days, data: result.data });
+  } catch (error) {
+    logError('history', `endpoint failed for ${symbol}`, error);
+    return res.status(502).json({ error: 'all sources failed', symbol });
   }
 });
 
@@ -177,6 +423,7 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`代理伺服器運行在 http://localhost:${PORT}`);
   console.log(`WantGoo 代理端點: http://localhost:${PORT}/api/wantgoo/:symbol`);
+  console.log(`歷史股價端點: http://localhost:${PORT}/api/history?symbol=0050&days=260`);
   console.log(`股價查詢端點: http://localhost:${PORT}/quote?symbol=SYMBOL`);
   console.log(`股價查詢端點 (備用): http://localhost:${PORT}/quote2?symbol=SYMBOL`);
   console.log(`健康檢查: http://localhost:${PORT}/health`);
