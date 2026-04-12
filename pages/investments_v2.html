@@ -533,13 +533,13 @@
                 <th class="num sortable" data-sort="qty">持有 / 成本</th>
                 <th class="num sortable" data-sort="price">市場實價<br><span class="mini muted" style="font-weight:500;font-size:10px;line-height:1.2">資訊更新時間</span></th>
                 <th class="num sortable" data-sort="marketValue">市值</th>
-                <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
-                <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
-                <th title="綜合 52 週位置與 MA200 乖離率，提供觀察用的加減碼訊號">訊號建議</th>
                 <th class="num sortable" data-sort="unrealized">股票損益 / 報酬%</th>
                 <th class="num sortable" data-sort="dividends">實領股息</th>
                 <th class="num sortable" data-sort="totalPnl">含息損益 / 報酬%</th>
                 <th class="sortable" data-sort="strategy">策略</th>
+                <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
+                <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
+                <th title="綜合 52 週位置與 MA200 乖離率，提供觀察用的加減碼訊號">訊號建議</th>
                 <th class="num">停損 / 停利</th>
                 <th class="num">操作</th>
               </tr>
@@ -1370,7 +1370,7 @@ let allocationPlannerContext = null;
   }
 
   // ── loadDB：優先從 IndexedDB 載入，失敗退回 localStorage ─
-  const fallbackDB = () => ({ stocks:[], txns:[], accounts:[], snapshots:[], meta:{} });
+  const fallbackDB = () => ({ stocks:[], txns:[], accounts:[], snapshots:[], meta:{}, watchlist:[] });
   async function loadDB() {
     const migrationData = await migrateFromLocalStorage();
     try {
@@ -1387,7 +1387,8 @@ let allocationPlannerContext = null;
           txns:      data.txns      || [],
           accounts:  data.accounts  || [],
           snapshots: data.snapshots || [],
-          meta:      data.meta      || {}
+          meta:      data.meta      || {},
+          watchlist: data.watchlist || []
         };
         if (migrationData) {
           // 遷移完成，寫入 IndexedDB 並標記
@@ -1404,7 +1405,8 @@ let allocationPlannerContext = null;
         if (parsed && typeof parsed === 'object') return {
           stocks: parsed.stocks || [], txns: parsed.txns || [],
           accounts: parsed.accounts || [], snapshots: parsed.snapshots || [],
-          meta: parsed.meta || {}
+          meta: parsed.meta || {},
+          watchlist: parsed.watchlist || []
         };
       } catch(e2) {}
     }
@@ -1514,6 +1516,72 @@ let allocationPlannerContext = null;
 
       // 全部失敗：回傳結構化錯誤，讓呼叫端顯示清楚提示
       return { error: true, symbol: origSym, message: '本地代理無回應，請確認已執行 npm start' };
+    },
+    async fetchQuote(symbol) {
+      if (!symbol) return null;
+      const origSym = String(symbol).toUpperCase();
+      const LOCAL = (window.API_BASE || 'http://localhost:3000').replace(/\/$/, '');
+
+      const symbolsToTry = [];
+      if (origSym.endsWith('B')) {
+        symbolsToTry.push(origSym, `${origSym}.TW`, `${origSym}.TWO`);
+      } else if (origSym.endsWith('.TW') || origSym.endsWith('.TWO')) {
+        symbolsToTry.push(origSym);
+      } else {
+        symbolsToTry.push(`${origSym}.TW`);
+      }
+
+      const parseV7Full = (j) => {
+        try {
+          const r = j?.quoteResponse?.result?.[0];
+          if (!r) return null;
+          const live = r.regularMarketPrice ?? r.regularMarketPreviousClose ?? null;
+          if (live == null || isNaN(Number(live))) return null;
+          return {
+            livePrice:     Number(live),
+            prevClose:     r.regularMarketPreviousClose != null ? Number(r.regularMarketPreviousClose) : null,
+            prevChangePct: r.regularMarketChangePercent != null ? Number(r.regularMarketChangePercent) : null,
+            todayOpen:     r.regularMarketOpen != null ? Number(r.regularMarketOpen) : null,
+          };
+        } catch { return null; }
+      };
+
+      const parseV8Full = (j) => {
+        try {
+          const m = j?.chart?.result?.[0]?.meta;
+          if (!m) return null;
+          const live = m.regularMarketPrice ?? m.previousClose ?? null;
+          if (live == null || isNaN(Number(live))) return null;
+          return {
+            livePrice:     Number(live),
+            prevClose:     m.chartPreviousClose != null ? Number(m.chartPreviousClose) : (m.previousClose != null ? Number(m.previousClose) : null),
+            prevChangePct: null,
+            todayOpen:     null,
+          };
+        } catch { return null; }
+      };
+
+      for (const sym of symbolsToTry) {
+        try {
+          const res = await fetch(`${LOCAL}/quote?symbol=${encodeURIComponent(sym)}`, { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            const q = parseV7Full(j) ?? parseV8Full(j);
+            if (q) return { ...q, symbol: sym, via: 'local-quote' };
+          }
+        } catch { /* continue */ }
+
+        try {
+          const res = await fetch(`${LOCAL}/quote2?symbol=${encodeURIComponent(sym)}`, { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            const q = parseV8Full(j) ?? parseV7Full(j);
+            if (q) return { ...q, symbol: sym, via: 'local-quote2' };
+          }
+        } catch { /* continue */ }
+      }
+
+      return { error: true, symbol: origSym, message: '本地代理無回應' };
     }
   };
 
@@ -2151,8 +2219,8 @@ let allocationPlannerContext = null;
         if (!pctCell) {
           pctCell = document.createElement('td');
           pctCell.className = 'num wk1-pct52w';
-          // Insert after marketValue column (5th column, index 4)
-          const refCell = tr.children[4];
+          // Insert after strategy column (base row index 8)
+          const refCell = tr.children[8];
           if (refCell && refCell.nextSibling) {
             tr.insertBefore(pctCell, refCell.nextSibling);
           } else {
@@ -6568,6 +6636,20 @@ function updateAllocationPlannerSummary(){
       return null;
     }
   }
+
+  // ===== [WEEK1-UPGRADE] Temporary: clear history cache for re-fetch =====
+  window.clearHistoryCache = async function() {
+    const symbols = (DB.stocks || []).map((s) => (s.symbol || s.id)).filter(Boolean);
+    for (const rawSym of symbols) {
+      const sym = String(rawSym).trim().toUpperCase();
+      if (!sym) continue;
+      try {
+        await idbPut(`history_${sym}`, null);
+      } catch (e) { /* ignore */ }
+    }
+    console.log('[history] Cache cleared for', symbols.length, 'symbols. Refresh the page to refetch.');
+  };
+  console.log('[WEEK1] Run window.clearHistoryCache() in console to force refresh indicator data');
 
   function week1IsTreemapSeriesAvailable(){
     if(typeof Highcharts === 'undefined') return false;

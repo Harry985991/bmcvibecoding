@@ -4,7 +4,7 @@ const cors = require('cors');
 const axios = require('axios');
 const app = express();
 const PORT = 3000;
-const historyCache = new Map(); // key: `${symbol}_${days}` => { data, source, fetchedAt }
+const historyCache = new Map(); // key: `${symbol}_${days}` => { data, source, priceType, fetchedAt }
 const inflightHistory = new Map(); // key => Promise
 const HISTORY_TTL_MS = 60 * 60 * 1000; // 1 hour
 const HISTORY_SYMBOL_RE = /^[0-9]{4,6}[A-Z]?$/;
@@ -240,9 +240,11 @@ function parseYahooHistoryCsv(csvText) {
     const line = lines[i].trim();
     if (!line) continue;
     const cols = line.split(',');
-    if (cols.length < 5) continue;
+    if (cols.length < 6) continue;
     const date = cols[0].trim();
-    const close = parseCloseValue(cols[4]);
+    const adjClose = parseCloseValue(cols[5]);
+    const rawClose = parseCloseValue(cols[4]);
+    const close = adjClose !== null ? adjClose : rawClose;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || close === null) continue;
     rows.push({ date, close });
   }
@@ -270,13 +272,16 @@ function parseYahooChartHistory(payload) {
   const result = payload?.chart?.result?.[0];
   const timestamps = result?.timestamp;
   const closes = result?.indicators?.quote?.[0]?.close;
+  const adjCloses = result?.indicators?.adjclose?.[0]?.adjclose;
   if (!Array.isArray(timestamps) || !Array.isArray(closes)) return [];
 
   const rows = [];
   const n = Math.min(timestamps.length, closes.length);
   for (let i = 0; i < n; i += 1) {
     const ts = Number(timestamps[i]);
-    const close = Number(closes[i]);
+    const adjClose = Number(adjCloses?.[i]);
+    const rawClose = Number(closes[i]);
+    const close = Number.isFinite(adjClose) ? adjClose : rawClose;
     if (!Number.isFinite(ts) || !Number.isFinite(close)) continue;
     const date = formatTaipeiDateFromUnix(ts);
     if (!date) continue;
@@ -345,32 +350,33 @@ async function fetchFromYahoo(symbol, days) {
 async function fetchHistory(symbol, days) {
   const enough = (arr) => Array.isArray(arr) && arr.length >= Math.min(days * 0.5, 50);
 
-  // Try TWSE first
+  // PRIMARY: Yahoo Finance (adjusted prices)
+  try {
+    const yahooData = await fetchFromYahoo(symbol, days);
+    if (enough(yahooData)) {
+      return { source: 'yahoo', priceType: 'adjusted', data: yahooData };
+    }
+    logInfo('history', `Yahoo returned insufficient data for ${symbol}, trying TWSE/TPEx`);
+  } catch (e) {
+    logError('yahoo', `failed for ${symbol}`, e);
+  }
+
+  // FALLBACK: TWSE/TPEx official raw prices
   try {
     const twseData = await fetchFromTwse(symbol, days);
     if (enough(twseData)) {
-      return { source: 'twse', data: twseData };
+      return { source: 'twse', priceType: 'raw', data: twseData };
     }
 
-    // For OTC symbols (e.g. many bond ETFs), extend primary source with TPEx official endpoint.
+    // Extend fallback for OTC symbols (e.g. bond ETFs) via TPEx official endpoint.
     const tpexData = await fetchFromTpex(symbol, days);
     const merged = dedupeAndSortHistory([...(twseData || []), ...(tpexData || [])]).slice(-days);
-    if (enough(merged)) {
-      return { source: 'twse', data: merged };
+    if (merged.length > 0) {
+      return { source: 'twse', priceType: 'raw', data: merged };
     }
-    logInfo('history', `official TWSE/TPEx returned insufficient data for ${symbol}, trying Yahoo`);
+    logInfo('history', `TWSE/TPEx returned no usable rows for ${symbol}`);
   } catch (e) {
     logError('twse', `failed for ${symbol}`, e);
-  }
-
-  // Fallback to Yahoo
-  try {
-    const yahooData = await fetchFromYahoo(symbol, days);
-    if (yahooData && yahooData.length > 0) {
-      return { source: 'yahoo', data: yahooData };
-    }
-  } catch (e) {
-    logError('yahoo', `failed for ${symbol}`, e);
   }
 
   return null;
@@ -398,7 +404,13 @@ app.get('/api/history', async (req, res) => {
   const cached = historyCache.get(key);
   if (cached && (Date.now() - cached.fetchedAt) < HISTORY_TTL_MS) {
     logInfo('history', `cache hit ${key}`);
-    return res.json({ symbol, source: cached.source, days, data: cached.data });
+    return res.json({
+      symbol,
+      source: cached.source,
+      priceType: cached.priceType || 'raw',
+      days: Array.isArray(cached.data) ? cached.data.length : 0,
+      data: cached.data
+    });
   }
   if (cached) historyCache.delete(key);
 
@@ -409,7 +421,12 @@ app.get('/api/history', async (req, res) => {
       pending = (async () => {
         const fetched = await fetchHistory(symbol, days);
         if (!fetched || !Array.isArray(fetched.data) || fetched.data.length === 0) return null;
-        const entry = { data: fetched.data, source: fetched.source, fetchedAt: Date.now() };
+        const entry = {
+          data: fetched.data,
+          source: fetched.source,
+          priceType: fetched.priceType || 'raw',
+          fetchedAt: Date.now()
+        };
         historyCache.set(key, entry);
         return entry;
       })().finally(() => {
@@ -422,7 +439,13 @@ app.get('/api/history', async (req, res) => {
 
     const result = await pending;
     if (!result) return res.status(502).json({ error: 'all sources failed', symbol });
-    return res.json({ symbol, source: result.source, days, data: result.data });
+    return res.json({
+      symbol,
+      source: result.source,
+      priceType: result.priceType || 'raw',
+      days: result.data.length,
+      data: result.data
+    });
   } catch (error) {
     logError('history', `endpoint failed for ${symbol}`, error);
     return res.status(502).json({ error: 'all sources failed', symbol });
@@ -437,18 +460,14 @@ function buildCandidates(input) {
 
   const hasSuffix = orig.endsWith('.TW') || orig.endsWith('.TWO');
   const base = hasSuffix ? orig.replace(/\.(TW|TWO)$/,'') : orig;
-  const isBondETF = /B$/.test(base);
   const isTWCodeLike = /^[0-9]{3,6}[A-Z]?$/.test(base);
 
   if (hasSuffix) {
     add(orig);
     add(base + (orig.endsWith('.TW') ? '.TWO' : '.TW'));
     add(base); // in case Yahoo accepts bare code
-  } else if (isBondETF) {
-    add(base);
-    add(base + '.TW');
-    add(base + '.TWO');
   } else if (isTWCodeLike) {
+    // TW listing priority: TW first, then TWO, then bare code.
     add(base + '.TW');
     add(base + '.TWO');
     add(base);
