@@ -161,6 +161,73 @@ async function fetchFromTwse(symbol, days) {
   return normalized.slice(-days);
 }
 
+function toTpexMonthCode(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  return `${y}/${m}/01`;
+}
+
+async function fetchFromTpex(symbol, days) {
+  const monthsToFetch = Math.ceil(days / 20) + 1;
+  const monthStarts = getMonthStarts(monthsToFetch);
+  const collected = [];
+
+  for (let i = 0; i < monthStarts.length; i += 1) {
+    if (i > 0) await sleep(600); // keep request pace conservative
+
+    const monthCode = toTpexMonthCode(monthStarts[i]);
+    logInfo('tpex', `requesting ${symbol} ${monthCode}`);
+    const response = await axios.post(
+      'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock',
+      new URLSearchParams({
+        code: symbol,
+        date: monthCode,
+        response: 'json'
+      }).toString(),
+      {
+        headers: {
+          'User-Agent': TWSE_UA,
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': 'application/json'
+        },
+        timeout: 15000,
+        validateStatus: (status) => status >= 200 && status < 500
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error(`HTTP ${response.status} for ${monthCode}`);
+    }
+
+    const payload = response.data;
+    if (!payload || typeof payload !== 'object') {
+      throw new Error(`invalid response body for ${monthCode}`);
+    }
+    if (payload.stat !== 'ok') {
+      logInfo('tpex', `no data for ${symbol} ${monthCode}, stat=${payload.stat || 'unknown'}`);
+      continue;
+    }
+
+    const rows = payload?.tables?.[0]?.data;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      logInfo('tpex', `empty rows for ${symbol} ${monthCode}`);
+      continue;
+    }
+
+    for (const row of rows) {
+      if (!Array.isArray(row) || row.length < 7) continue;
+      const date = rocToWestern(row[0]);
+      const close = parseCloseValue(row[6]);
+      if (!date || close === null) continue;
+      collected.push({ date, close });
+    }
+  }
+
+  if (collected.length === 0) return null;
+  const normalized = dedupeAndSortHistory(collected);
+  return normalized.slice(-days);
+}
+
 function parseYahooHistoryCsv(csvText) {
   const text = String(csvText || '').trim();
   if (!text) return [];
@@ -183,14 +250,49 @@ function parseYahooHistoryCsv(csvText) {
   return dedupeAndSortHistory(rows);
 }
 
+function formatTaipeiDateFromUnix(unixSec) {
+  const dt = new Date(unixSec * 1000);
+  if (Number.isNaN(dt.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(dt);
+  const y = parts.find((p) => p.type === 'year')?.value;
+  const m = parts.find((p) => p.type === 'month')?.value;
+  const d = parts.find((p) => p.type === 'day')?.value;
+  if (!y || !m || !d) return null;
+  return `${y}-${m}-${d}`;
+}
+
+function parseYahooChartHistory(payload) {
+  const result = payload?.chart?.result?.[0];
+  const timestamps = result?.timestamp;
+  const closes = result?.indicators?.quote?.[0]?.close;
+  if (!Array.isArray(timestamps) || !Array.isArray(closes)) return [];
+
+  const rows = [];
+  const n = Math.min(timestamps.length, closes.length);
+  for (let i = 0; i < n; i += 1) {
+    const ts = Number(timestamps[i]);
+    const close = Number(closes[i]);
+    if (!Number.isFinite(ts) || !Number.isFinite(close)) continue;
+    const date = formatTaipeiDateFromUnix(ts);
+    if (!date) continue;
+    rows.push({ date, close });
+  }
+  return dedupeAndSortHistory(rows);
+}
+
 async function fetchFromYahoo(symbol, days) {
   const nowSec = Math.floor(Date.now() / 1000);
   const period1 = nowSec - Math.floor(days * 1.5 * 24 * 60 * 60);
   const period2 = nowSec;
-  const suffixes = ['TW', 'TWO']; // listed first, OTC fallback
+  const candidates = buildCandidates(symbol);
+  logInfo('yahoo', `history candidates for ${symbol}: ${candidates.join(', ')}`);
 
-  for (const suffix of suffixes) {
-    const ticker = `${symbol}.${suffix}`;
+  for (const ticker of candidates) {
     const url = `https://query1.finance.yahoo.com/v7/finance/download/${encodeURIComponent(ticker)}?period1=${period1}&period2=${period2}&interval=1d&events=history`;
     logInfo('yahoo', `requesting ${ticker}`);
 
@@ -204,32 +306,59 @@ async function fetchFromYahoo(symbol, days) {
       validateStatus: (status) => status >= 200 && status < 500
     });
 
-    if (response.status === 404) {
-      logInfo('yahoo', `${ticker} not found (404), trying next suffix`);
-      continue;
+    if (response.status === 200) {
+      const parsed = parseYahooHistoryCsv(response.data);
+      if (parsed.length > 0) {
+        return parsed.slice(-days);
+      }
+      logInfo('yahoo', `${ticker} download CSV empty, trying chart endpoint`);
+    } else {
+      logInfo('yahoo', `${ticker} download returned HTTP ${response.status}, trying chart endpoint`);
     }
-    if (response.status !== 200) {
-      logInfo('yahoo', `${ticker} returned HTTP ${response.status}`);
+
+    // Download CSV may be unavailable or blocked for some symbols; fallback to chart API.
+    const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?period1=${period1}&period2=${period2}&interval=1d&events=history`;
+    const chartResponse = await axios.get(chartUrl, {
+      headers: {
+        'User-Agent': YAHOO_UA,
+        'Accept': 'application/json'
+      },
+      timeout: 15000,
+      validateStatus: (status) => status >= 200 && status < 500
+    });
+
+    if (chartResponse.status !== 200) {
+      logInfo('yahoo', `${ticker} chart endpoint returned HTTP ${chartResponse.status}`);
       continue;
     }
 
-    const parsed = parseYahooHistoryCsv(response.data);
-    if (parsed.length > 0) {
-      return parsed.slice(-days);
+    const parsedFromChart = parseYahooChartHistory(chartResponse.data);
+    if (parsedFromChart.length > 0) {
+      return parsedFromChart.slice(-days);
     }
+    logInfo('yahoo', `${ticker} chart returned no usable history rows`);
   }
 
   return null;
 }
 
 async function fetchHistory(symbol, days) {
+  const enough = (arr) => Array.isArray(arr) && arr.length >= Math.min(days * 0.5, 50);
+
   // Try TWSE first
   try {
     const twseData = await fetchFromTwse(symbol, days);
-    if (twseData && twseData.length >= Math.min(days * 0.5, 50)) {
+    if (enough(twseData)) {
       return { source: 'twse', data: twseData };
     }
-    logInfo('history', `TWSE returned insufficient data for ${symbol}, trying Yahoo`);
+
+    // For OTC symbols (e.g. many bond ETFs), extend primary source with TPEx official endpoint.
+    const tpexData = await fetchFromTpex(symbol, days);
+    const merged = dedupeAndSortHistory([...(twseData || []), ...(tpexData || [])]).slice(-days);
+    if (enough(merged)) {
+      return { source: 'twse', data: merged };
+    }
+    logInfo('history', `official TWSE/TPEx returned insufficient data for ${symbol}, trying Yahoo`);
   } catch (e) {
     logError('twse', `failed for ${symbol}`, e);
   }
