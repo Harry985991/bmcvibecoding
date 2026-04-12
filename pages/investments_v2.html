@@ -360,6 +360,24 @@
     .strategy-tag{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}
     .strategy-hold{background:#f0fff4;color:#276749}
     .strategy-trade{background:#ebf8ff;color:#2b6cb0}
+    .wk1-signal-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent;white-space:nowrap}
+    .wk1-signal-add{background:#ecfdf5;color:#047857;border-color:#6ee7b7}
+    .wk1-signal-reduce{background:#fff1f2;color:#be123c;border-color:#fda4af}
+    .wk1-signal-cool{background:#eff6ff;color:#1d4ed8;border-color:#93c5fd}
+    .wk1-signal-warm{background:#fffbeb;color:#b45309;border-color:#fcd34d}
+    .wk1-signal-neutral{background:#f8fafc;color:#334155;border-color:#cbd5e1}
+    .wk1-signal-missing{background:#f3f4f6;color:#6b7280;border-color:#d1d5db}
+    .wk1-indicator-help{
+      margin-top:12px;
+      padding:12px 14px;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      background:#f8fafc;
+    }
+    .wk1-indicator-help .title{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px}
+    .wk1-indicator-help .legend{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+    .wk1-indicator-help .rules{margin:6px 0 0 16px;padding:0;color:#334155;font-size:12px;line-height:1.5}
+    .wk1-signal-note{display:block;white-space:normal;line-height:1.35}
     .cell-stack{display:flex;flex-direction:column;gap:2px;line-height:1.25;text-align:inherit}
     .cell-stack .sym{font-weight:700;font-size:13px}
     .holdings-integrated td.text-start,.holdings-integrated th.text-start{text-align:left!important}
@@ -515,6 +533,9 @@
                 <th class="num sortable" data-sort="qty">持有 / 成本</th>
                 <th class="num sortable" data-sort="price">市場實價<br><span class="mini muted" style="font-weight:500;font-size:10px;line-height:1.2">資訊更新時間</span></th>
                 <th class="num sortable" data-sort="marketValue">市值</th>
+                <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
+                <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
+                <th title="綜合 52 週位置與 MA200 乖離率，提供觀察用的加減碼訊號">訊號建議</th>
                 <th class="num sortable" data-sort="unrealized">股票損益 / 報酬%</th>
                 <th class="num sortable" data-sort="dividends">實領股息</th>
                 <th class="num sortable" data-sort="totalPnl">含息損益 / 報酬%</th>
@@ -525,6 +546,25 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+        <div class="wk1-indicator-help">
+          <div class="title">指標解讀</div>
+          <div class="mini muted">52週位置與距MA200僅作交易輔助，不取代你的資產配置與停損規則。</div>
+          <div class="legend">
+            <span class="wk1-signal-badge wk1-signal-add">偏低估</span>
+            <span class="wk1-signal-badge wk1-signal-cool">偏冷</span>
+            <span class="wk1-signal-badge wk1-signal-warm">偏熱</span>
+            <span class="wk1-signal-badge wk1-signal-reduce">偏過熱</span>
+            <span class="wk1-signal-badge wk1-signal-neutral">中性</span>
+          </div>
+          <ul class="rules">
+            <li>52週位置 &lt; 20% 且 距MA200 &lt; -10%：偏低估，可分批觀察加碼。</li>
+            <li>52週位置約 20%~35% 且 距MA200仍為負：偏冷，可觀察是否止跌後再加碼。</li>
+            <li>52週位置約 70%~80% 且 距MA200約 +8%~+15%：偏熱，建議減少追價、等回檔。</li>
+            <li>52週位置 &gt; 80% 且 距MA200 &gt; +15%：偏過熱，可分批觀察減碼。</li>
+            <li>若一高一中（如 52週很高但 MA200 僅中度偏離，或 MA200 很高但 52週僅中高），建議先控倉、回檔確認後再動作。</li>
+            <li>其餘情境視為中性，建議配合停損與倉位管理。</li>
+          </ul>
         </div>
         <div class="holdings-longterm-zone">
           <div class="hr holdings-sub-hr"></div>
@@ -1725,6 +1765,83 @@ let allocationPlannerContext = null;
     return raw / 100;
   }
 
+  const indicatorCache = {}; // symbol -> { pct52w, ma200Bias, updatedAt }
+
+  function compute52wPercentile(history, currentPrice) {
+    if (!history || history.length < 20) return null;
+    const closes = history.map(d => d.close).filter(Number.isFinite);
+    if (closes.length < 20) return null;
+    const high = Math.max(...closes);
+    const low = Math.min(...closes);
+    if (high === low) return 0.5;
+    return (currentPrice - low) / (high - low);
+  }
+
+  function computeMA200Bias(history, currentPrice) {
+    if (!history || history.length < 200) return null;
+    const last200 = history.slice(-200).map(d => d.close).filter(Number.isFinite);
+    if (last200.length < 200) return null;
+    const ma = last200.reduce((a, b) => a + b, 0) / last200.length;
+    if (ma <= 0) return null;
+    return (currentPrice - ma) / ma;
+  }
+
+  function deriveIndicatorSignal(pct52w, ma200Bias) {
+    if (!Number.isFinite(pct52w) || !Number.isFinite(ma200Bias)) {
+      return { label: '資料不足', cls: 'wk1-signal-missing', note: '等資料補齊' };
+    }
+    const pct = pct52w * 100;
+    const bias = ma200Bias * 100;
+    if (pct < 20 && bias < -10) {
+      return { label: '偏低估', cls: 'wk1-signal-add', note: '分批小買，不破低再加' };
+    }
+    if (pct > 80 && bias > 15) {
+      return { label: '偏過熱', cls: 'wk1-signal-reduce', note: '分批減碼，暫不追價' };
+    }
+    if (pct > 80 && bias > 8 && bias <= 15) {
+      return { label: '高檔偏熱', cls: 'wk1-signal-warm', note: '等回檔再接，不追高' };
+    }
+    if (bias > 15 && pct >= 70 && pct <= 80) {
+      return { label: '均線過熱', cls: 'wk1-signal-warm', note: '先降倉位，觀察收斂' };
+    }
+    if (pct < 20 && bias >= -10 && bias < 0) {
+      return { label: '低檔偏冷', cls: 'wk1-signal-cool', note: '小量試單，站回再加' };
+    }
+    if (bias < -10 && pct >= 20 && pct <= 35) {
+      return { label: '均線偏冷', cls: 'wk1-signal-cool', note: '等止跌確認，再分批加' };
+    }
+    if (pct < 35 && bias < 0) {
+      return { label: '偏冷', cls: 'wk1-signal-cool', note: '先觀察止跌，再小買' };
+    }
+    if (pct > 70 && bias > 8) {
+      return { label: '偏熱', cls: 'wk1-signal-warm', note: '不追高，逢高減碼' };
+    }
+    return { label: '中性', cls: 'wk1-signal-neutral', note: '續抱觀察，按計畫走' };
+  }
+
+  async function refreshIndicatorsForAll() {
+    try {
+      const symbols = DB.stocks.map(s => (s.symbol || s.id)).filter(Boolean);
+      for (const rawSym of symbols) {
+        const sym = String(rawSym).trim().toUpperCase();
+        if (!sym) continue;
+        const history = await fetchPriceHistory(sym);
+        if (!history) continue;
+        const stock = DB.stocks.find(s => String(s.symbol || s.id).trim().toUpperCase() === sym);
+        const currentPrice = parseN(stock?.price) || parseN(stock?.currentPrice) || parseN(history[history.length - 1]?.close);
+        if (!Number.isFinite(currentPrice) || currentPrice <= 0) continue;
+        indicatorCache[sym] = {
+          pct52w: compute52wPercentile(history, currentPrice),
+          ma200Bias: computeMA200Bias(history, currentPrice),
+          updatedAt: Date.now()
+        };
+      }
+      if (typeof renderHoldings === 'function') renderHoldings();
+    } catch (e) {
+      console.warn('[indicator] refresh failed:', e);
+    }
+  }
+
   const holdingsSortDefaults = {
     tier: 'asc',
     symbol: 'asc',
@@ -1732,6 +1849,8 @@ let allocationPlannerContext = null;
     avgCost: 'desc',
     price: 'desc',
     marketValue: 'desc',
+    pct52w: 'desc',
+    ma200Bias: 'desc',
     unrealized: 'desc',
     unrealizedPct: 'desc',
     dividends: 'desc',
@@ -1756,6 +1875,16 @@ let allocationPlannerContext = null;
       case 'avgCost': return row.avgCost;
       case 'price': return row.currentPrice;
       case 'marketValue': return row.marketValue;
+      case 'pct52w': {
+        const sym = String(row.stock.symbol || '').trim().toUpperCase();
+        const value = indicatorCache[sym]?.pct52w;
+        return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+      }
+      case 'ma200Bias': {
+        const sym = String(row.stock.symbol || '').trim().toUpperCase();
+        const value = indicatorCache[sym]?.ma200Bias;
+        return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+      }
       case 'unrealized': return Number.isFinite(unreal) ? unreal : Number.NEGATIVE_INFINITY;
       case 'unrealizedPct': return Number.isFinite(unrealPct) ? unrealPct : Number.NEGATIVE_INFINITY;
       case 'dividends': return row.dividends;
@@ -2001,6 +2130,95 @@ let allocationPlannerContext = null;
     }
 
     updateHoldingsSortIndicators();
+    injectIndicatorCells();
+  }
+
+  function injectIndicatorCells() {
+    try {
+      const rows = document.querySelectorAll('#tbl-holdings tbody tr');
+      rows.forEach(tr => {
+        const symbolCell = tr.querySelector('td:nth-child(2)');
+        if (!symbolCell) return;
+        const symbolEl = symbolCell.querySelector('.sym');
+        const symbol = (symbolEl?.textContent || (symbolCell.textContent.trim().match(/^\S+/) || [])[0] || '').trim();
+        if (!symbol) return;
+        const ind = indicatorCache[String(symbol).toUpperCase()];
+
+        // Find or create cells (idempotent)
+        let pctCell = tr.querySelector('.wk1-pct52w');
+        let maCell = tr.querySelector('.wk1-ma200');
+        let signalCell = tr.querySelector('.wk1-signal');
+        if (!pctCell) {
+          pctCell = document.createElement('td');
+          pctCell.className = 'num wk1-pct52w';
+          // Insert after marketValue column (5th column, index 4)
+          const refCell = tr.children[4];
+          if (refCell && refCell.nextSibling) {
+            tr.insertBefore(pctCell, refCell.nextSibling);
+          } else {
+            tr.appendChild(pctCell);
+          }
+        }
+        if (!maCell) {
+          maCell = document.createElement('td');
+          maCell.className = 'num wk1-ma200';
+          pctCell.parentNode.insertBefore(maCell, pctCell.nextSibling);
+        }
+        if (!signalCell) {
+          signalCell = document.createElement('td');
+          signalCell.className = 'wk1-signal';
+          maCell.parentNode.insertBefore(signalCell, maCell.nextSibling);
+        }
+
+        // Render values with traffic light colors
+        if (!ind || ind.pct52w == null) {
+          pctCell.innerHTML = '<span class="muted">—</span>';
+        } else {
+          const pct = ind.pct52w * 100;
+          let color = '#0F172A';
+          if (pct < 20) color = '#059669';      // green: cheap
+          else if (pct > 80) color = '#DC2626'; // red: expensive
+          else if (pct > 60) color = '#D97706'; // amber
+          pctCell.innerHTML = `<span style="color:${color};font-weight:600">${pct.toFixed(0)}%</span>`;
+        }
+
+        if (!ind || ind.ma200Bias == null) {
+          maCell.innerHTML = '<span class="muted">—</span>';
+        } else {
+          const bias = ind.ma200Bias * 100;
+          let color = '#0F172A';
+          if (bias < -10) color = '#059669';     // green: oversold
+          else if (bias > 15) color = '#DC2626'; // red: overheated
+          else if (bias > 8) color = '#D97706';  // amber
+          const sign = bias >= 0 ? '+' : '';
+          maCell.innerHTML = `<span style="color:${color};font-weight:600">${sign}${bias.toFixed(1)}%</span>`;
+        }
+
+        const signal = deriveIndicatorSignal(ind?.pct52w, ind?.ma200Bias);
+        const signalNote = `建議：${signal.note}`;
+        if (!ind || ind.pct52w == null || ind.ma200Bias == null) {
+          signalCell.innerHTML = `
+            <div class="cell-stack">
+              <span class="wk1-signal-badge ${signal.cls}" title="${signal.note}">${signal.label}</span>
+              <span class="mini muted wk1-signal-note">${signalNote}</span>
+            </div>
+          `;
+        } else {
+          const pctText = `${(ind.pct52w * 100).toFixed(0)}%`;
+          const biasNum = ind.ma200Bias * 100;
+          const biasSign = biasNum >= 0 ? '+' : '';
+          const tip = `${signal.note}（52週:${pctText} / MA200:${biasSign}${biasNum.toFixed(1)}%）`;
+          signalCell.innerHTML = `
+            <div class="cell-stack">
+              <span class="wk1-signal-badge ${signal.cls}" title="${tip}">${signal.label}</span>
+              <span class="mini muted wk1-signal-note">${signalNote}</span>
+            </div>
+          `;
+        }
+      });
+    } catch (e) {
+      console.warn('[indicator] inject cells failed:', e);
+    }
   }
 
   function renderLongTermMetrics(){
@@ -5498,6 +5716,10 @@ function updateAllocationPlannerSummary(){
         showBackupStatus(`股價已更新 ${successCount} 個標的 ✓`);
       }
     }
+
+    refreshIndicatorsForAll().catch(err => {
+      console.warn('[indicator] refresh after price update failed:', err);
+    });
   };
 
   $$('[data-action="refresh-all"]').forEach(btn=>{
@@ -6299,6 +6521,7 @@ function updateAllocationPlannerSummary(){
   _dbReady.then(() => {
     updateTargetLabels(getAllocationTarget(), getRegionTarget());
     fullRender();
+    setTimeout(() => refreshIndicatorsForAll(), 2500);
     // 自動更新股價（延遲 1.5 秒，讓代理伺服器有時間回應）
     setTimeout(() => handleRefreshAllClick(true), 1500);
   }).catch(err => {
@@ -6314,6 +6537,37 @@ function updateAllocationPlannerSummary(){
   let week1OverviewTreemapChart = null;
   let week1TreemapRenderSeq = 0;
   let week1TreemapPreferFallback = false;
+
+  async function fetchPriceHistory(symbol, force = false) {
+    const sym = String(symbol || '').trim().toUpperCase();
+    if (!sym) return null;
+    const cacheKey = `history_${sym}`;
+    const TTL = 6 * 60 * 60 * 1000;
+    if (!force) {
+      try {
+        const cached = await idbGet(cacheKey);
+        if (cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < TTL) {
+          return cached.data;
+        }
+      } catch (e) { /* ignore */ }
+    }
+    try {
+      const baseUrl = (window.API_BASE || 'http://localhost:3000').replace(/\/$/, '');
+      const res = await fetch(`${baseUrl}/api/history?symbol=${encodeURIComponent(sym)}&days=260`);
+      if (!res.ok) throw new Error('history fetch failed');
+      const json = await res.json();
+      const data = json.data || [];
+      if (data.length > 0) {
+        try {
+          await idbPut(cacheKey, { symbol: sym, fetchedAt: Date.now(), data });
+        } catch (e) { /* ignore */ }
+      }
+      return data;
+    } catch (e) {
+      console.warn(`[history] ${sym} fetch failed:`, e);
+      return null;
+    }
+  }
 
   function week1IsTreemapSeriesAvailable(){
     if(typeof Highcharts === 'undefined') return false;
