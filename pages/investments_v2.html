@@ -464,6 +464,35 @@
     .div-tl-grow .sym{font-weight:700}
     .div-tl-amt{font-size:13px;font-weight:600;white-space:nowrap;text-align:right}
     .div-tl-actions{flex-shrink:0}
+    .wl-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+    .wl-card.wl-urgent{border-left:4px solid #ef4444}
+    .wl-card.wl-watching{border-left:4px solid #f59e0b}
+    .wl-card.wl-done{border-left:4px solid #10b981;opacity:.65}
+    .wl-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+    .wl-sym{font-size:15px;font-weight:700;color:var(--ink)}
+    .wl-name{font-size:11px;color:var(--sub);margin-top:1px}
+    .wl-status-badge{font-size:10px;padding:3px 10px;border-radius:999px;font-weight:600;flex-shrink:0;margin-left:auto;white-space:nowrap}
+    .wl-sb-urgent{background:#fff5f5;color:#c53030;border:1px solid #feb2b2}
+    .wl-sb-watching{background:#fffaf0;color:#c05621;border:1px solid #fbd38d}
+    .wl-sb-done{background:#f0fff4;color:#276749;border:1px solid #9ae6b4}
+    .wl-prices{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+    .wl-pc{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:center}
+    .wl-pc .wl-pc-lbl{font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+    .wl-pc .wl-pc-val{font-size:13px;font-weight:700;color:var(--ink)}
+    .wl-pc.wl-live-cell{background:#f0fff4;border-color:#9ae6b4}
+    .wl-pc.wl-live-cell .wl-pc-val{color:#276749}
+    .wl-pc.wl-chg-up .wl-pc-val{color:#276749}
+    .wl-pc.wl-chg-dn .wl-pc-val{color:#c53030}
+    .wl-plan{display:flex;flex-wrap:wrap;gap:14px;padding:9px 12px;background:#f8fafc;border-radius:8px;margin-bottom:10px}
+    .wl-pi{display:flex;flex-direction:column;gap:1px}
+    .wl-pi-lbl{font-size:10px;color:var(--sub)}
+    .wl-pi-val{font-size:12px;font-weight:700;color:var(--ink)}
+    .wl-memo-box{font-size:12px;color:var(--ink);line-height:1.6;padding:8px 10px;background:#f8fafc;border-radius:8px;margin-bottom:10px;white-space:pre-wrap;word-break:break-word}
+    .wl-footer{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .wl-date{font-size:11px;color:var(--sub);margin-left:auto}
+    .wl-empty{text-align:center;padding:48px 20px;color:var(--sub)}
+    .wl-live-tag{font-size:9px;background:#ebf8ff;color:#2b6cb0;border:1px solid #90cdf4;border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:middle}
+    .wl-quote-hint{font-size:10px;color:var(--sub);margin-top:4px;text-align:right}
   </style>
 </head>
 <body>
@@ -498,6 +527,7 @@
       <button class="tab" role="tab" aria-selected="false" data-target="#view-txns">異動紀錄</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-dividend">股息規劃</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-return">報酬檢視</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-watchlist">投資筆記</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-settings">設定</button>
   </div>
 
@@ -799,6 +829,25 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <section id="view-watchlist" class="view" role="tabpanel">
+      <div class="card">
+        <div class="stack" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <h3 style="margin:0;font-size:18px;font-weight:600">投資筆記</h3>
+          <div class="stack" style="gap:8px;flex-wrap:wrap;align-items:center">
+            <select id="watchlist-filter" class="select">
+              <option value="all">全部</option>
+              <option value="urgent">今日關注</option>
+              <option value="watching">觀察中</option>
+              <option value="done">已執行</option>
+            </select>
+            <button class="btn danger" id="btn-refresh-watchlist">更新行情</button>
+            <button class="btn primary" id="btn-add-watchlist">＋ 新增筆記</button>
+          </div>
+        </div>
+        <div id="watchlist-body"></div>
       </div>
     </section>
     
@@ -1225,6 +1274,68 @@
       </div>
       <div class="footer">
         <button class="btn ghost" value="cancel" formnovalidate>取消</button>
+        <button class="btn primary" value="ok">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-watchlist">
+    <form method="dialog">
+      <div class="dlg-head">
+        <div id="dlg-watchlist-title">新增投資筆記</div>
+        <button class="btn ghost" value="cancel">✕</button>
+      </div>
+      <div class="dlg-body">
+        <div class="grid">
+          <div class="field col-6">
+            <label>股票代號 <span style="color:#ef4444">*</span></label>
+            <input id="wl-symbol" placeholder="例如：0052" autocomplete="off" />
+          </div>
+          <div class="field col-6">
+            <label>狀態</label>
+            <select id="wl-status" class="select">
+              <option value="watching">觀察中</option>
+              <option value="urgent">今日關注</option>
+            </select>
+          </div>
+          <div class="field col-6">
+            <label>計劃買入單價（元）</label>
+            <input id="wl-plan-price" type="number" step="0.01" min="0" placeholder="選填，例如：78.50" />
+          </div>
+          <div class="field col-6">
+            <label>計劃張數</label>
+            <input id="wl-plan-qty" type="number" step="1" min="1" placeholder="選填，例如：2" />
+          </div>
+          <div class="field col-12" id="wl-total-wrap" style="display:none">
+            <label>預估總金額</label>
+            <div id="wl-total-display" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#f9fafb;font-weight:600;color:var(--ink)">—</div>
+          </div>
+          <div class="field col-6">
+            <label>停損線（元）</label>
+            <input id="wl-stop-loss" type="number" step="0.01" min="0" placeholder="選填，例如：74.50" />
+          </div>
+          <div class="field col-6">
+            <label>停利線（元）</label>
+            <input id="wl-stop-profit" type="number" step="0.01" min="0" placeholder="選填，例如：85.00" />
+          </div>
+          <div class="field col-6">
+            <label>進場條件</label>
+            <input id="wl-condition" placeholder="選填，例如：評分 ≥ +3" />
+          </div>
+          <div class="field col-6">
+            <label>最大持有天數</label>
+            <input id="wl-max-days" type="number" step="1" min="1" placeholder="選填，例如：3" />
+          </div>
+          <div class="field col-12">
+            <label>備忘 <span style="color:#ef4444">*</span></label>
+            <textarea id="wl-memo" rows="3" maxlength="500"
+              placeholder="記錄進場理由、注意事項、當日策略等"
+              style="resize:vertical;min-height:72px"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <button class="btn ghost" value="cancel">取消</button>
         <button class="btn primary" value="ok">儲存</button>
       </div>
     </form>
@@ -5596,6 +5707,7 @@ function updateAllocationPlannerSummary(){
       if(tab.dataset.target==='#view-dividend'){ renderDividend(); }
       // 切到報酬檢視時，確保重算
       if(tab.dataset.target==='#view-return'){ renderReturnOverview(); }
+      if(tab.dataset.target==='#view-watchlist'){ renderWatchlist(); }
       if(tab.dataset.target==='#view-snapshots'){ renderOverview(); }
     })
   });
@@ -5960,6 +6072,16 @@ function updateAllocationPlannerSummary(){
       };
       if(txn){ Object.assign(txn, t); }
       else{ DB.txns.push(t); }
+      // 若此交易來自投資筆記的「轉為交易」
+      const fromWatchId = txn?._fromWatchId ?? null;
+      if(!txn && fromWatchId){
+        ensureWatchlist();
+        const wi = (DB.watchlist || []).find(x => x.id === fromWatchId);
+        if(wi){
+          wi.status = 'done';
+          wi.executedTxnId = t.id;
+        }
+      }
       saveDB({backup:true}); fullRender();
     }, {once:true});
   };
@@ -6358,6 +6480,363 @@ function updateAllocationPlannerSummary(){
     });
   }
 
+  // ╔══════════════════════════════════════════════════════════╗
+  // ║  投資筆記模組                                              ║
+  // ╚══════════════════════════════════════════════════════════╝
+
+  // 確保 DB.watchlist 存在
+  function ensureWatchlist() {
+    if (!Array.isArray(DB.watchlist)) DB.watchlist = [];
+  }
+
+  // ── 輔助：根據 symbol 嘗試從 DB.stocks 取得名稱 ──────────────
+  function getStockNameBySymbol(symbol) {
+    const s = DB.stocks.find(x => x.symbol === symbol.toUpperCase());
+    return s?.name || '';
+  }
+
+  // ── 行情刷新：更新單筆筆記的 quoteCache ─────────────────────
+  async function refreshWatchItemQuote(item) {
+    const result = await priceProvider.fetchQuote(item.symbol);
+    if (!result || result.error) {
+      return false;
+    }
+    item.quoteCache = {
+      prevClose:     result.prevClose ?? null,
+      prevChangePct: result.prevChangePct ?? null,
+      todayOpen:     result.todayOpen ?? null,
+      livePrice:     result.livePrice ?? null,
+      updatedAt:     new Date().toISOString()
+    };
+    return true;
+  }
+
+  // ── 批次刷新全部筆記行情 ─────────────────────────────────────
+  async function refreshAllWatchlistQuotes() {
+    ensureWatchlist();
+    const btn = document.getElementById('btn-refresh-watchlist');
+    if (btn) { btn.disabled = true; btn.textContent = '更新中…'; }
+    try {
+      const active = DB.watchlist.filter(item => item.status !== 'done');
+      await Promise.allSettled(active.map(item => refreshWatchItemQuote(item)));
+      await saveDB();
+      renderWatchlist();
+      showBackupStatus(`行情已更新 ${active.length} 筆`);
+    } catch(e) {
+      console.warn('行情更新失敗：', e);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '更新行情'; }
+    }
+  }
+
+  // ── 渲染一張筆記卡片 ─────────────────────────────────────────
+  function buildWatchCard(item) {
+    const q = item.quoteCache;
+    const fmtP = (v) => (v != null && Number.isFinite(v)) ? fmt2.format(v) : '—';
+    const fmtPct = (v) => {
+      if (v == null || !Number.isFinite(v)) return '—';
+      return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+    };
+
+    // 行情格
+    const chgClass = (q?.prevChangePct != null)
+      ? (q.prevChangePct > 0 ? 'wl-chg-up' : q.prevChangePct < 0 ? 'wl-chg-dn' : '')
+      : '';
+    const updatedHint = q?.updatedAt
+      ? `更新：${new Date(q.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`
+      : '尚未更新行情';
+
+    // 計劃區塊
+    const planParts = [];
+    if (item.planPrice != null)  planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">計劃買入價</div><div class="wl-pi-val">≤ ${fmt2.format(item.planPrice)}</div></div>`);
+    if (item.planQty != null)    planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">計劃張數</div><div class="wl-pi-val">${item.planQty} 張</div></div>`);
+    if (item.planPrice != null && item.planQty != null) {
+      const total = item.planPrice * item.planQty * 1000;
+      planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">預估總金額</div><div class="wl-pi-val">~${fmtInt.format(Math.round(total))}</div></div>`);
+    }
+    if (item.stopLoss != null)   planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">停損線</div><div class="wl-pi-val" style="color:#c53030">${fmt2.format(item.stopLoss)}</div></div>`);
+    if (item.stopProfit != null) planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">停利線</div><div class="wl-pi-val" style="color:#276749">${fmt2.format(item.stopProfit)}</div></div>`);
+    if (item.condition)          planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">進場條件</div><div class="wl-pi-val">${item.condition}</div></div>`);
+    if (item.maxHoldDays != null) planParts.push(`<div class="wl-pi"><div class="wl-pi-lbl">最大持有</div><div class="wl-pi-val">${item.maxHoldDays} 天</div></div>`);
+
+    // 狀態 badge
+    const statusMap = {
+      urgent:   ['今日關注', 'wl-sb-urgent'],
+      watching: ['觀察中',   'wl-sb-watching'],
+      done:     ['已執行',   'wl-sb-done'],
+    };
+    const [statusText, statusCls] = statusMap[item.status] || ['觀察中', 'wl-sb-watching'];
+
+    // 底部按鈕
+    const footerBtns = item.status !== 'done'
+      ? `<button type="button" class="btn ok btn-sm" data-action="wl-execute" data-id="${item.id}">轉為交易</button>
+         <button type="button" class="btn btn-sm" data-action="wl-edit" data-id="${item.id}">編輯</button>
+         <button type="button" class="btn danger btn-sm" data-action="wl-delete" data-id="${item.id}">刪除</button>`
+      : `<span style="font-size:11px;color:#276749">已轉入異動紀錄</span>
+         <button type="button" class="btn btn-sm" data-action="wl-delete" data-id="${item.id}">刪除筆記</button>`;
+
+    const createdStr = item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit' })
+      : '';
+
+    const div = document.createElement('div');
+    div.className = `wl-card wl-${item.status || 'watching'}`;
+    div.dataset.id = item.id;
+    div.innerHTML = `
+      <div class="wl-top">
+        <div>
+          <div class="wl-sym">${item.symbol} <span style="font-size:12px;font-weight:400;color:var(--sub)">${item.name || ''}</span></div>
+        </div>
+        <span class="wl-status-badge ${statusCls}">${statusText}</span>
+      </div>
+      ${item.status !== 'done' ? `
+      <div class="wl-prices">
+        <div class="wl-pc">
+          <div class="wl-pc-lbl">昨收</div>
+          <div class="wl-pc-val">${fmtP(q?.prevClose)}</div>
+        </div>
+        <div class="wl-pc ${chgClass}">
+          <div class="wl-pc-lbl">昨漲跌</div>
+          <div class="wl-pc-val">${fmtPct(q?.prevChangePct)}</div>
+        </div>
+        <div class="wl-pc">
+          <div class="wl-pc-lbl">今開</div>
+          <div class="wl-pc-val">${fmtP(q?.todayOpen)}</div>
+        </div>
+        <div class="wl-pc wl-live-cell">
+          <div class="wl-pc-lbl">即時 <span class="wl-live-tag">Live</span></div>
+          <div class="wl-pc-val">${fmtP(q?.livePrice)}</div>
+        </div>
+      </div>
+      <div class="wl-quote-hint">${updatedHint}</div>
+      ` : ''}
+      ${planParts.length ? `<div class="wl-plan">${planParts.join('')}</div>` : ''}
+      ${item.memo ? `<div class="wl-memo-box">${item.memo.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
+      <div class="wl-footer">
+        ${footerBtns}
+        <span class="wl-date">${createdStr} 建立</span>
+      </div>
+    `;
+    return div;
+  }
+
+  // ── 主渲染函式 ───────────────────────────────────────────────
+  function renderWatchlist() {
+    const container = document.getElementById('watchlist-body');
+    if (!container) return;
+    ensureWatchlist();
+
+    const filter = document.getElementById('watchlist-filter')?.value || 'all';
+
+    // 排序：today > watching > done，同狀態按建立時間降序
+    const statusOrder = { urgent: 0, watching: 1, done: 2 };
+    const items = DB.watchlist
+      .filter(item => filter === 'all' || item.status === filter)
+      .slice()
+      .sort((a, b) => {
+        const os = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+        if (os !== 0) return os;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+
+    container.innerHTML = '';
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="wl-empty">尚無投資筆記。點擊右上方「＋ 新增筆記」開始記錄。</div>';
+      return;
+    }
+
+    for (const item of items) {
+      container.appendChild(buildWatchCard(item));
+    }
+  }
+
+  // ── Dialog 開啟（新增 / 編輯）───────────────────────────────
+  let _wlEditingId = null;
+
+  function openWatchlistDialog(item = null) {
+    const dlg = document.getElementById('dlg-watchlist');
+    if (!dlg) return;
+
+    _wlEditingId = item?.id || null;
+    document.getElementById('dlg-watchlist-title').textContent = item ? '編輯投資筆記' : '新增投資筆記';
+
+    document.getElementById('wl-symbol').value     = item?.symbol     || '';
+    document.getElementById('wl-status').value     = item?.status === 'done' ? 'watching' : (item?.status || 'watching');
+    document.getElementById('wl-plan-price').value = item?.planPrice  != null ? item.planPrice  : '';
+    document.getElementById('wl-plan-qty').value   = item?.planQty    != null ? item.planQty    : '';
+    document.getElementById('wl-stop-loss').value  = item?.stopLoss   != null ? item.stopLoss   : '';
+    document.getElementById('wl-stop-profit').value= item?.stopProfit != null ? item.stopProfit : '';
+    document.getElementById('wl-condition').value  = item?.condition  || '';
+    document.getElementById('wl-max-days').value   = item?.maxHoldDays!= null ? item.maxHoldDays : '';
+    document.getElementById('wl-memo').value       = item?.memo       || '';
+
+    updateWlTotalDisplay();
+
+    dlg.returnValue = '';
+    dlg.showModal();
+
+    dlg.addEventListener('close', async () => {
+      if (dlg.returnValue !== 'ok') return;
+
+      const symbolRaw = document.getElementById('wl-symbol').value.trim().toUpperCase();
+      const memo      = document.getElementById('wl-memo').value.trim();
+      if (!symbolRaw) { alert('請輸入股票代號'); return; }
+      if (!memo)      { alert('請填寫備忘'); return; }
+
+      const priceVal    = parseN(document.getElementById('wl-plan-price').value);
+      const qtyVal      = parseInt(document.getElementById('wl-plan-qty').value, 10);
+      const slVal       = parseN(document.getElementById('wl-stop-loss').value);
+      const spVal       = parseN(document.getElementById('wl-stop-profit').value);
+      const daysVal     = parseInt(document.getElementById('wl-max-days').value, 10);
+
+      const payload = {
+        symbol:      symbolRaw,
+        name:        getStockNameBySymbol(symbolRaw),
+        status:      document.getElementById('wl-status').value,
+        planPrice:   (priceVal > 0) ? priceVal : null,
+        planQty:     (Number.isFinite(qtyVal) && qtyVal > 0) ? qtyVal : null,
+        stopLoss:    (slVal > 0) ? slVal : null,
+        stopProfit:  (spVal > 0) ? spVal : null,
+        condition:   document.getElementById('wl-condition').value.trim(),
+        maxHoldDays: (Number.isFinite(daysVal) && daysVal > 0) ? daysVal : null,
+        memo,
+      };
+
+      ensureWatchlist();
+
+      if (_wlEditingId) {
+        const idx = DB.watchlist.findIndex(x => x.id === _wlEditingId);
+        if (idx >= 0) {
+          DB.watchlist[idx] = { ...DB.watchlist[idx], ...payload };
+        }
+      } else {
+        DB.watchlist.push({
+          id:           uid(),
+          ...payload,
+          createdAt:    new Date().toISOString(),
+          executedTxnId: null,
+          quoteCache:   null,
+        });
+      }
+
+      await saveDB({ backup: true });
+      renderWatchlist();
+      _wlEditingId = null;
+    }, { once: true });
+  }
+
+  // ── 預估總金額即時計算 ────────────────────────────────────────
+  function updateWlTotalDisplay() {
+    const p    = parseN(document.getElementById('wl-plan-price')?.value);
+    const q    = parseInt(document.getElementById('wl-plan-qty')?.value || '', 10);
+    const wrap = document.getElementById('wl-total-wrap');
+    const disp = document.getElementById('wl-total-display');
+    if (!wrap || !disp) return;
+    if (p > 0 && Number.isFinite(q) && q > 0) {
+      const total = p * q * 1000;
+      disp.textContent = '~' + fmtInt.format(Math.round(total)) + ' 元';
+      wrap.style.display = '';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  // ── 轉為交易（預填 openTxnDialog）───────────────────────────
+  function executeWatchItem(id) {
+    ensureWatchlist();
+    const item = DB.watchlist.find(x => x.id === id);
+    if (!item) return;
+
+    // 找或建立對應 stock
+    let stock = DB.stocks.find(s => s.symbol === item.symbol);
+    if (!stock) {
+      // 若標的不在持有列表，提示使用者先新增，或直接在異動記錄手動填入
+      alert(`「${item.symbol}」尚未在持有標的中建立。\n請先至「持有標的」新增此標的，再轉為交易。`);
+      return;
+    }
+
+    // 預填 openTxnDialog
+    openTxnDialog({
+      // 傳入一個「預填物件」，openTxnDialog 會據此填入欄位
+      stockId:      stock.id,
+      type:         'buy',
+      price:        item.planPrice || '',
+      qty:          item.planQty   || '',
+      amount:       (item.planPrice && item.planQty) ? Math.round(item.planPrice * item.planQty * 1000) : '',
+      time:         new Date().toISOString(),
+      note:         '',
+      journalNote:  item.memo || '',
+      decisionScore: null,
+      _fromWatchId: id,   // 自訂欄位，dialog close 時用來標記筆記為 done
+    });
+  }
+
+  // ── 事件委派 ─────────────────────────────────────────────────
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-action^="wl-"]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id     = btn.dataset.id;
+
+    if (action === 'wl-edit') {
+      ensureWatchlist();
+      const item = DB.watchlist.find(x => x.id === id);
+      if (item) openWatchlistDialog(item);
+    }
+
+    if (action === 'wl-delete') {
+      if (!confirm('確定刪除此筆投資筆記？')) return;
+      ensureWatchlist();
+      DB.watchlist = DB.watchlist.filter(x => x.id !== id);
+      await saveDB({ backup: true });
+      renderWatchlist();
+    }
+
+    if (action === 'wl-execute') {
+      executeWatchItem(id);
+    }
+  });
+
+  // ── 筆記轉交易後，標記為 done ────────────────────────────────
+  // 在現有 openTxnDialog 的 dlg.addEventListener('close') 回呼中，
+  // 儲存成功後加入以下邏輯（找到 saveDB({backup:true}); fullRender(); 的位置新增）：
+  //
+  //   const fromWatchId = txn?._fromWatchId || null;  // 若是從筆記轉來的
+  //   if (!txn && fromWatchId) {
+  //     // 新增交易成功，標記對應筆記為 done
+  //     ensureWatchlist();
+  //     const wi = DB.watchlist.find(x => x.id === fromWatchId);
+  //     if (wi) {
+  //       wi.status = 'done';
+  //       wi.executedTxnId = t.id;  // t 是剛建立的 txn 物件
+  //     }
+  //   }
+  //
+  // 注意：這段邏輯需要插入在 openTxnDialog 的 close 事件處理函式中，
+  //       緊接在 DB.txns.push(t) 之後，saveDB() 之前。
+
+  // ── 綁定按鈕事件 ─────────────────────────────────────────────
+  document.getElementById('btn-add-watchlist')?.addEventListener('click', () => {
+    openWatchlistDialog();
+  });
+
+  document.getElementById('btn-refresh-watchlist')?.addEventListener('click', () => {
+    refreshAllWatchlistQuotes();
+  });
+
+  document.getElementById('watchlist-filter')?.addEventListener('change', () => {
+    renderWatchlist();
+  });
+
+  // Dialog 欄位即時計算
+  document.getElementById('wl-plan-price')?.addEventListener('input', updateWlTotalDisplay);
+  document.getElementById('wl-plan-qty')?.addEventListener('input', updateWlTotalDisplay);
+
+  // ═══════════════════════════════════════════════════════════
+  // 投資筆記模組 END
+  // ═══════════════════════════════════════════════════════════
+
   // ========= 初次渲染 =========
   function fullRender(){
     renderOverview();
@@ -6371,6 +6850,7 @@ function updateAllocationPlannerSummary(){
     renderDividend();
     renderReturnOverview();
     checkProxyStatus(); // 檢查代理伺服器狀態
+    renderWatchlist();
   }
   
   function ensureDividendMonthOptions(){
