@@ -334,7 +334,8 @@
     .return-contrib-section{margin-bottom:16px}
     .return-contrib-title{font-size:14px; font-weight:600; color:var(--text); margin-bottom:10px}
     .return-contrib-row{display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13px}
-    .return-contrib-sym{flex:0 0 56px; font-weight:700; color:var(--text)}
+    .return-contrib-sym{flex:0 0 180px; min-width:140px; display:flex; align-items:baseline; gap:6px; font-weight:700; color:var(--text)}
+    .return-contrib-name{font-size:11px; font-weight:500; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
     .return-contrib-track{flex:1; height:7px; background:var(--muted); border-radius:4px; overflow:hidden; min-width:0}
     .return-contrib-fill{height:100%; border-radius:4px; min-width:0}
     .return-contrib-fill.pos{background:#3182ce}
@@ -451,15 +452,24 @@
     .div-cal-cell .div-cal-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:100%}
     .div-cal-chip{font-size:8px;padding:1px 4px;border-radius:3px;background:var(--div-blue-bg);color:var(--div-blue);font-weight:600}
     .div-cal-payout{background:#f0fff4;border-color:#9ae6b4}
-    .div-cal-current{border-width:2px;border-color:var(--brand)!important}
-    .div-cal-current .div-cal-mo{color:var(--brand);font-weight:700}
+    .div-cal-payout-past{background:#bbf7d0;border-color:#166534}
+    .div-cal-payout-current{background:#fee2e2;border-color:#dc2626}
+    .div-cal-payout-future{background:#eff6ff;border-color:#93c5fd}
+    .div-cal-current{border-width:2px;border-color:#dc2626!important}
+    .div-cal-current .div-cal-mo{color:#dc2626;font-weight:700}
     .div-timeline{margin-top:8px}
     .div-timeline h4{margin:0 0 10px;font-size:15px;font-weight:600}
     .div-timeline-row{display:flex;align-items:center;gap:10px;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line);background:#fff}
     .div-timeline-row.div-tl-projected{background:#f0fff4}
+    .div-timeline-row.div-tl-month-past{background:#bbf7d0;border-color:#166534}
+    .div-timeline-row.div-tl-month-current{background:#fee2e2;border-color:#dc2626}
+    .div-timeline-row.div-tl-month-future{background:#eff6ff;border-color:#93c5fd}
     .div-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .div-dot-future{background:#22c55e}
     .div-dot-past{background:#9ca3af}
+    .div-dot-month-past{background:#166534}
+    .div-dot-month-current{background:#dc2626}
+    .div-dot-month-future{background:#60a5fa}
     .div-tl-grow{flex:1;min-width:0}
     .div-tl-grow .sym{font-weight:700}
     .div-tl-amt{font-size:13px;font-weight:600;white-space:nowrap;text-align:right}
@@ -2914,7 +2924,7 @@ let allocationPlannerContext = null;
         const cb = parseN(p.costBasis);
         if(cb <= 0) return null;
         const r = parseN(p.totalPnl) / cb;
-        return { symbol: s.symbol, r };
+        return { symbol: s.symbol, name: s.name || '', r };
       })
       .filter(Boolean);
     metrics.sort((a, b) => b.r - a.r);
@@ -2941,7 +2951,10 @@ let allocationPlannerContext = null;
         w = Math.min(100, Math.max(8, w));
       }
       return `<div class="return-contrib-row">
-        <span class="return-contrib-sym">${x.symbol}</span>
+        <span class="return-contrib-sym">
+          <span>${escapeAttr(x.symbol)}</span>
+          <span class="return-contrib-name">${escapeAttr(x.name || '')}</span>
+        </span>
         <div class="return-contrib-track"><div class="return-contrib-fill ${cls}" style="width:${w.toFixed(2)}%"></div></div>
         <span class="return-contrib-pct">${pctStr}</span>
       </div>`;
@@ -4738,19 +4751,22 @@ function updateAllocationPlannerSummary(){
     return Number.isFinite(avg) ? avg : null;
   }
 
-  /** 未來配息預估：最近最多 2 筆「隱含每股」平均 × 目前股數；兩筆差異過大時改採最近一筆；無則回退手動 perShare／totalAmount */
+  /** 未來配息預估：
+   *  1) 優先使用手動編輯（perShare / totalAmount）
+   *  2) 若未提供手動值，再用最近股息隱含每股
+   */
   function estimateProjectedDividendForStock(stock, currentQty){
     const q = parseN(currentQty);
     if(q <= 0) return { amount: 0, perShareEff: null };
-    const avgPs = getAvgImpliedPerShareFromRecentDividends(stock.id, 2);
-    if(avgPs != null && avgPs > 0){
-      return { amount: avgPs * q, perShareEff: avgPs };
-    }
     const info = getCurrentDividendInfo(stock.symbol);
     const per = parseN(info.perShare);
     if(per > 0) return { amount: per * q, perShareEff: per };
     const ta = parseN(info.totalAmount);
     if(ta > 0) return { amount: ta, perShareEff: q > 0 ? ta / q : null };
+    const avgPs = getAvgImpliedPerShareFromRecentDividends(stock.id, 2);
+    if(avgPs != null && avgPs > 0){
+      return { amount: avgPs * q, perShareEff: avgPs };
+    }
     return { amount: 0, perShareEff: null };
   }
 
@@ -4844,6 +4860,11 @@ function updateAllocationPlannerSummary(){
         payDate: ''
       });
     }
+    const actualMonthKeys = new Set(
+      items
+        .filter(x => x.kind === 'actual')
+        .map(x => futKey(x.date, x.symbol))
+    );
 
     for(const stock of DB.stocks){
       const q = parseN((pos[stock.id] || {}).qty);
@@ -4852,8 +4873,9 @@ function updateAllocationPlannerSummary(){
       const pdStr = info.payDate ? String(info.payDate).trim() : '';
       if(pdStr){
         const pd = new Date(pdStr);
-        if(!Number.isNaN(pd.getTime()) && pd > todayEnd && pd <= futureEnd){
+        if(!Number.isNaN(pd.getTime()) && pd >= pastStart && pd <= futureEnd){
           const k = futKey(pd, stock.symbol);
+          if(actualMonthKeys.has(k)) continue;
           if(addedFut.has(k)) continue;
           addedFut.add(k);
           const est = estimateProjectedDividendForStock(stock, q);
@@ -4929,6 +4951,16 @@ function updateAllocationPlannerSummary(){
 
     const year = new Date().getFullYear();
     const curMonth = new Date().getMonth() + 1;
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const getTimelineMonthTone = (dateObj) => {
+      if(!dateObj || Number.isNaN(dateObj.getTime())) return '';
+      if(dateObj < startOfCurrentMonth) return 'past';
+      if(dateObj >= startOfCurrentMonth && dateObj < startOfNextMonth) return 'current';
+      if(dateObj >= startOfNextMonth) return 'future';
+      return '';
+    };
     const yearEl = $('#dividend-cal-year');
     if(yearEl) yearEl.textContent = String(year);
 
@@ -4968,7 +5000,16 @@ function updateAllocationPlannerSummary(){
         const cell = document.createElement('div');
         cell.className = 'div-cal-cell';
         cell.setAttribute('role', 'listitem');
-        if(hasFlow) cell.classList.add('div-cal-payout');
+        if(hasFlow){
+          cell.classList.add('div-cal-payout');
+          if(month <= curMonth - 1){
+            cell.classList.add('div-cal-payout-past');
+          } else if(month >= curMonth + 1){
+            cell.classList.add('div-cal-payout-future');
+          } else if(month === curMonth){
+            cell.classList.add('div-cal-payout-current');
+          }
+        }
         if(month === curMonth) cell.classList.add('div-cal-current');
 
         const mo = document.createElement('div');
@@ -5023,8 +5064,11 @@ function updateAllocationPlannerSummary(){
         for(const row of timeline){
           const div = document.createElement('div');
           div.className = 'div-timeline-row' + (row.kind === 'projected' ? ' div-tl-projected' : '');
+          const tone = getTimelineMonthTone(row.date);
+          if(tone) div.classList.add(`div-tl-month-${tone}`);
           const dot = document.createElement('span');
           dot.className = 'div-dot ' + (row.kind === 'projected' ? 'div-dot-future' : 'div-dot-past');
+          if(tone) dot.classList.add(`div-dot-month-${tone}`);
           const main = document.createElement('div');
           main.className = 'div-tl-grow';
           let sub = '';
