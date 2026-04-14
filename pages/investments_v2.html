@@ -301,7 +301,7 @@
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
 
     /* 報酬檢視：績效分析 */
-    .return-kpi-row{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:12px}
+    .return-kpi-row{display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:12px}
     @media (max-width:900px){ .return-kpi-row{ grid-template-columns:1fr; } }
     .return-kpi-card{
       position:relative;
@@ -818,6 +818,10 @@
         <div id="perf-chart-wrap" class="perf-chart-wrap">
           <div id="perf-chart-msg" class="perf-chart-msg" style="display:none"></div>
           <div id="perf-chart" class="perf-chart-inner"></div>
+        </div>
+        <div id="return-asset-chart-wrap" class="perf-chart-wrap">
+          <div id="return-asset-chart-msg" class="perf-chart-msg" style="display:none"></div>
+          <div id="return-asset-chart" class="perf-chart-inner"></div>
         </div>
         <div class="return-contrib-section">
           <div class="return-contrib-title" title="包含目前浮動損益、已領股息、以及過去賣出實現的損益，分母為累積投入成本">各標的累積報酬貢獻（含已實現損益）</div>
@@ -2670,6 +2674,7 @@ let allocationPlannerContext = null;
   }
 
   let returnPerfChart = null;
+  let returnAssetTrendChart = null;
   let _highchartsLoaderPromise = null;
 
   /** file:// 或 CDN 被擋時，head 的 Highcharts 可能未注入；改以備援網址動態載入 */
@@ -2913,6 +2918,179 @@ let allocationPlannerContext = null;
     });
   }
 
+  function buildReturnAssetTrendSeries(totalAssetsNow){
+    const todayLocalStr = (() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    })();
+    const points = [];
+    const seen = new Set();
+    const snapshots = [...(DB.snapshots || [])]
+      .filter(s => s && s.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    for(const s of snapshots){
+      const ts = Date.parse(`${s.date}T12:00:00`);
+      const val = parseN(s.total);
+      if(!Number.isFinite(ts) || !Number.isFinite(val)) continue;
+      const investedAtDate = getInitialCapitalAmount() + sumCapitalAdjustments(s.date);
+      const gainAtDate = val - investedAtDate;
+      points.push({
+        x: ts,
+        total: Math.round(val),
+        gain: Number.isFinite(gainAtDate) ? Math.round(gainAtDate) : null,
+        date: s.date
+      });
+      seen.add(s.date);
+    }
+    if(Number.isFinite(totalAssetsNow) && totalAssetsNow > 0 && !seen.has(todayLocalStr)){
+      const tsToday = Date.parse(`${todayLocalStr}T12:00:00`);
+      if(Number.isFinite(tsToday)){
+        const investedToday = getInitialCapitalAmount() + sumCapitalAdjustments(todayLocalStr);
+        const gainToday = totalAssetsNow - investedToday;
+        points.push({
+          x: tsToday,
+          total: Math.round(totalAssetsNow),
+          gain: Number.isFinite(gainToday) ? Math.round(gainToday) : null,
+          date: todayLocalStr
+        });
+      }
+    }
+    points.sort((a, b) => a.x - b.x);
+    return points;
+  }
+
+  function renderReturnAssetTrendChartFallback(chartDiv, points){
+    const lines = [{
+      color: '#2563eb',
+      points: points.map(p => ({ x: p.x, y: p.total }))
+    }];
+    week1RenderLineChartSvg(chartDiv, lines, { height: 220 });
+  }
+
+  async function renderReturnAssetTrendChart(totalAssetsNow){
+    const wrap = $('#return-asset-chart-wrap');
+    const msgEl = $('#return-asset-chart-msg');
+    const chartDiv = $('#return-asset-chart');
+    if(!wrap || !chartDiv) return;
+
+    const clearChart = () => {
+      if(returnAssetTrendChart){
+        try{ returnAssetTrendChart.destroy(); }catch(e){}
+        returnAssetTrendChart = null;
+      }
+    };
+
+    const points = buildReturnAssetTrendSeries(totalAssetsNow);
+    if(points.length < 2){
+      clearChart();
+      chartDiv.style.display = 'none';
+      if(msgEl){
+        msgEl.style.display = '';
+        msgEl.textContent = '快照筆數不足（至少 2 筆），無法繪製總資產趨勢';
+      }
+      return;
+    }
+
+    if(typeof Highcharts === 'undefined'){
+      if(msgEl){
+        msgEl.style.display = '';
+        msgEl.textContent = '載入圖表中…';
+      }
+      chartDiv.style.display = 'none';
+    }
+
+    try{
+      await loadHighchartsIfNeeded();
+    }catch(e){
+      if(typeof Highcharts === 'undefined'){
+        clearChart();
+        chartDiv.style.display = '';
+        if(msgEl){ msgEl.style.display = 'none'; msgEl.textContent = ''; }
+        renderReturnAssetTrendChartFallback(chartDiv, points);
+        return;
+      }
+    }
+
+    if(msgEl) msgEl.style.display = 'none';
+    chartDiv.style.display = '';
+
+    const totalPoints = points.map(p => [p.x, p.total]);
+    const gainPoints = points.map(p => [p.x, p.gain]);
+
+    clearChart();
+    returnAssetTrendChart = Highcharts.chart(chartDiv, {
+      chart: { height: 220, backgroundColor: 'transparent' },
+      title: { text: null },
+      xAxis: { type: 'datetime', labels: { format: '{value:%Y/%m/%d}' } },
+      yAxis: [
+        {
+          title: { text: null },
+          labels: {
+            formatter(){ return fmtInt.format(Math.round(this.value)); }
+          }
+        },
+        {
+          title: { text: null },
+          opposite: true,
+          gridLineWidth: 0,
+          labels: {
+            formatter(){ return fmtInt.format(Math.round(this.value)); }
+          }
+        }
+      ],
+      tooltip: {
+        shared: true,
+        formatter(){
+          const dateText = Highcharts.dateFormat('%Y/%m/%d', this.x);
+          const lines = [`<b>${dateText}</b>`];
+          (this.points || []).forEach(pt => {
+            const y = Number.isFinite(pt.y) ? Math.round(pt.y) : 0;
+            const valueText = pt.series.name === '含息報酬金額'
+              ? `${y >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(y))}`
+              : fmtInt.format(y);
+            lines.push(`<span style="color:${pt.color}">●</span> ${pt.series.name}：${valueText}`);
+          });
+          return lines.join('<br/>');
+        }
+      },
+      legend: { enabled: false },
+      plotOptions: {
+        line: {
+          marker: { enabled: points.length <= 60 },
+          connectNulls: true
+        },
+        column: {
+          borderWidth: 0,
+          pointPadding: 0.08,
+          groupPadding: 0.18
+        },
+        series: { animation: false }
+      },
+      series: [
+        {
+          type: 'column',
+          name: '含息報酬金額',
+          data: gainPoints,
+          color: '#93c5fd',
+          yAxis: 1,
+          tooltip: { valueDecimals: 0 }
+        },
+        {
+          type: 'line',
+          name: '總資產',
+          data: totalPoints,
+          color: '#2563eb',
+          lineWidth: 2,
+          yAxis: 0
+        }
+      ],
+      credits: { enabled: false }
+    });
+  }
+
   function renderReturnContribBars(){
     const el = $('#return-twr-bars');
     if(!el) return;
@@ -2992,6 +3170,38 @@ let allocationPlannerContext = null;
     const investedCapital = getInitialCapitalAmount() + sumCapitalAdjustments();
     const simpleDec = investedCapital !== 0 ? (totalAssets - investedCapital) / investedCapital : null;
     const simplePct = simpleDec != null && Number.isFinite(simpleDec) ? simpleDec * 100 : null;
+    const todayLocalStr = (() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    })();
+    const snapshotsAsc = [...(DB.snapshots || [])]
+      .filter(s => s && s.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    let dailyBase = null;
+    let dailyBaseDate = '';
+    if(snapshotsAsc.length > 0){
+      const latest = snapshotsAsc[snapshotsAsc.length - 1];
+      const latestTotal = parseN(latest.total);
+      if(latest.date === todayLocalStr && snapshotsAsc.length >= 2){
+        const prev = snapshotsAsc[snapshotsAsc.length - 2];
+        const prevTotal = parseN(prev.total);
+        if(Number.isFinite(prevTotal) && prevTotal > 0){
+          dailyBase = prevTotal;
+          dailyBaseDate = prev.date;
+        }
+      }
+      if((dailyBase == null || !Number.isFinite(dailyBase)) && Number.isFinite(latestTotal) && latestTotal > 0){
+        dailyBase = latestTotal;
+        dailyBaseDate = latest.date;
+      }
+    }
+    const dailyDelta = Number.isFinite(dailyBase) ? (totalAssets - dailyBase) : null;
+    const dailyPct = Number.isFinite(dailyBase) && dailyBase !== 0 && Number.isFinite(dailyDelta)
+      ? (dailyDelta / dailyBase * 100)
+      : null;
 
     if(hintEl){
       if(snapCount < 3){
@@ -3017,6 +3227,12 @@ let allocationPlannerContext = null;
       const simpleHtml = simplePct != null
         ? `<span class="return-kpi-val ${simplePct >= 0 ? 'pos' : 'neg'}">${fmtReturnPct2FromPercent(simplePct)}</span>`
         : '<span class="return-kpi-val muted">—</span>';
+      const dailyHtml = Number.isFinite(dailyDelta)
+        ? `<span class="return-kpi-val ${dailyDelta >= 0 ? 'pos' : 'neg'}">${dailyDelta >= 0 ? '+' : ''}${fmtInt.format(Math.round(dailyDelta))}</span>`
+        : '<span class="return-kpi-val muted">—</span>';
+      const dailySub = Number.isFinite(dailyPct) && dailyBaseDate
+        ? `較 ${dailyBaseDate}：${dailyPct >= 0 ? '+' : ''}${dailyPct.toFixed(2)}%`
+        : '請先新增資產快照';
 
       kpiRow.innerHTML = `
         <div class="return-kpi-card">
@@ -3032,6 +3248,11 @@ let allocationPlannerContext = null;
           <div class="return-kpi-label">簡單報酬（含息）</div>
           ${simpleHtml}
           <div class="return-kpi-sub">現有計算方式：淨值增減 ÷ 累計投入資本（含起始與增減資）</div>
+        </div>
+        <div class="return-kpi-card">
+          <div class="return-kpi-label">總資產日變化</div>
+          ${dailyHtml}
+          <div class="return-kpi-sub">${dailySub}</div>
         </div>`;
     }
 
@@ -3042,6 +3263,7 @@ let allocationPlannerContext = null;
       return { date: s.date, y };
     });
     await renderPerfChart(twrPeriodsForChart, baseline0050);
+    await renderReturnAssetTrendChart(totalAssets);
     renderReturnContribBars();
 
     // 取得所有股票的指標（包含目前持有和曾經持有）
@@ -4033,6 +4255,96 @@ let allocationPlannerContext = null;
     // 渲染 Highcharts 折線圖
     renderSnapshotChangeChart(chartData);
     renderSnapshotChart(chartData);
+  }
+
+  // ========= 每日自動快照（24:00 前最後一筆）=========
+  let _autoSnapshotInitialized = false;
+  let _autoSnapshotIntervalId = null;
+  let _autoSnapshotDeadlineId = null;
+
+  function computeCurrentAssetSnapshotBase(dateStr){
+    const pos = computeAllPositions();
+    const holdings = Math.round(Object.values(pos).reduce((a, b) => a + parseN(b.marketValue), 0));
+    const cash = Math.round(DB.accounts.reduce((a, acc) => a + (parseN(acc.actual) + parseN(acc.settlement)), 0));
+    const total = holdings + cash;
+    const prev = DB.snapshots
+      .filter(s => s.date < dateStr)
+      .sort((a, b) => a.date < b.date ? 1 : -1)[0];
+    const prevTotal = prev ? parseN(prev.total) : 0;
+    const deltaAmt = prev ? (total - prevTotal) : 0;
+    const deltaPct = prev && prevTotal !== 0 ? (deltaAmt / prevTotal) : 0;
+    return { date: dateStr, holdings, cash, total, deltaAmt, deltaPct };
+  }
+
+  function upsertAutoDailySnapshot(reason = 'auto', force = false){
+    if(!DB || !Array.isArray(DB.snapshots)) return false;
+    const date = todayStr();
+    const base = computeCurrentAssetSnapshotBase(date);
+    const idx = DB.snapshots.findIndex(s => s.date === date);
+
+    if(idx >= 0){
+      const existing = DB.snapshots[idx] || {};
+      const isSame = parseN(existing.holdings) === base.holdings
+        && parseN(existing.cash) === base.cash
+        && parseN(existing.total) === base.total;
+      if(!force && isSame) return false;
+      DB.snapshots[idx] = {
+        ...existing,
+        ...base,
+        note: existing.note || '',
+        auto: true,
+        autoUpdatedAt: nowISO(),
+        autoReason: reason
+      };
+    } else {
+      DB.snapshots.push({
+        ...base,
+        note: '',
+        auto: true,
+        autoUpdatedAt: nowISO(),
+        autoReason: reason
+      });
+    }
+
+    saveDB();
+    return true;
+  }
+
+  function scheduleAutoSnapshotBeforeMidnight(){
+    if(_autoSnapshotDeadlineId) clearTimeout(_autoSnapshotDeadlineId);
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 50, 0);
+    if(target <= now) target.setDate(target.getDate() + 1);
+    _autoSnapshotDeadlineId = setTimeout(() => {
+      upsertAutoDailySnapshot('eod', true);
+      scheduleAutoSnapshotBeforeMidnight();
+    }, target.getTime() - now.getTime());
+  }
+
+  function startAutoDailySnapshotWatcher(){
+    if(_autoSnapshotInitialized) return;
+    _autoSnapshotInitialized = true;
+
+    // 進頁先寫一筆，確保當日趨勢有資料
+    upsertAutoDailySnapshot('init');
+
+    // 週期更新當日快照（覆蓋同一天）
+    _autoSnapshotIntervalId = setInterval(() => {
+      upsertAutoDailySnapshot('interval');
+    }, 5 * 60 * 1000);
+
+    // 24:00 前強制寫入最後一筆
+    scheduleAutoSnapshotBeforeMidnight();
+
+    // 切背景或離頁前補寫，盡量保留最後狀態
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'hidden'){
+        upsertAutoDailySnapshot('hidden', true);
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      upsertAutoDailySnapshot('pagehide', true);
+    });
   }
 
   function handleSnapshotAction(action, date){
@@ -7150,6 +7462,7 @@ function updateAllocationPlannerSummary(){
   _dbReady.then(() => {
     updateTargetLabels(getAllocationTarget(), getRegionTarget());
     fullRender();
+    startAutoDailySnapshotWatcher();
     setTimeout(() => refreshIndicatorsForAll(), 2500);
     // 自動更新股價（延遲 1.5 秒，讓代理伺服器有時間回應）
     setTimeout(() => handleRefreshAllClick(true), 1500);
@@ -7157,6 +7470,7 @@ function updateAllocationPlannerSummary(){
     console.error('[Init] DB 載入失敗，使用空資料渲染：', err);
     updateTargetLabels(getAllocationTarget(), getRegionTarget());
     fullRender();
+    startAutoDailySnapshotWatcher();
   });
 
   // ── 手動備份按鈕（設定頁用）─────────────────────────────
