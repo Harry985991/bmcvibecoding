@@ -240,6 +240,14 @@
     .range-btn{appearance:none; border:0; background:transparent; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:var(--sub); transition:all 0.2s}
     .range-btn:hover{background:#e2e8f0; color:var(--ink)}
     .range-btn.active{background:var(--brand); color:#fff; box-shadow:0 2px 4px rgba(15,118,110,0.25)}
+    .return-chart-toolbar{display:flex; justify-content:flex-end; margin:0 0 8px}
+    .return-range-btn{appearance:none; border:0; background:transparent; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:var(--sub); transition:all 0.2s; white-space:nowrap}
+    .return-range-btn:hover{background:#e2e8f0; color:var(--ink)}
+    .return-range-btn.active{background:var(--brand); color:#fff; box-shadow:0 2px 4px rgba(15,118,110,0.25)}
+    @media (max-width:640px){
+      .return-chart-toolbar{justify-content:flex-start; overflow-x:auto; padding-bottom:2px}
+      .return-chart-toolbar .chart-range-selector{flex:0 0 auto}
+    }
 
     /* 圖例樣式 */
     .chart-legend-container{display:flex; gap:20px; align-items:center}
@@ -301,7 +309,7 @@
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
 
     /* 報酬檢視：績效分析 */
-    .return-kpi-row{display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:12px}
+    .return-kpi-row{display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-bottom:12px}
     @media (max-width:900px){ .return-kpi-row{ grid-template-columns:1fr; } }
     .return-kpi-card{
       position:relative;
@@ -815,6 +823,15 @@
       <div class="card">
         <div id="return-kpi-row" class="return-kpi-row"></div>
         <div id="return-twr-hint" class="return-twr-hint" style="display:none" role="status"></div>
+        <div class="return-chart-toolbar">
+          <div class="chart-range-selector" role="group" aria-label="報酬圖表週期">
+            <button class="return-range-btn" type="button" data-return-range="all" aria-pressed="false">全部</button>
+            <button class="return-range-btn" type="button" data-return-range="half-year" aria-pressed="false">近半年</button>
+            <button class="return-range-btn" type="button" data-return-range="three-months" aria-pressed="false">近三個月</button>
+            <button class="return-range-btn" type="button" data-return-range="quarter" aria-pressed="false">近一季</button>
+            <button class="return-range-btn active" type="button" data-return-range="two-weeks" aria-pressed="true">近二周</button>
+          </div>
+        </div>
         <div id="perf-chart-wrap" class="perf-chart-wrap">
           <div id="perf-chart-msg" class="perf-chart-msg" style="display:none"></div>
           <div id="perf-chart" class="perf-chart-inner"></div>
@@ -1372,6 +1389,13 @@ const fmt2 = new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 2, maximumF
 const pct = (n) => (isFinite(n)? (n*100).toFixed(2)+'%':'—');
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 const todayStr = () => new Date().toISOString().slice(0,10);
+const localDateStr = (date = new Date()) => {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 const nowISO = () => new Date().toISOString();
 const parseN = (v) => isNaN(parseFloat(v))? 0 : parseFloat(v);
 const allocationTargetDefaults = { equity: 60, bond: 40 };
@@ -2673,9 +2697,76 @@ let allocationPlannerContext = null;
     }
   }
 
-  let returnPerfChart = null;
+  let returnDailyChangeChart = null;
   let returnAssetTrendChart = null;
+  let returnChartRange = 'two-weeks';
+  let returnChartLastInput = { totalAssets: null };
   let _highchartsLoaderPromise = null;
+
+  const returnChartRangeConfig = {
+    all: { label: '全部', type: 'all' },
+    'half-year': { label: '近半年', type: 'months', value: 6 },
+    'three-months': { label: '近三個月', type: 'months', value: 3 },
+    quarter: { label: '近一季', type: 'days', value: 90 },
+    'two-weeks': { label: '近二周', type: 'days', value: 14 }
+  };
+
+  function getLocalDateOnly(date = new Date()){
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function parseLocalDateOnly(dateStr){
+    if(!dateStr) return null;
+    const m = String(dateStr).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return null;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  function subtractLocalMonths(date, months){
+    const d = getLocalDateOnly(date);
+    const day = d.getDate();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - months);
+    const maxDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(day, maxDay));
+    return d;
+  }
+
+  function getReturnChartRangeStart(rangeKey){
+    const cfg = returnChartRangeConfig[rangeKey] || returnChartRangeConfig.all;
+    if(cfg.type === 'all') return null;
+    const today = getLocalDateOnly();
+    if(cfg.type === 'months') return subtractLocalMonths(today, cfg.value);
+    if(cfg.type === 'days'){
+      const start = getLocalDateOnly(today);
+      start.setDate(start.getDate() - cfg.value);
+      return start;
+    }
+    return null;
+  }
+
+  function getReturnChartRangeLabel(rangeKey){
+    return (returnChartRangeConfig[rangeKey] || returnChartRangeConfig.all).label;
+  }
+
+  function filterReturnChartDateData(data, rangeKey, getDate){
+    const list = Array.isArray(data) ? data : [];
+    const start = getReturnChartRangeStart(rangeKey);
+    if(!start) return list.slice();
+    return list.filter(item => {
+      const dateObj = parseLocalDateOnly(getDate(item));
+      return dateObj && dateObj >= start;
+    });
+  }
+
+  function syncReturnRangeButtons(){
+    $$('.return-range-btn').forEach(btn => {
+      const active = btn.dataset.returnRange === returnChartRange;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
 
   /** file:// 或 CDN 被擋時，head 的 Highcharts 可能未注入；改以備援網址動態載入 */
   function loadHighchartsIfNeeded(){
@@ -2821,37 +2912,93 @@ let allocationPlannerContext = null;
     });
   }
 
-  /** @param twrPeriods {{date:string,y:number|null}[]} 各快照日之累計 TWR（%） */
-  async function renderPerfChart(twrPeriods, baseline0050){
+  function buildReturnDailyChangeSeries(){
+    const points = [];
+    const snapshots = [...(DB.snapshots || [])]
+      .filter(s => s && s.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    let prevTotal = null;
+    for(const s of snapshots){
+      const ts = Date.parse(`${s.date}T12:00:00`);
+      const total = parseN(s.total);
+      if(!Number.isFinite(ts) || !Number.isFinite(total)) continue;
+      const delta = Number.isFinite(prevTotal) ? total - prevTotal : 0;
+      points.push({
+        x: ts,
+        date: s.date,
+        total: Math.round(total),
+        delta: Math.round(delta)
+      });
+      prevTotal = total;
+    }
+    return points;
+  }
+
+  function renderReturnDailyChangeChartFallback(chartDiv, points){
+    const width = 760;
+    const height = 220;
+    const pad = { top: 18, right: 18, bottom: 32, left: 70 };
+    const innerW = width - pad.left - pad.right;
+    const innerH = height - pad.top - pad.bottom;
+    const maxAbs = Math.max(1, ...points.map(p => Math.abs(parseN(p.delta))));
+    const yFor = (v) => pad.top + innerH / 2 - (parseN(v) / maxAbs) * (innerH / 2 - 8);
+    const zeroY = yFor(0);
+    const slotW = innerW / points.length;
+    const barW = Math.max(3, Math.min(18, slotW * 0.62));
+    const maxLabels = 6;
+    const labelStep = Math.max(1, Math.ceil(points.length / maxLabels));
+    const bars = points.map((p, i) => {
+      const x = pad.left + i * slotW + (slotW - barW) / 2;
+      const y = yFor(Math.max(p.delta, 0));
+      const h = Math.max(1, Math.abs(yFor(p.delta) - zeroY));
+      const color = p.delta >= 0 ? '#0f766e' : '#dc2626';
+      const title = `${p.date} ${p.delta >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(p.delta)))}`;
+      return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="2" fill="${color}"><title>${title}</title></rect>`;
+    }).join('');
+    const xLabels = points
+      .filter((_, i) => i % labelStep === 0 || i === points.length - 1)
+      .map((p, i, arr) => {
+        const sourceIndex = points.indexOf(p);
+        const x = pad.left + sourceIndex * slotW + slotW / 2;
+        const text = p.date.slice(5).replace('-', '/');
+        return `<text x="${x.toFixed(2)}" y="${height - 10}" text-anchor="${i === 0 ? 'start' : (i === arr.length - 1 ? 'end' : 'middle')}" font-size="10" fill="#64748b">${text}</text>`;
+      }).join('');
+    chartDiv.style.height = `${height}px`;
+    chartDiv.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" style="display:block;width:100%;height:${height}px" preserveAspectRatio="xMidYMid meet" aria-label="每日總資產增減金額">
+        <line x1="${pad.left}" y1="${zeroY.toFixed(2)}" x2="${width - pad.right}" y2="${zeroY.toFixed(2)}" stroke="#cbd5e1" stroke-width="1"></line>
+        ${bars}
+        ${xLabels}
+      </svg>`;
+  }
+
+  async function renderReturnDailyChangeChart(){
     const wrap = $('#perf-chart-wrap');
     const msgEl = $('#perf-chart-msg');
     const chartDiv = $('#perf-chart');
     if(!wrap || !chartDiv) return;
 
+    const allPoints = buildReturnDailyChangeSeries();
+    const points = filterReturnChartDateData(allPoints, returnChartRange, p => p.date);
+    const isFiltered = returnChartRange !== 'all';
+    const rangeLabel = getReturnChartRangeLabel(returnChartRange);
+
     const clearChart = () => {
-      if(returnPerfChart){
-        try{ returnPerfChart.destroy(); }catch(e){}
-        returnPerfChart = null;
+      if(returnDailyChangeChart){
+        try{ returnDailyChangeChart.destroy(); }catch(e){}
+        returnDailyChangeChart = null;
       }
     };
 
-    if(!twrPeriods || twrPeriods.length < 3){
+    if(points.length < 2){
       clearChart();
       chartDiv.style.display = 'none';
       if(msgEl){
         msgEl.style.display = '';
-        msgEl.textContent = '快照筆數不足（至少 3 筆），無法繪製走勢圖';
-      }
-      return;
-    }
-
-    const hasY = twrPeriods.some(p => p.y != null && Number.isFinite(p.y));
-    if(!hasY){
-      clearChart();
-      chartDiv.style.display = 'none';
-      if(msgEl){
-        msgEl.style.display = '';
-        msgEl.textContent = 'TWR 無法計算，無法繪製走勢圖';
+        msgEl.textContent = isFiltered && allPoints.length >= 2
+          ? `選定週期（${rangeLabel}）內快照筆數不足（至少 2 筆），無法繪製每日總資產增減`
+          : '快照筆數不足（至少 2 筆），無法繪製每日總資產增減';
       }
       return;
     }
@@ -2872,48 +3019,48 @@ let allocationPlannerContext = null;
         clearChart();
         chartDiv.style.display = '';
         if(msgEl){ msgEl.style.display = 'none'; msgEl.textContent = ''; }
-        renderPerfChartFallback(chartDiv, twrPeriods, baseline0050);
+        renderReturnDailyChangeChartFallback(chartDiv, points);
         return;
       }
-      // Highcharts 已載入（只是 treemap 失敗），繼續正常渲染折線圖
+      // Highcharts 已載入（只是 treemap 失敗），繼續正常渲染柱狀圖
     }
 
     if(msgEl) msgEl.style.display = 'none';
     chartDiv.style.display = '';
 
-    const dates = twrPeriods.map(p => p.date);
-    const baselinePct = buildBaselinePctArray(dates, baseline0050);
-
-    const dataMy = twrPeriods.map(p => {
-      const t = Date.parse(p.date + 'T12:00:00');
-      const y = p.y;
-      return [t, y != null && Number.isFinite(y) ? Number(y.toFixed(4)) : null];
-    });
-
-    const data50 = dates.map((d, i) => {
-      const t = Date.parse(d + 'T12:00:00');
-      const y = baselinePct[i];
-      return [t, y != null && Number.isFinite(y) ? Number(y.toFixed(4)) : null];
-    });
+    const data = points.map(p => ({
+      x: p.x,
+      y: p.delta,
+      color: p.delta >= 0 ? '#0f766e' : '#dc2626',
+      custom: { total: p.total, date: p.date }
+    }));
 
     clearChart();
-    returnPerfChart = Highcharts.chart(chartDiv, {
-      chart: { type: 'line', height: 220, backgroundColor: 'transparent' },
+    returnDailyChangeChart = Highcharts.chart(chartDiv, {
+      chart: { type: 'column', height: 220, backgroundColor: 'transparent' },
       title: { text: null },
-      xAxis: { type: 'datetime', labels: { format: '{value:%Y/%m}' } },
-      yAxis: { title: { text: null }, labels: { format: '{value}%' } },
-      tooltip: { pointFormat: '<b>{series.name}</b>: {point.y:.2f}%' },
-      legend: { enabled: false },
-      plotOptions: {
-        line: {
-          marker: { enabled: false },
-          connectNulls: true
+      xAxis: { type: 'datetime', labels: { format: '{value:%Y/%m/%d}' } },
+      yAxis: {
+        title: { text: null },
+        labels: {
+          formatter(){ return fmtInt.format(Math.round(this.value)); }
+        },
+        plotLines: [{ value: 0, color: '#94a3b8', width: 1, dashStyle: 'Dash' }]
+      },
+      tooltip: {
+        formatter(){
+          const dateText = Highcharts.dateFormat('%Y/%m/%d', this.x);
+          const value = Number.isFinite(this.y) ? Math.round(this.y) : 0;
+          const sign = value >= 0 ? '+' : '-';
+          return `<b>${dateText}</b><br/>每日總資產增減：${sign}${fmtInt.format(Math.abs(value))}<br/>總資產：${fmtInt.format(Math.round(this.point.custom.total))}`;
         }
       },
-      series: [
-        { name: '我的組合', data: dataMy, color: '#3182ce', lineWidth: 2 },
-        { name: '純持有 0050', data: data50, color: '#a0aec0', dashStyle: 'Dash', lineWidth: 1.5 }
-      ],
+      legend: { enabled: false },
+      plotOptions: {
+        column: { borderWidth: 0, pointPadding: 0.08, groupPadding: 0.18 },
+        series: { animation: false }
+      },
+      series: [{ name: '每日總資產增減', data }],
       credits: { enabled: false }
     });
   }
@@ -2935,8 +3082,9 @@ let allocationPlannerContext = null;
       const ts = Date.parse(`${s.date}T12:00:00`);
       const val = parseN(s.total);
       if(!Number.isFinite(ts) || !Number.isFinite(val)) continue;
+      const hasStoredReturnAmount = s.returnAmount !== undefined && s.returnAmount !== null && s.returnAmount !== '';
       const investedAtDate = getInitialCapitalAmount() + sumCapitalAdjustments(s.date);
-      const gainAtDate = val - investedAtDate;
+      const gainAtDate = hasStoredReturnAmount ? parseN(s.returnAmount) : (val - investedAtDate);
       points.push({
         x: ts,
         total: Math.round(val),
@@ -2983,13 +3131,18 @@ let allocationPlannerContext = null;
       }
     };
 
-    const points = buildReturnAssetTrendSeries(totalAssetsNow);
+    const allPoints = buildReturnAssetTrendSeries(totalAssetsNow);
+    const points = filterReturnChartDateData(allPoints, returnChartRange, p => p.date);
+    const isFiltered = returnChartRange !== 'all';
+    const rangeLabel = getReturnChartRangeLabel(returnChartRange);
     if(points.length < 2){
       clearChart();
       chartDiv.style.display = 'none';
       if(msgEl){
         msgEl.style.display = '';
-        msgEl.textContent = '快照筆數不足（至少 2 筆），無法繪製總資產趨勢';
+        msgEl.textContent = isFiltered && allPoints.length >= 2
+          ? `選定週期（${rangeLabel}）內快照筆數不足（至少 2 筆），無法繪製總資產趨勢`
+          : '快照筆數不足（至少 2 筆），無法繪製總資產趨勢';
       }
       return;
     }
@@ -3150,18 +3303,21 @@ let allocationPlannerContext = null;
     return (percentVal >= 0 ? '+' : '') + percentVal.toFixed(2) + '%';
   }
 
+  async function refreshReturnCharts(){
+    syncReturnRangeButtons();
+    const { totalAssets } = returnChartLastInput;
+    await renderReturnDailyChangeChart();
+    await renderReturnAssetTrendChart(totalAssets);
+  }
+
   async function renderReturnOverview(){
     const tbody = $('#tbl-return tbody');
     if(!tbody) return;
     tbody.innerHTML = '';
+    syncReturnRangeButtons();
 
-    const snapCount = (DB.snapshots || []).length;
     const hintEl = $('#return-twr-hint');
     const kpiRow = $('#return-kpi-row');
-    const twrFull = snapCount >= 3 ? calcTWR() : { twr: null, periods: [] };
-    const twrOk = snapCount >= 3 && twrFull.twr != null && Number.isFinite(twrFull.twr);
-    const baseline0050 = calc0050BaselineReturn();
-    const baselineOk = baseline0050 != null && Number.isFinite(baseline0050);
 
     const posAll = computeAllPositions();
     const holdingsMv = Object.values(posAll).reduce((a, b) => a + b.marketValue, 0);
@@ -3204,26 +3360,11 @@ let allocationPlannerContext = null;
       : null;
 
     if(hintEl){
-      if(snapCount < 3){
-        hintEl.style.display = '';
-        hintEl.textContent = '請在「資產變化」頁面新增每日快照以啟用 TWR 計算';
-      }else{
-        hintEl.style.display = 'none';
-      }
+      hintEl.style.display = 'none';
+      hintEl.textContent = '';
     }
 
     if(kpiRow){
-      const twrText = !twrOk
-        ? '<span class="return-kpi-val muted">快照資料不足</span>'
-        : `<span class="return-kpi-val ${twrFull.twr >= 0 ? 'pos' : 'neg'}">${fmtReturnPct2FromDecimal(twrFull.twr)}</span>`;
-      let excessHtml;
-      if(!twrOk || !baselineOk){
-        excessHtml = '<span class="return-kpi-val muted">—</span>';
-      }else{
-        const ex = twrFull.twr - baseline0050;
-        const exCls = ex >= 0 ? 'pos' : 'neg';
-        excessHtml = `<span class="return-kpi-val ${exCls}">${fmtReturnPct2FromDecimal(ex)}</span>`;
-      }
       const simpleHtml = simplePct != null
         ? `<span class="return-kpi-val ${simplePct >= 0 ? 'pos' : 'neg'}">${fmtReturnPct2FromPercent(simplePct)}</span>`
         : '<span class="return-kpi-val muted">—</span>';
@@ -3236,15 +3377,6 @@ let allocationPlannerContext = null;
 
       kpiRow.innerHTML = `
         <div class="return-kpi-card">
-          ${twrOk ? '<span class="return-kpi-badge">新</span>' : ''}
-          <div class="return-kpi-label">TWR 時間加權報酬</div>
-          ${twrText}
-        </div>
-        <div class="return-kpi-card">
-          <div class="return-kpi-label">vs 0050 超額報酬</div>
-          ${excessHtml}
-        </div>
-        <div class="return-kpi-card">
           <div class="return-kpi-label">簡單報酬（含息）</div>
           ${simpleHtml}
           <div class="return-kpi-sub">現有計算方式：淨值增減 ÷ 累計投入資本（含起始與增減資）</div>
@@ -3256,14 +3388,8 @@ let allocationPlannerContext = null;
         </div>`;
     }
 
-    const snapsSorted = [...(DB.snapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
-    const twrPeriodsForChart = snapsSorted.map(s => {
-      const c = calcTWR(s.date);
-      const y = c.twr != null && Number.isFinite(c.twr) ? c.twr * 100 : null;
-      return { date: s.date, y };
-    });
-    await renderPerfChart(twrPeriodsForChart, baseline0050);
-    await renderReturnAssetTrendChart(totalAssets);
+    returnChartLastInput = { totalAssets };
+    await refreshReturnCharts();
     renderReturnContribBars();
 
     // 取得所有股票的指標（包含目前持有和曾經持有）
@@ -4262,31 +4388,44 @@ let allocationPlannerContext = null;
   let _autoSnapshotIntervalId = null;
   let _autoSnapshotDeadlineId = null;
 
+  function isAutoSnapshotDateAllowed(dateStr){
+    const d = parseLocalDateOnly(dateStr);
+    if(!d) return false;
+    const day = d.getDay();
+    return day !== 0 && day !== 6;
+  }
+
   function computeCurrentAssetSnapshotBase(dateStr){
     const pos = computeAllPositions();
     const holdings = Math.round(Object.values(pos).reduce((a, b) => a + parseN(b.marketValue), 0));
     const cash = Math.round(DB.accounts.reduce((a, acc) => a + (parseN(acc.actual) + parseN(acc.settlement)), 0));
     const total = holdings + cash;
+    const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(dateStr);
+    const returnAmount = Math.round(total - investedCapitalToDate);
     const prev = DB.snapshots
       .filter(s => s.date < dateStr)
       .sort((a, b) => a.date < b.date ? 1 : -1)[0];
     const prevTotal = prev ? parseN(prev.total) : 0;
     const deltaAmt = prev ? (total - prevTotal) : 0;
     const deltaPct = prev && prevTotal !== 0 ? (deltaAmt / prevTotal) : 0;
-    return { date: dateStr, holdings, cash, total, deltaAmt, deltaPct };
+    return { date: dateStr, holdings, cash, total, returnAmount, deltaAmt, deltaPct };
   }
 
   function upsertAutoDailySnapshot(reason = 'auto', force = false){
     if(!DB || !Array.isArray(DB.snapshots)) return false;
-    const date = todayStr();
+    const date = localDateStr();
+    if(!isAutoSnapshotDateAllowed(date)) return false;
     const base = computeCurrentAssetSnapshotBase(date);
     const idx = DB.snapshots.findIndex(s => s.date === date);
 
     if(idx >= 0){
       const existing = DB.snapshots[idx] || {};
+      const hasReturnAmount = existing.returnAmount !== undefined && existing.returnAmount !== null && existing.returnAmount !== '';
       const isSame = parseN(existing.holdings) === base.holdings
         && parseN(existing.cash) === base.cash
-        && parseN(existing.total) === base.total;
+        && parseN(existing.total) === base.total
+        && hasReturnAmount
+        && parseN(existing.returnAmount) === base.returnAmount;
       if(!force && isSame) return false;
       DB.snapshots[idx] = {
         ...existing,
@@ -6236,6 +6375,7 @@ function updateAllocationPlannerSummary(){
 
       await Promise.allSettled(tasks);
       saveDB();
+      upsertAutoDailySnapshot(isAutoRefresh ? 'price-refresh-auto' : 'price-refresh-manual', true);
       fullRender();
     } catch(err) {
       console.error('即時更新全部時發生錯誤:', err);
@@ -6656,7 +6796,7 @@ function updateAllocationPlannerSummary(){
     const currentCash = DB.accounts.reduce((a,acc)=> a + (parseN(acc.actual) + parseN(acc.settlement)), 0);
     const currentTotal = currentHoldings + currentCash;
     
-    $('#snapshot-date').value = snapshot?.date || todayStr();
+    $('#snapshot-date').value = snapshot?.date || localDateStr();
     $('#snapshot-holdings').value = snapshot ? Math.round(parseN(snapshot.holdings)) : Math.round(currentHoldings);
     $('#snapshot-cash').value = snapshot ? Math.round(parseN(snapshot.cash)) : Math.round(currentCash);
     $('#snapshot-total').value = Math.round(currentTotal);
@@ -6683,7 +6823,9 @@ function updateAllocationPlannerSummary(){
       const prev = DB.snapshots.filter(s=>s.date<date).sort((a,b)=> a.date<b.date?1:-1)[0];
       const deltaAmt = prev? total - prev.total : 0;
       const deltaPct = prev? (deltaAmt / (prev.total||1)) : 0;
-      const record = {date, holdings, cash, total, deltaAmt, deltaPct, note};
+      const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(date);
+      const returnAmount = Math.round(total - investedCapitalToDate);
+      const record = {date, holdings, cash, total, returnAmount, deltaAmt, deltaPct, note};
       const idx = DB.snapshots.findIndex(s=>s.date===date);
       if(idx>=0) DB.snapshots[idx]=record; else DB.snapshots.push(record);
       saveDB({backup:true}); fullRender();
@@ -6810,7 +6952,7 @@ function updateAllocationPlannerSummary(){
   if (btnStartProxy) btnStartProxy.addEventListener('click', startProxyServer);
   
   // 綁定時間範圍選擇器事件
-  $$('.range-btn').forEach(btn => {
+  $$('.range-btn[data-range]').forEach(btn => {
     btn.addEventListener('click', () => {
       const rangeValue = parseInt(btn.dataset.range);
       // 更新所有按鈕的 active 狀態
@@ -6822,6 +6964,19 @@ function updateAllocationPlannerSummary(){
       if($('#tbl-snapshots')) renderSnapshots();
     });
   });
+
+  const returnRangeToolbar = $('.return-chart-toolbar');
+  if(returnRangeToolbar){
+    returnRangeToolbar.addEventListener('click', (event) => {
+      const btn = event.target.closest('.return-range-btn');
+      if(!btn) return;
+      const nextRange = btn.dataset.returnRange || 'all';
+      if(!returnChartRangeConfig[nextRange]) return;
+      if(returnChartRange === nextRange) return;
+      returnChartRange = nextRange;
+      refreshReturnCharts();
+    });
+  }
   
   // 監聽 Electron 的代理伺服器狀態更新
   if (isElectron) {
@@ -7729,24 +7884,6 @@ function updateAllocationPlannerSummary(){
       </svg>`;
   }
 
-  function renderPerfChartFallback(chartDiv, twrPeriods, baseline0050){
-    const dates = twrPeriods.map(p => p.date);
-    const baselinePct = buildBaselinePctArray(dates, baseline0050);
-    const lines = [
-      {
-        color: '#3182ce',
-        points: twrPeriods.map(p => [Date.parse(p.date + 'T12:00:00'), p.y]).map(([x, y]) => ({ x, y }))
-      },
-      {
-        color: '#94a3b8',
-        dash: '6 5',
-        strokeWidth: 1.5,
-        points: dates.map((d, i) => ({ x: Date.parse(d + 'T12:00:00'), y: baselinePct[i] }))
-      }
-    ];
-    week1RenderLineChartSvg(chartDiv, lines, { height: 220 });
-  }
-
   function renderDrawdownChartFallback(container, series){
     container.style.height = '380px';
     container.style.display = '';
@@ -8230,7 +8367,7 @@ function updateAllocationPlannerSummary(){
     }
 
     // Highcharts not yet loaded or failed — use built-in SVG fallback.
-    // If renderPerfChart is concurrently loading Highcharts, retry a few times first.
+    // If another return chart is concurrently loading Highcharts, retry a few times first.
     if (typeof Highcharts === 'undefined') {
       const tryCount = (renderDrawdownChart._retries || 0) + 1;
       renderDrawdownChart._retries = tryCount;
