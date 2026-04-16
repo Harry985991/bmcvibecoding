@@ -2088,6 +2088,32 @@ let allocationPlannerContext = null;
     };
   }
 
+  function buildHoldingSourceStates(stocks, txns){
+    const txnsByStockId = new Map();
+    for(const txn of txns){
+      if(!txnsByStockId.has(txn.stockId)){
+        txnsByStockId.set(txn.stockId, []);
+      }
+      txnsByStockId.get(txn.stockId).push(txn);
+    }
+
+    return (stocks || []).map(stock => {
+      const stockTxns = txnsByStockId.get(stock.id) || [];
+      const position = buildMergedPosition(stockTxns);
+      return {
+        stock,
+        txns: stockTxns,
+        txnCount: stockTxns.length,
+        position,
+        qty: roundHoldingQty(position.qty),
+        hasTransactions: stockTxns.length > 0,
+        isActiveHolding: roundHoldingQty(position.qty) > 0,
+        quoteTime: String(stock?.lastPriceAt || '').trim(),
+        price: parseN(stock?.price)
+      };
+    });
+  }
+
   /**
    * 將 DB.stocks / DB.txns 先標準化成同一份持倉資料：
    * 1. 以 symbol + market + assetClass 合併重複標的
@@ -2114,7 +2140,11 @@ let allocationPlannerContext = null;
     }
 
     return Array.from(groups.entries()).map(([instrumentKey, group]) => {
-      const displayStock = selectDisplayStock(group.stocks) || group.stocks[0] || {};
+      const sourceStates = buildHoldingSourceStates(group.stocks, group.txns);
+      const activeSourceStates = sourceStates.filter(state => state.isActiveHolding);
+      const activeSourceStocks = activeSourceStates.map(state => state.stock);
+      const relevantQuoteStates = activeSourceStates.length ? activeSourceStates : sourceStates.filter(state => state.hasTransactions);
+      const displayStock = selectDisplayStock(activeSourceStocks.length ? activeSourceStocks : group.stocks) || group.stocks[0] || {};
       const mergedPosition = buildMergedPosition(group.txns);
       const symbol = String(displayStock.symbol || group.stocks[0]?.symbol || '').trim().toUpperCase();
       const name = group.stocks.map(s => s.name).find(Boolean) || '';
@@ -2122,10 +2152,12 @@ let allocationPlannerContext = null;
       const assetClass = String(displayStock.assetClass || group.stocks[0]?.assetClass || 'Equity').trim() || 'Equity';
       const currency = group.stocks.map(s => s.currency).find(Boolean) || '';
       const stockIds = group.stocks.map(s => s.id);
-      const quoteTimes = [...new Set(group.stocks.map(s => String(s.lastPriceAt || '').trim()).filter(Boolean))];
+      const activeSourceStockIds = activeSourceStates.map(state => state.stock.id);
+      const inactiveSourceStockIds = sourceStates.filter(state => !state.isActiveHolding).map(state => state.stock.id);
+      const quoteTimes = [...new Set(relevantQuoteStates.map(state => state.quoteTime).filter(Boolean))];
       const quotePrices = [...new Set(
-        group.stocks
-          .map(s => parseN(s.price))
+        relevantQuoteStates
+          .map(state => state.price)
           .filter(v => Number.isFinite(v) && v > 0)
           .map(v => v.toFixed(6))
       )];
@@ -2152,8 +2184,9 @@ let allocationPlannerContext = null;
         .slice()
         .sort((a, b) => getQuoteTimeValue(b) - getQuoteTimeValue(a))[0] || (displayStock.lastPriceAt || '');
       const missingPrice = !(price > 0);
-      const quoteSyncWarning = quoteTimes.length > 1 || quotePrices.length > 1;
-      const hasDuplicateRecords = stockIds.length > 1;
+      // Data Health 只檢查「目前持倉有貢獻」的來源，避免把已出清舊倉或空主檔誤判成重複持倉。
+      const quoteSyncWarning = activeSourceStates.length > 1 && (quoteTimes.length > 1 || quotePrices.length > 1);
+      const hasDuplicateRecords = activeSourceStates.length > 1;
 
       return {
         instrumentKey,
@@ -2167,7 +2200,11 @@ let allocationPlannerContext = null;
           currency
         },
         stockIds,
+        activeSourceStockIds,
+        inactiveSourceStockIds,
         sourceStocks: group.stocks.slice(),
+        sourceStates,
+        activeSourceStates,
         txns: group.txns.slice(),
         txnCount: group.txns.length,
         qty,
@@ -2187,6 +2224,8 @@ let allocationPlannerContext = null;
         missingPrice,
         quoteSyncWarning,
         hasDuplicateRecords,
+        sourceRecordCount: sourceStates.length,
+        activeSourceCount: activeSourceStates.length,
         stockPnlWithFees,
         stockReturnPct,
         totalPnlWithFees,
@@ -2761,6 +2800,63 @@ let allocationPlannerContext = null;
     return t.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false });
   }
 
+  function formatQuoteTimeDiff(ms){
+    if(!Number.isFinite(ms) || ms < 0) return '—';
+    const totalMinutes = Math.round(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if(hours <= 0) return `${minutes} 分`;
+    if(minutes === 0) return `${hours} 小時`;
+    return `${hours} 小時 ${minutes} 分`;
+  }
+
+  function getQuoteTimeRangeSummary(quoteTimes){
+    const values = (quoteTimes || [])
+      .map(iso => ({ iso, ts: getQuoteTimeValue(iso) }))
+      .filter(item => Number.isFinite(item.ts))
+      .sort((a, b) => a.ts - b.ts);
+
+    if(values.length === 0){
+      return {
+        text: '尚無持倉報價',
+        detail: '尚未抓到可用的報價更新時間',
+        earliest: null,
+        latest: null,
+        diffMs: null,
+        level: 'missing'
+      };
+    }
+
+    if(values.length === 1){
+      const timeText = formatStockPriceUpdatedAt(values[0].iso);
+      return {
+        text: `報價更新 ${timeText}`,
+        detail: `所有持倉共用同一個更新時間：${timeText}`,
+        earliest: values[0].iso,
+        latest: values[0].iso,
+        diffMs: 0,
+        level: 'aligned'
+      };
+    }
+
+    const earliest = values[0];
+    const latest = values[values.length - 1];
+    const diffMs = latest.ts - earliest.ts;
+    const diffMinutes = diffMs / 60000;
+    let level = 'minor';
+    if(diffMinutes >= 180) level = 'major';
+    else if(diffMinutes >= 30) level = 'medium';
+
+    return {
+      text: `最早 ${formatStockPriceUpdatedAt(earliest.iso)} / 最晚 ${formatStockPriceUpdatedAt(latest.iso)} / 時差 ${formatQuoteTimeDiff(diffMs)}`,
+      detail: `${values.length} 個不同更新時間，最早 ${formatStockPriceUpdatedAt(earliest.iso)}，最晚 ${formatStockPriceUpdatedAt(latest.iso)}，最大時間差 ${formatQuoteTimeDiff(diffMs)}`,
+      earliest: earliest.iso,
+      latest: latest.iso,
+      diffMs,
+      level
+    };
+  }
+
   function renderHoldingsValidation(summary = calculatePortfolioSummary()){
     const panel = $('#holdings-validation-panel');
     if(!panel) return;
@@ -2772,9 +2868,7 @@ let allocationPlannerContext = null;
     const statusDesc = !summary.validation.holdingsMatchesDetails
       ? '持倉市值與明細加總不一致，請檢查零股、重複持倉或資料同步時間'
       : (summary.hasSyncWarning ? '資料更新時間不同，數值可能暫時不一致' : '持倉市值與明細加總一致，摘要卡與表格共用同一份持倉資料');
-    const quoteSummary = summary.quoteTimes.length > 1
-      ? `${summary.quoteTimes.length} 個不同更新時間`
-      : (summary.quoteTimes[0] ? formatStockPriceUpdatedAt(summary.quoteTimes[0]) : '—');
+    const quoteRangeSummary = getQuoteTimeRangeSummary(summary.quoteTimes);
     const heldRows = summary.heldRows.slice().sort((a, b) => b.marketValue - a.marketValue);
 
     panel.className = `holdings-validation-panel ${statusClass}`;
@@ -2809,7 +2903,7 @@ let allocationPlannerContext = null;
         </div>
         <div class="holdings-validation-item">
           <div class="label">報價更新時間</div>
-          <div class="value ${summary.hasSyncWarning ? 'warn' : ''}" style="font-size:15px">${quoteSummary}</div>
+          <div class="value ${summary.hasSyncWarning ? 'warn' : ''}" style="font-size:15px">${quoteRangeSummary.text}</div>
         </div>
       </div>
       <details>
@@ -3049,9 +3143,7 @@ let allocationPlannerContext = null;
     const desc = issues.length
       ? '以下項目可能導致畫面數值暫時不一致，建議先確認後再判讀報表。'
       : '目前未發現會直接導致資料錯誤或不一致的高風險訊號。';
-    const quoteSummary = summary.quoteTimes.length > 1
-      ? `${summary.quoteTimes.length} 個報價時間`
-      : (summary.quoteTimes[0] ? `報價更新 ${formatStockPriceUpdatedAt(summary.quoteTimes[0])}` : '尚無持倉報價');
+    const quoteRangeSummary = getQuoteTimeRangeSummary(summary.quoteTimes);
     const shouldShowDebug = issues.length > 0;
     const debugSections = [
       {
@@ -3091,7 +3183,7 @@ let allocationPlannerContext = null;
           ? issues.map(issue => `<span class="data-health-chip ${issue.type}">${issue.text}</span>`).join('')
           : '<span class="data-health-chip ok">持倉、總資產與報價口徑目前一致</span>'}
       </div>
-      <div class="data-health-note">目前追蹤：${quoteSummary}；持倉 ${summary.heldRows.length} 檔；明細加總 ${fmtInt.format(Math.round(summary.detailMarketValueSum))}。</div>
+      <div class="data-health-note">目前追蹤：${quoteRangeSummary.detail}；持倉 ${summary.heldRows.length} 檔；明細加總 ${fmtInt.format(Math.round(summary.detailMarketValueSum))}。</div>
       <div class="data-health-report">
         <div class="data-health-report-head">
           <div>
