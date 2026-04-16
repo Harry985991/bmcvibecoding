@@ -389,6 +389,83 @@
     .wk1-signal-note{display:block;white-space:normal;line-height:1.35}
     .cell-stack{display:flex;flex-direction:column;gap:2px;line-height:1.25;text-align:inherit}
     .cell-stack .sym{font-weight:700;font-size:13px}
+    .holdings-validation-panel{
+      margin-bottom:14px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#f8fafc;
+    }
+    .holdings-validation-panel.ok{background:#ecfdf5;border-color:#a7f3d0}
+    .holdings-validation-panel.warn{background:#fffbeb;border-color:#fcd34d}
+    .holdings-validation-panel.error{background:#fef2f2;border-color:#fecaca}
+    .holdings-validation-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .holdings-validation-title{font-size:13px;font-weight:700;color:var(--ink)}
+    .holdings-validation-desc{font-size:12px;color:var(--sub);line-height:1.5}
+    .holdings-validation-status{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
+      border:1px solid var(--line);background:#fff;color:var(--ink);
+    }
+    .holdings-validation-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .holdings-validation-item{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+    }
+    .holdings-validation-item .label{font-size:11px;color:var(--sub);margin-bottom:4px}
+    .holdings-validation-item .value{
+      font-size:18px;font-weight:700;color:var(--ink);
+      font-family:var(--font-num);font-variant-numeric:tabular-nums;
+    }
+    .holdings-validation-item .value.ok{color:var(--green)}
+    .holdings-validation-item .value.warn{color:var(--orange)}
+    .holdings-validation-item .value.error{color:var(--red)}
+    .holdings-validation-panel details{
+      margin-top:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+    }
+    .holdings-validation-panel summary{
+      cursor:pointer;
+      font-size:12px;
+      font-weight:600;
+      color:var(--text);
+      list-style:none;
+    }
+    .holdings-validation-panel summary::-webkit-details-marker{display:none}
+    .holdings-debug-table-wrap{overflow-x:auto;margin-top:10px}
+    .holdings-debug-table{width:100%;border-collapse:collapse;font-size:12px}
+    .holdings-debug-table th,.holdings-debug-table td{
+      border-bottom:1px solid var(--line);
+      padding:8px 6px;
+      text-align:left;
+      vertical-align:top;
+    }
+    .holdings-debug-table th{color:var(--sub);font-weight:600}
+    .holdings-debug-table td.num{text-align:right}
+    .holdings-flag{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:700;
+      border:1px solid transparent;
+      margin-right:4px;
+      margin-top:2px;
+    }
+    .holdings-flag.warn{background:#fffbeb;color:#b45309;border-color:#fcd34d}
+    .holdings-flag.error{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+    .holdings-flag.info{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
     .holdings-integrated td.text-start,.holdings-integrated th.text-start{text-align:left!important}
     .holdings-integrated td.text-start .cell-stack,.holdings-integrated th.text-start{text-align:left}
     .price-stale-warn{color:#ea580c;font-weight:600}
@@ -520,7 +597,7 @@
         <div class="kpi-mini" id="kpi-mini-strip" aria-label="關鍵指標快覽">
           <span class="kpi-mini-item"><span class="kpi-mini-label">總資產</span><span class="kpi-mini-value" id="mini-total-asset">—</span></span>
           <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">股票市值</span><span class="kpi-mini-value" id="mini-holdings-mv">—</span></span>
+          <span class="kpi-mini-item"><span class="kpi-mini-label">持倉市值</span><span class="kpi-mini-value" id="mini-holdings-mv">—</span></span>
           <span class="kpi-mini-sep">|</span>
           <span class="kpi-mini-item"><span class="kpi-mini-label">可用現金</span><span class="kpi-mini-value" id="mini-cash">—</span></span>
           <span class="kpi-mini-sep">|</span>
@@ -572,13 +649,14 @@
         </div>
         <select id="q" hidden aria-hidden="true"><option value="">全部標的</option></select>
         <div class="hr"></div>
+        <div id="holdings-validation-panel" class="holdings-validation-panel" aria-live="polite"></div>
         <div class="table-wrap">
           <table id="tbl-holdings">
             <thead>
               <tr>
                 <th class="sortable" data-sort="tier">分層</th>
                 <th class="sortable text-start" data-sort="symbol">代號 / 名稱</th>
-                <th class="num sortable" data-sort="qty">持有 / 成本</th>
+                <th class="num sortable" data-sort="qty">股數 / 成本</th>
                 <th class="num sortable" data-sort="price">市場實價<br><span class="mini muted" style="font-weight:500;font-size:10px;line-height:1.2">資訊更新時間</span></th>
                 <th class="num sortable" data-sort="marketValue">市值</th>
                 <th class="num sortable" data-sort="unrealized">股票損益 / 報酬%</th>
@@ -1776,6 +1854,226 @@ let allocationPlannerContext = null;
     return map;
   }
 
+  const HOLDING_QTY_DECIMALS = 4;
+
+  function roundHoldingQty(value, decimals = HOLDING_QTY_DECIMALS){
+    const num = parseN(value);
+    const factor = 10 ** decimals;
+    return Math.round(num * factor) / factor;
+  }
+
+  function formatHoldingQty(value){
+    const num = parseN(value);
+    if(!Number.isFinite(num)) return '—';
+    if(Math.abs(num - Math.round(num)) < 1e-8){
+      return fmtInt.format(Math.round(num));
+    }
+    return num.toLocaleString('zh-TW', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: HOLDING_QTY_DECIMALS
+    });
+  }
+
+  function getHoldingInstrumentKey(stock){
+    const symbol = String(stock?.symbol || '').trim().toUpperCase();
+    const market = String(stock?.market || 'TW').trim() || 'TW';
+    const assetClass = String(stock?.assetClass || 'Equity').trim() || 'Equity';
+    return `${symbol}__${market}__${assetClass}`;
+  }
+
+  function getHoldingBoardLotSize(stock){
+    return String(stock?.market || 'TW').trim() === 'TW' ? 1000 : 1;
+  }
+
+  function getQuoteTimeValue(iso){
+    if(!iso) return Number.NEGATIVE_INFINITY;
+    const t = new Date(iso);
+    return Number.isNaN(t.getTime()) ? Number.NEGATIVE_INFINITY : t.getTime();
+  }
+
+  function selectDisplayStock(stocks){
+    if(!Array.isArray(stocks) || stocks.length === 0) return null;
+    return stocks.slice().sort((a, b) => {
+      const aHasPrice = parseN(a?.price) > 0 ? 1 : 0;
+      const bHasPrice = parseN(b?.price) > 0 ? 1 : 0;
+      if(aHasPrice !== bHasPrice) return bHasPrice - aHasPrice;
+      return getQuoteTimeValue(b?.lastPriceAt) - getQuoteTimeValue(a?.lastPriceAt);
+    })[0];
+  }
+
+  function buildMergedPosition(txns){
+    const sorted = txns.slice().sort((a,b)=>new Date(a.time)-new Date(b.time));
+    let qty = 0;
+    let costBasis = 0;
+    let avgCost = 0;
+    let dividends = 0;
+    for(const t of sorted){
+      if(t.type === 'buy'){
+        const amount = parseN(t.price) * parseN(t.qty);
+        costBasis += amount;
+        qty += parseN(t.qty);
+        avgCost = qty ? costBasis / qty : 0;
+      }else if(t.type === 'sell'){
+        const sellQty = parseN(t.qty);
+        costBasis -= avgCost * sellQty;
+        qty -= sellQty;
+        avgCost = qty ? costBasis / qty : 0;
+      }else if(t.type === 'fee'){
+        costBasis += parseN(t.amount);
+        avgCost = qty ? costBasis / qty : 0;
+      }else if(t.type === 'dividend'){
+        dividends += parseN(t.amount);
+      }
+    }
+    return {
+      qty: roundHoldingQty(qty),
+      avgCost,
+      costBasis,
+      dividends
+    };
+  }
+
+  /**
+   * 將 DB.stocks / DB.txns 先標準化成同一份持倉資料：
+   * 1. 以 symbol + market + assetClass 合併重複標的
+   * 2. 先合併整股/零股/不同來源，再算市值
+   * 3. 所有摘要卡、持股表、配置圖都共用這份資料，避免各算各的
+   */
+  function normalizeHoldings(){
+    const groups = new Map();
+    const stockIdToKey = new Map();
+
+    for(const stock of DB.stocks){
+      const instrumentKey = getHoldingInstrumentKey(stock);
+      if(!groups.has(instrumentKey)){
+        groups.set(instrumentKey, { stocks: [], txns: [] });
+      }
+      groups.get(instrumentKey).stocks.push(stock);
+      stockIdToKey.set(stock.id, instrumentKey);
+    }
+
+    for(const txn of DB.txns){
+      const instrumentKey = stockIdToKey.get(txn.stockId);
+      if(!instrumentKey || !groups.has(instrumentKey)) continue;
+      groups.get(instrumentKey).txns.push(txn);
+    }
+
+    return Array.from(groups.entries()).map(([instrumentKey, group]) => {
+      const displayStock = selectDisplayStock(group.stocks) || group.stocks[0] || {};
+      const mergedPosition = buildMergedPosition(group.txns);
+      const symbol = String(displayStock.symbol || group.stocks[0]?.symbol || '').trim().toUpperCase();
+      const name = group.stocks.map(s => s.name).find(Boolean) || '';
+      const market = String(displayStock.market || group.stocks[0]?.market || 'TW').trim() || 'TW';
+      const assetClass = String(displayStock.assetClass || group.stocks[0]?.assetClass || 'Equity').trim() || 'Equity';
+      const currency = group.stocks.map(s => s.currency).find(Boolean) || '';
+      const stockIds = group.stocks.map(s => s.id);
+      const quoteTimes = [...new Set(group.stocks.map(s => String(s.lastPriceAt || '').trim()).filter(Boolean))];
+      const quotePrices = [...new Set(
+        group.stocks
+          .map(s => parseN(s.price))
+          .filter(v => Number.isFinite(v) && v > 0)
+          .map(v => v.toFixed(6))
+      )];
+      const price = parseN(displayStock.price);
+      const qty = roundHoldingQty(mergedPosition.qty);
+      const marketValue = qty * price;
+      const unrealized = marketValue - mergedPosition.costBasis;
+      const totalPnl = unrealized + mergedPosition.dividends;
+      const boardLotSize = getHoldingBoardLotSize(displayStock);
+      const rawWholeQty = boardLotSize > 1
+        ? Math.floor(qty / boardLotSize) * boardLotSize
+        : Math.floor(qty);
+      const wholeLotQty = roundHoldingQty(rawWholeQty);
+      const oddLotQty = roundHoldingQty(qty - wholeLotQty);
+      const buyFee = estimateFee(mergedPosition.costBasis);
+      const sellFee = estimateFee(marketValue);
+      const totalFees = buyFee + sellFee;
+      const stockPnlWithFees = marketValue - mergedPosition.costBasis - totalFees;
+      const totalPnlWithFees = stockPnlWithFees + mergedPosition.dividends;
+      const costBasisWithBuyFee = mergedPosition.costBasis + buyFee;
+      const stockReturnPct = costBasisWithBuyFee > 0 ? (stockPnlWithFees / costBasisWithBuyFee * 100) : 0;
+      const totalReturnPct = costBasisWithBuyFee > 0 ? (totalPnlWithFees / costBasisWithBuyFee * 100) : 0;
+      const quoteTime = quoteTimes
+        .slice()
+        .sort((a, b) => getQuoteTimeValue(b) - getQuoteTimeValue(a))[0] || (displayStock.lastPriceAt || '');
+      const missingPrice = !(price > 0);
+      const quoteSyncWarning = quoteTimes.length > 1 || quotePrices.length > 1;
+      const hasDuplicateRecords = stockIds.length > 1;
+
+      return {
+        instrumentKey,
+        stock: {
+          ...displayStock,
+          id: displayStock.id || stockIds[0] || instrumentKey,
+          symbol,
+          name,
+          market,
+          assetClass,
+          currency
+        },
+        stockIds,
+        sourceStocks: group.stocks.slice(),
+        txns: group.txns.slice(),
+        txnCount: group.txns.length,
+        qty,
+        avgCost: mergedPosition.avgCost,
+        costBasis: mergedPosition.costBasis,
+        dividends: mergedPosition.dividends,
+        price,
+        currentPrice: price,
+        marketValue,
+        unrealized,
+        totalPnl,
+        wholeLotQty,
+        oddLotQty,
+        boardLotSize,
+        quoteTime,
+        quoteTimes,
+        missingPrice,
+        quoteSyncWarning,
+        hasDuplicateRecords,
+        stockPnlWithFees,
+        stockReturnPct,
+        totalPnlWithFees,
+        totalReturnPct
+      };
+    }).sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0));
+  }
+
+  function calculatePortfolioSummary(){
+    const rows = normalizeHoldings();
+    const heldRows = rows.filter(row => parseN(row.qty) > 0);
+    const holdingsMarketValue = heldRows.reduce((sum, row) => sum + parseN(row.marketValue), 0);
+    const detailMarketValueSum = heldRows.reduce((sum, row) => sum + parseN(row.marketValue), 0);
+    const cashAvailable = DB.accounts.reduce((sum, acc) => sum + parseN(acc.actual) + parseN(acc.settlement), 0);
+    const otherAssets = 0;
+    const totalAssets = holdingsMarketValue + cashAvailable + otherAssets;
+    const holdingsVsDetailsDiff = holdingsMarketValue - detailMarketValueSum;
+    const totalAssetsDiff = totalAssets - (holdingsMarketValue + cashAvailable + otherAssets);
+    const quoteTimes = [...new Set(heldRows.map(row => row.quoteTime).filter(Boolean))];
+    const hasSyncWarning = heldRows.some(row => row.quoteSyncWarning || row.missingPrice || !row.quoteTime) || quoteTimes.length > 1;
+
+    return {
+      rows,
+      heldRows,
+      holdingsMarketValue,
+      detailMarketValueSum,
+      cashAvailable,
+      otherAssets,
+      totalAssets,
+      holdingsVsDetailsDiff,
+      totalAssetsDiff,
+      quoteTimes,
+      hasSyncWarning,
+      syncWarningMessage: hasSyncWarning ? '資料更新時間不同，數值可能暫時不一致' : '',
+      validation: {
+        holdingsMatchesDetails: Math.abs(holdingsVsDetailsDiff) < 0.5,
+        totalAssetsMatchesEquation: Math.abs(totalAssetsDiff) < 0.5,
+        isConsistent: Math.abs(holdingsVsDetailsDiff) < 0.5 && Math.abs(totalAssetsDiff) < 0.5
+      }
+    };
+  }
+
   function computeTxnRealizedList(){
     const tx = DB.txns.slice().sort((a,b)=>new Date(a.time)-new Date(b.time));
     const state = new Map(); // stockId -> {qty, avgCost}
@@ -1802,7 +2100,7 @@ let allocationPlannerContext = null;
   }
 
   // ========= Header KPI =========
-  function refreshKPI(){
+  function refreshKPI(summary = calculatePortfolioSummary()){
     const miniTotalAsset = document.getElementById('mini-total-asset');
     if(!miniTotalAsset) return;
 
@@ -1812,12 +2110,11 @@ let allocationPlannerContext = null;
     const miniHoldingsMv = document.getElementById('mini-holdings-mv');
     const miniNetGain = document.getElementById('mini-net-gain');
 
-    const pos = computeAllPositions();
-    const holdings = Object.values(pos).reduce((a,b)=>a + b.marketValue, 0);
-    const cash = DB.accounts.reduce((a,acc)=> a + (parseN(acc.actual) + parseN(acc.settlement)), 0);
+    const holdings = summary.holdingsMarketValue;
+    const cash = summary.cashAvailable;
     const capitalAdjustments = sumCapitalAdjustments();
     const initialCapital = getInitialCapitalAmount();
-    const totalAssets = holdings + cash;
+    const totalAssets = summary.totalAssets;
     const netGain = totalAssets - initialCapital - capitalAdjustments;
     const investedCapital = initialCapital + capitalAdjustments;
     const returnRate = investedCapital !== 0 ? netGain / investedCapital : 0;
@@ -1837,36 +2134,12 @@ let allocationPlannerContext = null;
 
     if(miniMonthDiv){
       try{
-        const now = new Date();
-        const thisYear = now.getFullYear();
-        const thisMonth = now.getMonth() + 1;
-
-        const actualThisMonth = DB.txns
-          .filter(t => {
-            if(t.type !== 'dividend') return false;
-            const d = new Date(t.time);
-            return d.getFullYear() === thisYear && d.getMonth() + 1 === thisMonth;
-          })
-          .reduce((s, t) => s + parseN(t.amount), 0);
-
-        const posDiv = computeAllPositions();
-        let projectedThisMonth = 0;
-        for(const stock of DB.stocks){
-          const p = posDiv[stock.id];
-          if(!p || parseN(p.qty) <= 0) continue;
-          const info = getCurrentDividendInfo(stock.symbol);
-          const payoutMonths = normalizeDividendMonths(info && info.payoutMonths ? info.payoutMonths : []);
-          if(!payoutMonths.includes(thisMonth)) continue;
-          const perShare = parseN(info.perShare);
-          if(perShare > 0) projectedThisMonth += perShare * parseN(p.qty);
-        }
-
-        const total = actualThisMonth > 0 ? actualThisMonth : projectedThisMonth;
-        miniMonthDiv.textContent = total > 0
-          ? fmtInt.format(Math.round(total))
+        const monthDividend = calculateCurrentMonthDividend(summary);
+        miniMonthDiv.textContent = monthDividend.amount > 0
+          ? fmtInt.format(Math.round(monthDividend.amount))
           : '—';
-        if(actualThisMonth === 0 && projectedThisMonth > 0){
-          miniMonthDiv.textContent = '~' + fmtInt.format(Math.round(projectedThisMonth));
+        if(!monthDividend.isActual && monthDividend.amount > 0){
+          miniMonthDiv.textContent = '~' + fmtInt.format(Math.round(monthDividend.amount));
         }
       }catch(e){
         console.warn('本月配息計算失敗：', e);
@@ -2151,35 +2424,39 @@ let allocationPlannerContext = null;
     });
   }
 
-  function computeStockMetrics(){
-    const pos = computeAllPositions();
-    return DB.stocks.map(s => {
-      const p = pos[s.id] || { qty:0, avgCost:0, costBasis:0, marketValue:0, dividends:0 };
-      const currentPrice = parseN(s.price);
-      const currentValue = currentPrice * p.qty;
-      const marketValue = Number.isFinite(p.marketValue) ? p.marketValue : currentValue;
-      const buyFee = estimateFee(p.costBasis);
-      const sellFee = estimateFee(currentValue);
-      const totalFees = buyFee + sellFee;
-      const stockPnlWithFees = currentValue - p.costBasis - totalFees;
-      const totalPnlWithFees = stockPnlWithFees + p.dividends;
-      const costBasisWithBuyFee = p.costBasis + buyFee;
-      const stockReturnPct = costBasisWithBuyFee > 0 ? (stockPnlWithFees / costBasisWithBuyFee * 100) : 0;
-      const totalReturnPct = costBasisWithBuyFee > 0 ? (totalPnlWithFees / costBasisWithBuyFee * 100) : 0;
-      return {
-        stock: s,
-        pos: p,
-        currentPrice,
-        marketValue,
-        stockPnlWithFees,
-        stockReturnPct,
-        totalPnlWithFees,
-        totalReturnPct,
-        dividends: p.dividends,
-        avgCost: p.avgCost,
-        qty: p.qty
-      };
-    });
+  function computeStockMetrics(summary = calculatePortfolioSummary()){
+    return summary.rows.map(row => ({
+      instrumentKey: row.instrumentKey,
+      stock: row.stock,
+      stockIds: row.stockIds,
+      pos: {
+        qty: row.qty,
+        avgCost: row.avgCost,
+        costBasis: row.costBasis,
+        price: row.price,
+        marketValue: row.marketValue,
+        unrealized: row.unrealized,
+        dividends: row.dividends,
+        totalPnl: row.totalPnl
+      },
+      currentPrice: row.currentPrice,
+      marketValue: row.marketValue,
+      stockPnlWithFees: row.stockPnlWithFees,
+      stockReturnPct: row.stockReturnPct,
+      totalPnlWithFees: row.totalPnlWithFees,
+      totalReturnPct: row.totalReturnPct,
+      dividends: row.dividends,
+      avgCost: row.avgCost,
+      qty: row.qty,
+      wholeLotQty: row.wholeLotQty,
+      oddLotQty: row.oddLotQty,
+      boardLotSize: row.boardLotSize,
+      quoteTime: row.quoteTime,
+      quoteSyncWarning: row.quoteSyncWarning,
+      missingPrice: row.missingPrice,
+      hasDuplicateRecords: row.hasDuplicateRecords,
+      txnCount: row.txnCount
+    }));
   }
 
   const longTermSortDefaults = {
@@ -2253,14 +2530,104 @@ let allocationPlannerContext = null;
     return t.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false });
   }
 
-  function renderHoldings(){
+  function renderHoldingsValidation(summary = calculatePortfolioSummary()){
+    const panel = $('#holdings-validation-panel');
+    if(!panel) return;
+
+    const diff = summary.holdingsVsDetailsDiff;
+    const diffAbs = Math.abs(diff);
+    const statusText = summary.validation.isConsistent ? '正確' : '不一致';
+    const statusClass = !summary.validation.isConsistent ? 'error' : (summary.hasSyncWarning ? 'warn' : 'ok');
+    const statusDesc = !summary.validation.holdingsMatchesDetails
+      ? '持倉市值與明細加總不一致，請檢查零股、重複持倉或資料同步時間'
+      : (summary.hasSyncWarning ? '資料更新時間不同，數值可能暫時不一致' : '持倉市值與明細加總一致，摘要卡與表格共用同一份持倉資料');
+    const quoteSummary = summary.quoteTimes.length > 1
+      ? `${summary.quoteTimes.length} 個不同更新時間`
+      : (summary.quoteTimes[0] ? formatStockPriceUpdatedAt(summary.quoteTimes[0]) : '—');
+    const heldRows = summary.heldRows.slice().sort((a, b) => b.marketValue - a.marketValue);
+
+    panel.className = `holdings-validation-panel ${statusClass}`;
+    panel.innerHTML = `
+      <div class="holdings-validation-head">
+        <div>
+          <div class="holdings-validation-title">持倉驗算</div>
+          <div class="holdings-validation-desc">${statusDesc}</div>
+        </div>
+        <div class="holdings-validation-status">${statusText}</div>
+      </div>
+      <div class="holdings-validation-grid">
+        <div class="holdings-validation-item">
+          <div class="label">明細市值加總</div>
+          <div class="value">${fmtInt.format(Math.round(summary.detailMarketValueSum))}</div>
+        </div>
+        <div class="holdings-validation-item">
+          <div class="label">持倉市值</div>
+          <div class="value">${fmtInt.format(Math.round(summary.holdingsMarketValue))}</div>
+        </div>
+        <div class="holdings-validation-item">
+          <div class="label">差額</div>
+          <div class="value ${diffAbs < 0.5 ? 'ok' : 'error'}">${diff >= 0 ? '+' : ''}${fmtInt.format(Math.round(diff))}</div>
+        </div>
+        <div class="holdings-validation-item">
+          <div class="label">總資產公式</div>
+          <div class="value ${summary.validation.totalAssetsMatchesEquation ? 'ok' : 'error'}">${summary.validation.totalAssetsMatchesEquation ? '正確' : '不一致'}</div>
+        </div>
+        <div class="holdings-validation-item">
+          <div class="label">可用現金</div>
+          <div class="value">${fmtInt.format(Math.round(summary.cashAvailable))}</div>
+        </div>
+        <div class="holdings-validation-item">
+          <div class="label">報價更新時間</div>
+          <div class="value ${summary.hasSyncWarning ? 'warn' : ''}" style="font-size:15px">${quoteSummary}</div>
+        </div>
+      </div>
+      <details>
+        <summary>展開 debug 資訊</summary>
+        <div class="mini muted" style="margin-top:8px">下表為標準化後持倉。若同一商品分散在整股、零股或重複標的，會先合併再計算。</div>
+        <div class="holdings-debug-table-wrap">
+          <table class="holdings-debug-table">
+            <thead>
+              <tr>
+                <th>代號</th>
+                <th>名稱</th>
+                <th class="num">整股</th>
+                <th class="num">零股</th>
+                <th class="num">合計股數</th>
+                <th class="num">市價</th>
+                <th class="num">個別市值</th>
+                <th>重複計算</th>
+                <th>更新時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${heldRows.map(row => `
+                <tr>
+                  <td>${escapeAttr(row.stock.symbol || '—')}</td>
+                  <td>${escapeAttr(row.stock.name || '')}</td>
+                  <td class="num">${formatHoldingQty(row.wholeLotQty)}</td>
+                  <td class="num">${formatHoldingQty(row.oddLotQty)}</td>
+                  <td class="num">${formatHoldingQty(row.qty)}</td>
+                  <td class="num">${row.missingPrice ? '缺價格' : fmt2.format(row.price)}</td>
+                  <td class="num">${fmtInt.format(Math.round(row.marketValue))}</td>
+                  <td>${row.hasDuplicateRecords ? `是（合併 ${row.stockIds.length} 筆）` : '否'}</td>
+                  <td>${row.quoteTime ? formatStockPriceUpdatedAt(row.quoteTime) : '—'}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="9" class="empty">尚無持倉資料</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </details>`;
+  }
+
+  function renderHoldings(summary = calculatePortfolioSummary()){
     const tbody = $('#tbl-holdings tbody');
     tbody.innerHTML = '';
     $$('#view-holdings .tier-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.tier === activeTierFilter));
+    renderHoldingsValidation(summary);
 
     const tierLabelText = { core: '核心', satellite: '衛星', bond: '債券', watch: '觀察' };
 
-    let dataset = computeStockMetrics()
+    let dataset = computeStockMetrics(summary)
       .filter(row => row.qty > 0)
       .map(row => {
         const label = getStockLabel(row.stock.id);
@@ -2303,9 +2670,10 @@ let allocationPlannerContext = null;
         if(label.stopProfit != null && ret >= label.stopProfit) profitHit = true;
       }
 
-      const stale = s.lastPriceAt && (Date.now() - new Date(s.lastPriceAt).getTime() > 86400000);
-      const priceStr = Number.isFinite(price) ? fmt2.format(price) : '—';
-      const priceHtml = stale && Number.isFinite(price)
+      const hasPrice = !row.missingPrice && Number.isFinite(price) && price > 0;
+      const stale = hasPrice && s.lastPriceAt && (Date.now() - new Date(s.lastPriceAt).getTime() > 86400000);
+      const priceStr = hasPrice ? fmt2.format(price) : '—';
+      const priceHtml = stale && hasPrice
         ? `<span class="price-stale-warn" title="報價超過 24 小時未更新">${priceStr}</span>`
         : priceStr;
       const priceUpdatedNote = formatStockPriceUpdatedAt(s.lastPriceAt);
@@ -2320,15 +2688,21 @@ let allocationPlannerContext = null;
       const stratClass = label.strategy === 'hold-for-dividend' ? 'strategy-hold' : 'strategy-trade';
       const stratText = label.strategy === 'hold-for-dividend' ? '領息不賣' : '可進出';
 
-      const qtyDisplay = Number.isFinite(row.qty) ? fmtInt.format(Math.round(row.qty)) : '—';
+      const qtyDisplay = formatHoldingQty(row.qty);
+      const wholeLotDisplay = formatHoldingQty(row.wholeLotQty);
+      const oddLotDisplay = formatHoldingQty(row.oddLotQty);
       const avgCostDisplay = avgCost ? fmt2.format(avgCost) : '—';
-      const mvDisplay = Number.isFinite(pos.marketValue) ? fmtInt.format(Math.round(pos.marketValue)) : '—';
+      const mvDisplay = Number.isFinite(row.marketValue) ? fmtInt.format(Math.round(row.marketValue)) : '—';
       const divDisplay = row.dividends > 0 ? fmtInt.format(Math.round(row.dividends)) : '—';
+      const flags = [];
+      if(row.hasDuplicateRecords) flags.push('<span class="holdings-flag warn">合併重複</span>');
+      if(row.missingPrice) flags.push('<span class="holdings-flag error">缺價格</span>');
+      else if(row.quoteSyncWarning) flags.push('<span class="holdings-flag info">時間差</span>');
 
       tr.innerHTML = `
         <td><span class="tier-tag tier-${tierKey}">${tierShort}</span></td>
-        <td class="text-start"><div class="cell-stack"><span class="sym">${s.symbol}</span><span class="mini muted">${s.name||''}</span></div></td>
-        <td class="num"><div class="cell-stack"><span>${qtyDisplay}</span><span class="mini muted">${avgCostDisplay}</span></div></td>
+        <td class="text-start"><div class="cell-stack"><span class="sym">${s.symbol}</span><span class="mini muted">${s.name||''}</span>${flags.length ? `<span>${flags.join('')}</span>` : ''}</div></td>
+        <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${qtyDisplay}</span><span class="mini muted">整股 ${wholeLotDisplay} / 零股 ${oddLotDisplay}</span><span class="mini muted">均價 ${avgCostDisplay}</span></div></td>
         <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${priceHtml}</span><span class="mini muted" title="此筆市場實價的取得或手動儲存時刻">${priceUpdatedNote}</span></div></td>
         <td class="num">${mvDisplay}</td>
         <td class="num">
@@ -2445,12 +2819,12 @@ let allocationPlannerContext = null;
     }
   }
 
-  function renderLongTermMetrics(){
+  function renderLongTermMetrics(summary = calculatePortfolioSummary()){
     const tbody = $('#tbl-long-term tbody');
     if(!tbody) return;
     tbody.innerHTML = '';
     
-  const dataset = computeStockMetrics().filter(row => row.qty > 0);
+  const dataset = computeStockMetrics(summary).filter(row => row.qty > 0);
     if(dataset.length === 0){
       const tr = document.createElement('tr');
       tr.innerHTML = `<td colspan="6" class="empty">尚無標的資料</td>`;
@@ -2483,7 +2857,7 @@ let allocationPlannerContext = null;
 
     const buildHighlightSets = (accessor) => {
       const entries = rows
-        .map(r => ({ id: r.stock.id, value: accessor(r) }))
+        .map(r => ({ id: r.instrumentKey, value: accessor(r) }))
         .filter(entry => Number.isFinite(entry.value));
       if(entries.length === 0){
         return { max: new Set(), min: new Set() };
@@ -2524,16 +2898,16 @@ let allocationPlannerContext = null;
       const yieldDisplayRaw = Number.isFinite(row.yieldPct) && row.yieldPct > 0 ? `${fmt2.format(row.yieldPct)}%` : '—';
 
       const allocationDisplay = Number.isFinite(row.allocationRatio)
-        ? wrapHighlight(allocationDisplayRaw, 'allocation', true, row.stock.id)
+        ? wrapHighlight(allocationDisplayRaw, 'allocation', true, row.instrumentKey)
         : allocationDisplayRaw;
       const totalReturnDisplay = Number.isFinite(row.totalReturnPct)
-        ? wrapHighlight(totalReturnDisplayRaw, 'totalReturn', true, row.stock.id)
+        ? wrapHighlight(totalReturnDisplayRaw, 'totalReturn', true, row.instrumentKey)
         : totalReturnDisplayRaw;
       const contributionDisplay = Number.isFinite(row.contributionRatio)
-        ? wrapHighlight(contributionDisplayRaw, 'contribution', true, row.stock.id)
+        ? wrapHighlight(contributionDisplayRaw, 'contribution', true, row.instrumentKey)
         : contributionDisplayRaw;
       const yieldDisplay = Number.isFinite(row.yieldPct) && row.yieldPct > 0
-        ? wrapHighlight(yieldDisplayRaw, 'yield', true, row.stock.id)
+        ? wrapHighlight(yieldDisplayRaw, 'yield', true, row.instrumentKey)
         : yieldDisplayRaw;
 
       const tr = document.createElement('tr');
@@ -2551,9 +2925,9 @@ let allocationPlannerContext = null;
     updateLongTermSortIndicators();
   }
 
-  function renderLongTermMetricsIfOpen(){
+  function renderLongTermMetricsIfOpen(summary = calculatePortfolioSummary()){
     const d = document.getElementById('longterm-details');
-    if(d && d.open) renderLongTermMetrics();
+    if(d && d.open) renderLongTermMetrics(summary);
   }
 
   // ========= 報酬檢視 =========
@@ -2637,40 +3011,49 @@ let allocationPlannerContext = null;
   }
 
   // 計算每檔股票的已實現損益（含息）
-  function computeRealizedPnlByStock(){
+  function computeRealizedPnlByStock(summary = calculatePortfolioSummary()){
     const realizedMap = {};
+    const stockIdToInstrumentKey = new Map();
+    summary.rows.forEach(row => {
+      row.stockIds.forEach(id => stockIdToInstrumentKey.set(id, row.instrumentKey));
+    });
     const txList = computeTxnRealizedList();
     for(const t of txList){
-      const stockId = t.stockId;
-      if(!realizedMap[stockId]){
-        realizedMap[stockId] = 0;
+      const instrumentKey = stockIdToInstrumentKey.get(t.stockId);
+      if(!instrumentKey) continue;
+      if(!realizedMap[instrumentKey]){
+        realizedMap[instrumentKey] = 0;
       }
       // 已實現損益包含：賣出損益 + 股息收入
       if(t.type === 'sell' || t.type === 'dividend'){
-        realizedMap[stockId] += Number.isFinite(t.realized) ? t.realized : 0;
+        realizedMap[instrumentKey] += Number.isFinite(t.realized) ? t.realized : 0;
       }
     }
     return realizedMap;
   }
 
   // 計算每檔股票的歷史總投入成本（所有買入金額 + 手續費）
-  function computeTotalCostByStock(){
+  function computeTotalCostByStock(summary = calculatePortfolioSummary()){
     const costMap = {};
+    const stockIdToInstrumentKey = new Map();
+    summary.rows.forEach(row => {
+      row.stockIds.forEach(id => stockIdToInstrumentKey.set(id, row.instrumentKey));
+    });
     for(const t of DB.txns){
-      const stockId = t.stockId;
-      if(!costMap[stockId]){
-        costMap[stockId] = 0;
+      const instrumentKey = stockIdToInstrumentKey.get(t.stockId);
+      if(!instrumentKey) continue;
+      if(!costMap[instrumentKey]){
+        costMap[instrumentKey] = 0;
       }
       if(t.type === 'buy'){
         const amount = parseN(t.price) * parseN(t.qty);
-        costMap[stockId] += amount;
+        costMap[instrumentKey] += amount;
       } else if(t.type === 'fee'){
-        costMap[stockId] += parseN(t.amount);
+        costMap[instrumentKey] += parseN(t.amount);
       }
     }
-    // 加上估算手續費
-    for(const stockId in costMap){
-      costMap[stockId] += estimateFee(costMap[stockId]);
+    for(const instrumentKey in costMap){
+      costMap[instrumentKey] += estimateFee(costMap[instrumentKey]);
     }
     return costMap;
   }
@@ -3244,18 +3627,15 @@ let allocationPlannerContext = null;
     });
   }
 
-  function renderReturnContribBars(){
+  function renderReturnContribBars(summary = calculatePortfolioSummary()){
     const el = $('#return-twr-bars');
     if(!el) return;
-    const pos = computeAllPositions();
-    const metrics = DB.stocks
-      .map(s => {
-        const p = pos[s.id];
-        if(!p || parseN(p.qty) <= 0) return null;
-        const cb = parseN(p.costBasis);
+    const metrics = summary.heldRows
+      .map(row => {
+        const cb = parseN(row.costBasis);
         if(cb <= 0) return null;
-        const r = parseN(p.totalPnl) / cb;
-        return { symbol: s.symbol, name: s.name || '', r };
+        const r = parseN(row.totalPnl) / cb;
+        return { symbol: row.stock.symbol, name: row.stock.name || '', r };
       })
       .filter(Boolean);
     metrics.sort((a, b) => b.r - a.r);
@@ -3310,7 +3690,7 @@ let allocationPlannerContext = null;
     await renderReturnAssetTrendChart(totalAssets);
   }
 
-  async function renderReturnOverview(){
+  async function renderReturnOverview(summary = calculatePortfolioSummary()){
     const tbody = $('#tbl-return tbody');
     if(!tbody) return;
     tbody.innerHTML = '';
@@ -3319,10 +3699,9 @@ let allocationPlannerContext = null;
     const hintEl = $('#return-twr-hint');
     const kpiRow = $('#return-kpi-row');
 
-    const posAll = computeAllPositions();
-    const holdingsMv = Object.values(posAll).reduce((a, b) => a + b.marketValue, 0);
-    const cashAvail = DB.accounts.reduce((a, acc) => a + (parseN(acc.actual) + parseN(acc.settlement)), 0);
-    const totalAssets = holdingsMv + cashAvail;
+    const holdingsMv = summary.holdingsMarketValue;
+    const cashAvail = summary.cashAvailable;
+    const totalAssets = summary.totalAssets;
     const investedCapital = getInitialCapitalAmount() + sumCapitalAdjustments();
     const simpleDec = investedCapital !== 0 ? (totalAssets - investedCapital) / investedCapital : null;
     const simplePct = simpleDec != null && Number.isFinite(simpleDec) ? simpleDec * 100 : null;
@@ -3390,16 +3769,11 @@ let allocationPlannerContext = null;
 
     returnChartLastInput = { totalAssets };
     await refreshReturnCharts();
-    renderReturnContribBars();
+    renderReturnContribBars(summary);
 
     // 取得所有股票的指標（包含目前持有和曾經持有）
-    const allMetrics = computeStockMetrics();
-    
-    // 找出曾經有交易記錄的股票 ID
-    const heldStockIds = new Set(DB.txns.map(t => t.stockId));
-    
-    // 篩選：目前持有 或 曾經持有過（有交易記錄）
-    const metrics = allMetrics.filter(row => row.qty > 0 || heldStockIds.has(row.stock.id));
+    const allMetrics = computeStockMetrics(summary);
+    const metrics = allMetrics.filter(row => row.qty > 0 || row.txnCount > 0);
     
     if(metrics.length === 0){
       const tr = document.createElement('tr');
@@ -3417,10 +3791,10 @@ let allocationPlannerContext = null;
     }, 0);
 
     // 取得已實現損益
-    const realizedMap = computeRealizedPnlByStock();
+    const realizedMap = computeRealizedPnlByStock(summary);
     
     // 取得歷史總投入成本
-    const totalCostMap = computeTotalCostByStock();
+    const totalCostMap = computeTotalCostByStock(summary);
 
     // 建立行資料
     const rows = [];
@@ -3438,10 +3812,10 @@ let allocationPlannerContext = null;
       const unrealizedPnl = isCurrentlyHeld ? row.stockPnlWithFees : 0;
 
       // 已實現損益（含息）= 賣出損益 + 已領股息
-      const realizedPnl = realizedMap[row.stock.id] || 0;
+      const realizedPnl = realizedMap[row.instrumentKey] || 0;
 
       // 綜合含息報酬率 = (未實現損益 + 已實現損益) ÷ 歷史總投入成本 × 100%
-      const totalCost = totalCostMap[row.stock.id] || 0;
+      const totalCost = totalCostMap[row.instrumentKey] || 0;
       const combinedPnl = unrealizedPnl + realizedPnl;
       const combinedReturnPct = totalCost > 0 ? (combinedPnl / totalCost * 100) : 0;
 
@@ -4080,7 +4454,7 @@ let allocationPlannerContext = null;
     return qty;
   }
 
-  function renderOverview(){
+  function renderOverview(summary = calculatePortfolioSummary()){
     const kpiRow = $('#overview-kpi-row');
     const barsEl = $('#overview-alloc-bars');
     const donutEl = $('#overview-donut');
@@ -4088,10 +4462,9 @@ let allocationPlannerContext = null;
     const alertEl = $('#overview-alert');
     if(!kpiRow || !barsEl || !donutEl || !donutLeg || !alertEl) return;
 
-    const pos = computeAllPositions();
-    const holdingsMv = Object.values(pos).reduce((a, b) => a + b.marketValue, 0);
-    const cashAvail = DB.accounts.reduce((a, acc) => a + (parseN(acc.actual) + parseN(acc.settlement)), 0);
-    const totalMv = Math.round(holdingsMv + cashAvail);
+    const holdingsMv = summary.holdingsMarketValue;
+    const cashAvail = summary.cashAvailable;
+    const totalMv = Math.round(summary.totalAssets);
 
     const investedCapital = getInitialCapitalAmount() + sumCapitalAdjustments();
     const netGainAmt = totalMv - investedCapital;
@@ -4101,36 +4474,11 @@ let allocationPlannerContext = null;
     const retStr = (returnPct >= 0 ? '+' : '') + returnPct.toFixed(2) + '%';
     const retClass = returnPct >= 0 ? 'pos' : 'neg';
 
-    const hasAnyDividendTxn = DB.txns.some(t => t.type === 'dividend');
-    let monthDivTotal = 0;
-    const currentMonth = new Date().getMonth() + 1;
-
-    if(hasAnyDividendTxn){
-      for(const stock of DB.stocks){
-        const p = pos[stock.id];
-        const currentQty = p ? parseN(p.qty) : 0;
-        if(currentQty <= 0) continue;
-
-        const divTxns = DB.txns
-          .filter(t => t.stockId === stock.id && t.type === 'dividend')
-          .sort((a, b) => new Date(b.time) - new Date(a.time));
-        const lastDiv = divTxns[0];
-        if(!lastDiv) continue;
-
-        const info = getCurrentDividendInfo(stock.symbol);
-        const payoutMonths = normalizeDividendMonths(info.payoutMonths || []);
-        if(!payoutMonths.includes(currentMonth)) continue;
-
-        const qAt = qtyBeforeDividendTxn(stock.id, lastDiv);
-        if(!(qAt > 0)) continue;
-        const perShare = parseN(lastDiv.amount) / qAt;
-        if(!Number.isFinite(perShare)) continue;
-        monthDivTotal += Math.round(perShare * currentQty);
-      }
-    }
-
-    const monthDivDisplay = !hasAnyDividendTxn ? '—' : fmtInt.format(Math.round(monthDivTotal));
-    const monthDivClass = !hasAnyDividendTxn ? '' : 'blue';
+    const monthDividend = calculateCurrentMonthDividend(summary);
+    const monthDivDisplay = monthDividend.amount > 0
+      ? `${monthDividend.isActual ? '' : '~'}${fmtInt.format(Math.round(monthDividend.amount))}`
+      : '—';
+    const monthDivClass = monthDividend.amount > 0 ? 'blue' : '';
 
     kpiRow.innerHTML = `
       <div class="overview-kpi-card">
@@ -4138,7 +4486,7 @@ let allocationPlannerContext = null;
         <div class="overview-kpi-val">${fmtInt.format(totalMv)}</div>
       </div>
       <div class="overview-kpi-card">
-        <div class="overview-kpi-label">股票市值</div>
+        <div class="overview-kpi-label">持倉市值</div>
         <div class="overview-kpi-val">${fmtInt.format(Math.round(holdingsMv))}</div>
       </div>
       <div class="overview-kpi-card">
@@ -4162,12 +4510,8 @@ let allocationPlannerContext = null;
     const COL_GLB_EQ = '#534AB7';
     const COL_BOND = '#EF9F27';
 
-    const stockRows = DB.stocks
-      .map(s => {
-        const p = pos[s.id] || { marketValue: 0 };
-        const mv = Math.round(parseN(p.marketValue));
-        return { stock: s, mv };
-      })
+    const stockRows = summary.heldRows
+      .map(row => ({ stock: row.stock, mv: Math.round(parseN(row.marketValue)) }))
       .filter(x => x.mv > 0)
       .sort((a, b) => b.mv - a.mv);
 
@@ -4202,10 +4546,9 @@ let allocationPlannerContext = null;
     }).join('') : `<div class="empty">尚無持倉市值</div>`;
 
     let twEq = 0, glEq = 0, bond = 0;
-    for(const s of DB.stocks){
-      const p = pos[s.id];
-      if(!p) continue;
-      const mv = parseN(p.marketValue);
+    for(const row of summary.heldRows){
+      const s = row.stock;
+      const mv = parseN(row.marketValue);
       if(mv <= 0) continue;
       if(s.assetClass === 'Bond'){
         bond += mv;
@@ -4242,17 +4585,24 @@ let allocationPlannerContext = null;
       <div>股票 <strong>${stockPctActual.toFixed(2)}%</strong>／債券 <strong>${bondPctActual.toFixed(2)}%</strong>（實際）</div>
       <div>目標　股票 <strong>${Number(tgt.equity).toFixed(2)}%</strong>／債券 <strong>${Number(tgt.bond).toFixed(2)}%</strong></div>`;
 
-    const labels = DB.meta && DB.meta.stockLabels ? DB.meta.stockLabels : {};
     let redMsg = null;
     let orangeMsg = null;
 
-    for(const s of DB.stocks){
-      const p = pos[s.id];
-      if(!p || parseN(p.qty) <= 0) continue;
-      const avg = parseN(p.avgCost);
-      const price = parseN(p.price);
+    if(!summary.validation.holdingsMatchesDetails){
+      redMsg = `持倉市值與明細加總不一致，差額 ${fmtInt.format(Math.round(summary.holdingsVsDetailsDiff))}。`;
+    }else if(!summary.validation.totalAssetsMatchesEquation){
+      redMsg = `總資產公式不一致，差額 ${fmtInt.format(Math.round(summary.totalAssetsDiff))}。`;
+    }else if(summary.hasSyncWarning){
+      orangeMsg = summary.syncWarningMessage;
+    }
+
+    for(const row of summary.heldRows){
+      if(redMsg || orangeMsg) break;
+      const s = row.stock;
+      const avg = parseN(row.avgCost);
+      const price = parseN(row.price);
       const ret = avg > 0 ? (price - avg) / avg : NaN;
-      const lb = labels[s.id] || {};
+      const lb = getStockLabel(s.id) || {};
       const sl = lb.stopLoss;
 
       if(sl != null && sl !== '' && Number.isFinite(parseN(sl)) && Number.isFinite(ret)){
@@ -4264,13 +4614,12 @@ let allocationPlannerContext = null;
     }
 
     if(!redMsg){
-      for(const s of DB.stocks){
-        const p = pos[s.id];
-        if(!p || parseN(p.qty) <= 0) continue;
-        const avg = parseN(p.avgCost);
-        const price = parseN(p.price);
+      for(const row of summary.heldRows){
+        const s = row.stock;
+        const avg = parseN(row.avgCost);
+        const price = parseN(row.price);
         const ret = avg > 0 ? (price - avg) / avg : NaN;
-        const lb = labels[s.id] || {};
+        const lb = getStockLabel(s.id) || {};
         const sl = lb.stopLoss;
         const strategy = lb.strategy;
         if(strategy === 'tradeable' && (sl == null || sl === '') && Number.isFinite(ret) && ret < -0.05){
@@ -4305,7 +4654,7 @@ let allocationPlannerContext = null;
         goHoldings();
       }
     };
-    renderTreemap();
+    renderTreemap(summary);
   }
 
   // ========= 資產成果（圖表／表格 DOM 若不存在則略過）=========
@@ -4671,9 +5020,8 @@ let allocationPlannerContext = null;
   }
 
   // ========= 配置 =========
-  function renderAllocation(){
-    const pos = computeAllPositions();
-    const rows = DB.stocks.map(s=>({s, mval: pos[s.id].marketValue})).filter(r=>r.mval>0);
+  function renderAllocation(summary = calculatePortfolioSummary()){
+    const rows = summary.heldRows.map(row => ({ s: row.stock, mval: row.marketValue })).filter(r=>r.mval>0);
     const total = rows.reduce((a,b)=>a+b.mval,0) || 1;
 
     // 1. 個股投資占比
@@ -5202,6 +5550,57 @@ function updateAllocationPlannerSummary(){
     return Number.isFinite(avg) ? avg : null;
   }
 
+  function getAvgImpliedPerShareFromRecentDividendsForIds(stockIds, n = 2){
+    const idSet = new Set((stockIds || []).filter(Boolean));
+    if(idSet.size === 0) return null;
+    const txs = DB.txns
+      .filter(x => idSet.has(x.stockId))
+      .sort((a, b) => {
+        const da = new Date(a.time).getTime();
+        const db = new Date(b.time).getTime();
+        if(da !== db) return da - db;
+        const order = { buy: 0, sell: 1, fee: 2, dividend: 4 };
+        return (order[a.type] ?? 9) - (order[b.type] ?? 9);
+      });
+    let qty = 0;
+    let costBasis = 0;
+    let avgCost = 0;
+    const implied = [];
+    for(const t of txs){
+      if(t.type === 'dividend'){
+        if(qty > 0) implied.push(parseN(t.amount) / qty);
+        continue;
+      }
+      if(t.type === 'buy'){
+        const amount = parseN(t.price) * parseN(t.qty);
+        costBasis += amount;
+        qty += parseN(t.qty);
+        avgCost = qty ? costBasis / qty : 0;
+      }else if(t.type === 'sell'){
+        const sellQty = parseN(t.qty);
+        costBasis -= avgCost * sellQty;
+        qty -= sellQty;
+        avgCost = qty ? costBasis / qty : 0;
+      }else if(t.type === 'fee'){
+        costBasis += parseN(t.amount);
+        avgCost = qty ? costBasis / qty : 0;
+      }
+    }
+    const slice = implied.slice(-n);
+    if(slice.length === 0) return null;
+    const IMPLIED_BLEND_MIN_RATIO = 0.65;
+    if(slice.length >= 2){
+      const lo = Math.min(...slice);
+      const hi = Math.max(...slice);
+      if(hi > 0 && lo / hi < IMPLIED_BLEND_MIN_RATIO){
+        const latest = slice[slice.length - 1];
+        return Number.isFinite(latest) ? latest : null;
+      }
+    }
+    const avg = slice.reduce((a, b) => a + b, 0) / slice.length;
+    return Number.isFinite(avg) ? avg : null;
+  }
+
   /** 未來配息預估：
    *  1) 優先使用手動編輯（perShare / totalAmount）
    *  2) 若未提供手動值，再用最近股息隱含每股
@@ -5221,18 +5620,31 @@ function updateAllocationPlannerSummary(){
     return { amount: 0, perShareEff: null };
   }
 
-  function calcMonthlyDividend(month, year){
-    const pos = computeAllPositions();
+  function estimateProjectedDividendForHolding(row){
+    const q = parseN(row?.qty);
+    if(q <= 0) return { amount: 0, perShareEff: null };
+    const stock = row.stock || {};
+    const info = getCurrentDividendInfo(stock.symbol);
+    const per = parseN(info.perShare);
+    if(per > 0) return { amount: per * q, perShareEff: per };
+    const ta = parseN(info.totalAmount);
+    if(ta > 0) return { amount: ta, perShareEff: q > 0 ? ta / q : null };
+    const avgPs = getAvgImpliedPerShareFromRecentDividendsForIds(row.stockIds, 2);
+    if(avgPs != null && avgPs > 0){
+      return { amount: avgPs * q, perShareEff: avgPs };
+    }
+    return { amount: 0, perShareEff: null };
+  }
+
+  function buildMonthlyDividendSnapshot(month, year, summary = calculatePortfolioSummary()){
     const projectedStocks = [];
     let projected = 0;
-    for(const stock of DB.stocks){
-      const q = parseN((pos[stock.id] || {}).qty);
-      if(q <= 0) continue;
-      if(!getPayoutMonthsForStock(stock.symbol).includes(month)) continue;
-      const { amount: add } = estimateProjectedDividendForStock(stock, q);
+    for(const row of summary.heldRows){
+      if(!getPayoutMonthsForStock(row.stock.symbol).includes(month)) continue;
+      const { amount: add } = estimateProjectedDividendForHolding(row);
       if(add <= 0) continue;
       projected += add;
-      projectedStocks.push(stock.symbol);
+      projectedStocks.push(row.stock.symbol);
     }
 
     let actual = 0;
@@ -5242,17 +5654,33 @@ function updateAllocationPlannerSummary(){
       const d = new Date(t.time);
       if(Number.isNaN(d.getTime()) || d.getFullYear() !== year || d.getMonth() + 1 !== month) continue;
       actual += parseN(t.amount);
-      const st = DB.stocks.find(s => s.id === t.stockId);
-      if(st && !actualSyms.includes(st.symbol)) actualSyms.push(st.symbol);
+      const row = summary.rows.find(r => r.stockIds.includes(t.stockId));
+      const sym = row?.stock?.symbol;
+      if(sym && !actualSyms.includes(sym)) actualSyms.push(sym);
     }
 
     const isActual = actual > 0;
-    const amount = isActual ? actual : projected;
-    const stocks = isActual ? actualSyms : projectedStocks;
-    return { amount, stocks, isActual };
+    return {
+      amount: isActual ? actual : projected,
+      stocks: isActual ? actualSyms : projectedStocks,
+      isActual,
+      actual,
+      projected
+    };
   }
 
-  function calcAnnualDividendStats(){
+  function calculateCurrentMonthDividend(summary = calculatePortfolioSummary(), refDate = new Date()){
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth() + 1;
+    return buildMonthlyDividendSnapshot(month, year, summary);
+  }
+
+  function calcMonthlyDividend(month, year, summary = calculatePortfolioSummary()){
+    const snapshot = buildMonthlyDividendSnapshot(month, year, summary);
+    return { amount: snapshot.amount, stocks: snapshot.stocks, isActual: snapshot.isActual };
+  }
+
+  function calcAnnualDividendStats(summary = calculatePortfolioSummary()){
     const year = new Date().getFullYear();
     const received = DB.txns
       .filter(t => t.type === 'dividend')
@@ -5262,15 +5690,12 @@ function updateAllocationPlannerSummary(){
       })
       .reduce((s, t) => s + parseN(t.amount), 0);
 
-    const pos = computeAllPositions();
     let projected = 0;
-    for(const stock of DB.stocks){
-      const q = parseN((pos[stock.id] || {}).qty);
-      if(q <= 0) continue;
-      const months = getPayoutMonthsForStock(stock.symbol);
+    for(const row of summary.heldRows){
+      const months = getPayoutMonthsForStock(row.stock.symbol);
       const n = months.length;
       if(n === 0) continue;
-      const { amount: onePay } = estimateProjectedDividendForStock(stock, q);
+      const { amount: onePay } = estimateProjectedDividendForHolding(row);
       projected += onePay * n;
     }
 
@@ -6790,11 +7215,10 @@ function updateAllocationPlannerSummary(){
   function openSnapshotDialog(snapshot){
     const dlg = $('#dlg-snapshot');
     
-    // 計算當前市值和可用現金
-    const pos = computeAllPositions();
-    const currentHoldings = Object.values(pos).reduce((a,b)=>a + b.marketValue, 0);
-    const currentCash = DB.accounts.reduce((a,acc)=> a + (parseN(acc.actual) + parseN(acc.settlement)), 0);
-    const currentTotal = currentHoldings + currentCash;
+    const summary = calculatePortfolioSummary();
+    const currentHoldings = summary.holdingsMarketValue;
+    const currentCash = summary.cashAvailable;
+    const currentTotal = summary.totalAssets;
     
     $('#snapshot-date').value = snapshot?.date || localDateStr();
     $('#snapshot-holdings').value = snapshot ? Math.round(parseN(snapshot.holdings)) : Math.round(currentHoldings);
@@ -7387,16 +7811,17 @@ function updateAllocationPlannerSummary(){
 
   // ========= 初次渲染 =========
   function fullRender(){
-    renderOverview();
+    const summary = calculatePortfolioSummary();
+    renderOverview(summary);
     updateSearchDropdown();
-    refreshKPI();
-    renderHoldings();
-    renderLongTermMetricsIfOpen();
+    refreshKPI(summary);
+    renderHoldings(summary);
+    renderLongTermMetricsIfOpen(summary);
     renderTxns();
     renderAccounts();
-    renderAllocation();
+    renderAllocation(summary);
     renderDividend();
-    renderReturnOverview();
+    renderReturnOverview(summary);
     checkProxyStatus(); // 檢查代理伺服器狀態
     renderWatchlist();
   }
@@ -8152,11 +8577,11 @@ function updateAllocationPlannerSummary(){
     return window.__week1TreemapModulePromise;
   }
 
-  function renderTreemap() {
+  function renderTreemap(summary = calculatePortfolioSummary()) {
     const container = document.getElementById('overview-treemap');
     if (!container) return;
     const renderSeq = ++week1TreemapRenderSeq;
-    const metrics = computeStockMetrics().filter(r => r.qty > 0 && r.marketValue > 0);
+    const metrics = computeStockMetrics(summary).filter(r => r.qty > 0 && r.marketValue > 0);
     if (metrics.length === 0) {
       if(week1OverviewTreemapChart){
         try { week1OverviewTreemapChart.destroy(); } catch(e) { /* ignore */ }
