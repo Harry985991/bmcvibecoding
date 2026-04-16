@@ -307,6 +307,125 @@
     .overview-alert-red{background:rgba(239,68,68,0.08); border-left:3px solid var(--red); color:var(--text)}
     .overview-alert-orange{background:rgba(245,158,11,0.12); border-left:3px solid var(--orange); color:var(--text)}
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
+    .data-health-panel{
+      margin-bottom:14px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#f8fafc;
+      box-shadow:var(--shadow);
+    }
+    .data-health-panel.ok{background:#ecfdf5;border-color:#a7f3d0}
+    .data-health-panel.warn{background:#fffbeb;border-color:#fcd34d}
+    .data-health-panel.error{background:#fef2f2;border-color:#fecaca}
+    .data-health-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .data-health-head-main{display:grid;gap:2px}
+    .data-health-head-side{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .data-health-title{font-size:13px;font-weight:700;color:var(--ink)}
+    .data-health-desc{font-size:12px;color:var(--sub);line-height:1.5;margin-top:2px}
+    .data-health-status{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
+      border:1px solid var(--line);background:#fff;color:var(--ink);
+    }
+    .data-health-action{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .data-health-action:hover{background:#f8fafc}
+    .data-health-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .data-health-chip{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600;
+      background:#fff;border:1px solid var(--line);color:var(--ink);
+    }
+    .data-health-chip.error{border-color:#fecaca;color:#b91c1c;background:#fff}
+    .data-health-chip.warn{border-color:#fcd34d;color:#b45309;background:#fff}
+    .data-health-chip.ok{border-color:#a7f3d0;color:#047857;background:#fff}
+    .data-health-note{margin-top:10px;font-size:11px;color:var(--sub);line-height:1.45}
+    .data-health-debug{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px dashed rgba(148,163,184,.45);
+    }
+    .data-health-debug summary{
+      cursor:pointer;
+      font-size:12px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .data-health-debug-wrap{display:grid;gap:12px;margin-top:10px}
+    .data-health-debug-card{
+      background:rgba(255,255,255,.7);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+    }
+    .data-health-debug-card.error{border-color:#fecaca;background:#fff7f7}
+    .data-health-debug-card.warn{border-color:#fcd34d;background:#fffdf5}
+    .data-health-debug-title{font-size:12px;font-weight:700;color:var(--ink)}
+    .data-health-debug-desc{font-size:11px;color:var(--sub);line-height:1.45;margin-top:3px}
+    .data-health-debug-table-wrap{margin-top:8px;overflow:auto}
+    .data-health-debug-table{
+      width:100%;
+      min-width:760px;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    .data-health-debug-table th,
+    .data-health-debug-table td{
+      border-bottom:1px solid rgba(148,163,184,.18);
+      padding:7px 8px;
+      text-align:left;
+      vertical-align:top;
+    }
+    .data-health-debug-table th{
+      color:var(--sub);
+      font-weight:700;
+      background:rgba(248,250,252,.85);
+      position:sticky;
+      top:0;
+    }
+    .data-health-debug-table td.num,
+    .data-health-debug-table th.num{text-align:right}
+    .data-health-debug-empty{font-size:11px;color:var(--sub);margin-top:8px}
+    .data-health-report{
+      margin-top:12px;
+      background:rgba(255,255,255,.7);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+    }
+    .data-health-report-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .data-health-report-title{font-size:12px;font-weight:700;color:var(--ink)}
+    .data-health-report-desc{font-size:11px;color:var(--sub);line-height:1.45;margin-top:3px}
+    .data-health-issue-badges{display:flex;gap:6px;flex-wrap:wrap}
+    .data-health-issue-badge{
+      display:inline-flex;
+      align-items:center;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:11px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .data-health-issue-badge.error{border-color:#fecaca;color:#b91c1c}
+    .data-health-issue-badge.warn{border-color:#fcd34d;color:#b45309}
 
     /* 報酬檢視：績效分析 */
     .return-kpi-row{display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-bottom:12px}
@@ -616,6 +735,7 @@
   </header>
 
   <main>
+    <div id="data-health-panel" class="data-health-panel" aria-live="polite"></div>
     <div class="tabs" role="tablist" aria-label="主導覽">
       <button class="tab" role="tab" aria-selected="true" data-target="#view-snapshots">總覽</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-holdings">持有標的</button>
@@ -1566,6 +1686,11 @@ let allocationPlannerContext = null;
   }
 
   // ── 狀態列備份提示 ────────────────────────────────────────
+  const dataHealthState = {
+    storageWriteError: false,
+    storageMessage: ''
+  };
+
   function showBackupStatus(msg, isError = false) {
     let el = document.getElementById('_backup-status');
     if (!el) {
@@ -1603,56 +1728,80 @@ let allocationPlannerContext = null;
     return null;
   }
 
-  // ── loadDB：優先從 IndexedDB 載入，失敗退回 localStorage ─
+  // ── loadDB：優先從較新的儲存來源載入，避免 localStorage / IndexedDB 不一致時回滾 ─
   const fallbackDB = () => ({ stocks:[], txns:[], accounts:[], snapshots:[], meta:{}, watchlist:[] });
+  function sanitizeDBShape(data){
+    if (!data || typeof data !== 'object') return null;
+    return {
+      stocks: Array.isArray(data.stocks) ? data.stocks : [],
+      txns: Array.isArray(data.txns) ? data.txns : [],
+      accounts: Array.isArray(data.accounts) ? data.accounts : [],
+      snapshots: Array.isArray(data.snapshots) ? data.snapshots : [],
+      meta: data.meta && typeof data.meta === 'object' ? data.meta : {},
+      watchlist: Array.isArray(data.watchlist) ? data.watchlist : []
+    };
+  }
+  function getDBUpdatedAt(data){
+    const ts = data?.meta?._updatedAt;
+    const t = ts ? new Date(ts).getTime() : Number.NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function markDBUpdated(target){
+    if(!target.meta || typeof target.meta !== 'object') target.meta = {};
+    target.meta._updatedAt = new Date().toISOString();
+    return target;
+  }
   async function loadDB() {
     const migrationData = await migrateFromLocalStorage();
+    let idbData = null;
+    let localData = null;
     try {
-      let data = await idbGet(IDB_KEY);
-      if (!data || typeof data !== 'object') {
-        // IndexedDB 無資料，嘗試用遷移資料或 localStorage
-        data = migrationData || (() => {
-          try { return JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch(e) { return null; }
-        })();
-      }
-      if (data && typeof data === 'object') {
-        const db = {
-          stocks:    data.stocks    || [],
-          txns:      data.txns      || [],
-          accounts:  data.accounts  || [],
-          snapshots: data.snapshots || [],
-          meta:      data.meta      || {},
-          watchlist: data.watchlist || []
-        };
-        if (migrationData) {
-          // 遷移完成，寫入 IndexedDB 並標記
-          await idbPut(IDB_KEY, db);
-          localStorage.setItem('_idb_migrated', '1');
-          showBackupStatus('資料已從 localStorage 遷移至 IndexedDB ✓');
-        }
-        return db;
+      idbData = sanitizeDBShape(await idbGet(IDB_KEY));
+    } catch(e) {
+      console.warn('[loadDB] IndexedDB 讀取失敗，改讀 localStorage：', e);
+    }
+    try {
+      localData = sanitizeDBShape(migrationData || JSON.parse(localStorage.getItem(storeKey) || 'null'));
+    } catch(e) {
+      localData = null;
+    }
+
+    const candidates = [idbData, localData].filter(Boolean);
+    if(candidates.length === 0) return fallbackDB();
+
+    let db = candidates[0];
+    if(candidates.length === 2 && getDBUpdatedAt(candidates[1]) > getDBUpdatedAt(candidates[0])){
+      db = candidates[1];
+    }
+    db = sanitizeDBShape(db) || fallbackDB();
+
+    try {
+      await idbPut(IDB_KEY, db);
+      localStorage.setItem(storeKey, JSON.stringify(db));
+      dataHealthState.storageWriteError = false;
+      dataHealthState.storageMessage = '';
+      if(migrationData) {
+        localStorage.setItem('_idb_migrated', '1');
+        showBackupStatus('資料已從 localStorage 遷移至 IndexedDB ✓');
       }
     } catch(e) {
-      console.warn('[loadDB] IndexedDB 讀取失敗，退回 localStorage：', e);
-      try {
-        const parsed = JSON.parse(localStorage.getItem(storeKey) || 'null');
-        if (parsed && typeof parsed === 'object') return {
-          stocks: parsed.stocks || [], txns: parsed.txns || [],
-          accounts: parsed.accounts || [], snapshots: parsed.snapshots || [],
-          meta: parsed.meta || {},
-          watchlist: parsed.watchlist || []
-        };
-      } catch(e2) {}
+      console.warn('[loadDB] 無法回補較新的資料到雙儲存層：', e);
     }
-    return fallbackDB();
+    return db;
   }
 
   // ── saveDB：同時寫 IndexedDB + localStorage（雙重保障）──
   async function saveDB(opts = {}) {
+    markDBUpdated(DB);
     // 同步寫 localStorage（確保即時可讀）
     try { localStorage.setItem(storeKey, JSON.stringify(DB)); } catch(e) {}
     // 非同步寫 IndexedDB
-    idbPut(IDB_KEY, DB).catch(e => console.warn('[saveDB] IndexedDB 寫入失敗：', e));
+    idbPut(IDB_KEY, DB).catch(e => {
+      console.warn('[saveDB] IndexedDB 寫入失敗：', e);
+      dataHealthState.storageWriteError = true;
+      dataHealthState.storageMessage = 'IndexedDB 寫入失敗，重新整理後可能回到舊資料';
+      showBackupStatus('IndexedDB 寫入失敗，重新整理後可能回到舊資料', true);
+    });
     // 每次有交易異動才觸發備份
     if (opts.backup) triggerAutoBackup();
   }
@@ -1820,37 +1969,43 @@ let allocationPlannerContext = null;
   };
 
   // ========= 成本/部位計算（加權平均成本法） =========
+  // Legacy compatibility:
+  // 新版資料流已改由 normalizeHoldings() / calculatePortfolioSummary() 統一口徑。
+  // 這兩個函式保留是為了避免未來誤用時重新引入舊口徑，所以直接代理到 normalized summary。
   function calcPosition(stockId){
-    const tx = DB.txns.filter(t=>t.stockId===stockId).sort((a,b)=>new Date(a.time)-new Date(b.time));
-    let qty=0, costBasis=0, avgCost=0, dividends=0;
-    for(const t of tx){
-      if(t.type==='buy'){
-        const amount = parseN(t.price)*parseN(t.qty);
-        costBasis += amount; qty += parseN(t.qty);
-        avgCost = qty? costBasis/qty : 0;
-      }else if(t.type==='sell'){
-        const sellQty = parseN(t.qty);
-        const realized = (parseN(t.price)-avgCost)*sellQty;
-        costBasis -= avgCost*sellQty; qty -= sellQty;
-        avgCost = qty? costBasis/qty : 0; t._realized = realized;
-      }else if(t.type==='fee'){
-        costBasis += parseN(t.amount);
-        avgCost = qty? costBasis/qty : 0;
-      }else if(t.type==='dividend'){
-        dividends += parseN(t.amount);
-      }
+    const row = findSummaryRowByStockId(stockId, calculatePortfolioSummary());
+    if(!row){
+      return {qty:0, avgCost:0, costBasis:0, price:0, marketValue:0, unrealized:0, dividends:0, totalPnl:0};
     }
-    const stock = DB.stocks.find(s=>s.id===stockId);
-    const price = parseN(stock?.price);
-    const marketValue = price*qty;
-    const unrealized = marketValue - costBasis;
-    const totalPnl = unrealized + dividends;
-    return {qty, avgCost, costBasis, price, marketValue, unrealized, dividends, totalPnl};
+    return {
+      qty: row.qty,
+      avgCost: row.avgCost,
+      costBasis: row.costBasis,
+      price: row.price,
+      marketValue: row.marketValue,
+      unrealized: row.unrealized,
+      dividends: row.dividends,
+      totalPnl: row.totalPnl
+    };
   }
 
   function computeAllPositions(){
+    const summary = calculatePortfolioSummary();
     const map = {};
     for(const s of DB.stocks){ map[s.id] = calcPosition(s.id); }
+    for(const row of summary.rows){
+      const payload = {
+        qty: row.qty,
+        avgCost: row.avgCost,
+        costBasis: row.costBasis,
+        price: row.price,
+        marketValue: row.marketValue,
+        unrealized: row.unrealized,
+        dividends: row.dividends,
+        totalPnl: row.totalPnl
+      };
+      row.stockIds.forEach(id => { map[id] = payload; });
+    }
     return map;
   }
 
@@ -2052,6 +2207,46 @@ let allocationPlannerContext = null;
     const totalAssetsDiff = totalAssets - (holdingsMarketValue + cashAvailable + otherAssets);
     const quoteTimes = [...new Set(heldRows.map(row => row.quoteTime).filter(Boolean))];
     const hasSyncWarning = heldRows.some(row => row.quoteSyncWarning || row.missingPrice || !row.quoteTime) || quoteTimes.length > 1;
+    const missingPriceCount = heldRows.filter(row => row.missingPrice).length;
+    const quoteMismatchCount = heldRows.filter(row => row.quoteSyncWarning || !row.quoteTime).length;
+    const duplicateRecordCount = heldRows.filter(row => row.hasDuplicateRecords).length;
+    const debugRows = heldRows.map(row => ({
+      instrumentKey: row.instrumentKey,
+      symbol: row.stock.symbol || '—',
+      name: row.stock.name || '',
+      wholeLotQty: row.wholeLotQty,
+      oddLotQty: row.oddLotQty,
+      qty: row.qty,
+      price: row.price,
+      marketValue: row.marketValue,
+      quoteTime: row.quoteTime || '',
+      quoteTimes: row.quoteTimes.slice(),
+      sourceCount: row.stockIds.length,
+      stockIds: row.stockIds.slice(),
+      txnCount: row.txnCount,
+      missingPrice: row.missingPrice,
+      quoteSyncWarning: row.quoteSyncWarning || !row.quoteTime,
+      hasDuplicateRecords: row.hasDuplicateRecords
+    }));
+    const missingPriceRows = debugRows.filter(row => row.missingPrice);
+    const quoteMismatchRows = debugRows.filter(row => row.quoteSyncWarning);
+    const duplicateRows = debugRows.filter(row => row.hasDuplicateRecords);
+    const anomalyRows = debugRows
+      .map(row => {
+        const issues = [];
+        if(row.missingPrice) issues.push({ type: 'error', label: '缺價格' });
+        if(row.quoteSyncWarning) issues.push({ type: 'warn', label: '報價不同步' });
+        if(row.hasDuplicateRecords) issues.push({ type: 'warn', label: '多來源合併' });
+        return { ...row, issues };
+      })
+      .filter(row => row.issues.length > 0)
+      .sort((a, b) => {
+        const aSeverity = a.issues.some(issue => issue.type === 'error') ? 2 : 1;
+        const bSeverity = b.issues.some(issue => issue.type === 'error') ? 2 : 1;
+        if(aSeverity !== bSeverity) return bSeverity - aSeverity;
+        if(a.issues.length !== b.issues.length) return b.issues.length - a.issues.length;
+        return (b.marketValue || 0) - (a.marketValue || 0);
+      });
 
     return {
       rows,
@@ -2065,6 +2260,14 @@ let allocationPlannerContext = null;
       totalAssetsDiff,
       quoteTimes,
       hasSyncWarning,
+      missingPriceCount,
+      quoteMismatchCount,
+      duplicateRecordCount,
+      debugRows,
+      missingPriceRows,
+      quoteMismatchRows,
+      duplicateRows,
+      anomalyRows,
       syncWarningMessage: hasSyncWarning ? '資料更新時間不同，數值可能暫時不一致' : '',
       validation: {
         holdingsMatchesDetails: Math.abs(holdingsVsDetailsDiff) < 0.5,
@@ -2074,28 +2277,47 @@ let allocationPlannerContext = null;
     };
   }
 
+  function findSummaryRowByStockId(stockId, summary = calculatePortfolioSummary()){
+    return summary.rows.find(row => row.stockIds.includes(stockId)) || null;
+  }
+
+  function getStockLabelKey(stockId){
+    const stock = DB.stocks.find(s => s.id === stockId);
+    if(!stock) return String(stockId || '');
+    return getHoldingInstrumentKey(stock);
+  }
+
   function computeTxnRealizedList(){
-    const tx = DB.txns.slice().sort((a,b)=>new Date(a.time)-new Date(b.time));
-    const state = new Map(); // stockId -> {qty, avgCost}
+    const tx = DB.txns.slice().sort((a,b)=>{
+      const da = new Date(a.time).getTime();
+      const db = new Date(b.time).getTime();
+      if(da !== db) return da - db;
+      const order = { buy: 0, sell: 1, fee: 2, dividend: 3 };
+      return (order[a.type] ?? 9) - (order[b.type] ?? 9);
+    });
+    const state = new Map(); // instrumentKey -> {qty, avgCost}
     return tx.map(t=>{
-      const st = state.get(t.stockId) || {qty:0, avgCost:0};
+      const stock = DB.stocks.find(s => s.id === t.stockId);
+      const instrumentKey = stock ? getHoldingInstrumentKey(stock) : String(t.stockId || '');
+      const st = state.get(instrumentKey) || {qty:0, avgCost:0};
       let realized = 0;
       if(t.type==='buy'){
         const amount = parseN(t.price)*parseN(t.qty);
         const newQty = st.qty + parseN(t.qty);
         const newCost = st.avgCost*st.qty + amount;
-        st.qty = newQty; st.avgCost = newQty? newCost/newQty : 0;
+        st.qty = newQty;
+        st.avgCost = newQty ? newCost/newQty : 0;
       }else if(t.type==='sell'){
         realized = (parseN(t.price)-st.avgCost) * parseN(t.qty);
         st.qty -= parseN(t.qty);
       }else if(t.type==='fee'){
         const newCostBasis = st.avgCost*st.qty + parseN(t.amount);
-        st.avgCost = st.qty? newCostBasis/st.qty : 0;
+        st.avgCost = st.qty ? newCostBasis/st.qty : 0;
       }else if(t.type==='dividend'){
         realized = parseN(t.amount);
       }
-      state.set(t.stockId, st);
-      return {...t, realized};
+      state.set(instrumentKey, st);
+      return {...t, realized, instrumentKey};
     }).sort((a,b)=>new Date(b.time)-new Date(a.time));
   }
 
@@ -2150,6 +2372,13 @@ let allocationPlannerContext = null;
 
   // ========= 更新搜尋下拉選單 =========
   function updateSearchDropdown(){
+    const summary = calculatePortfolioSummary();
+    const options = summary.rows
+      .map(row => ({
+        symbol: row.stock.symbol,
+        name: row.stock.name || '',
+        sortKey: row.stock.symbol
+      }));
     // 更新持有標的頁面的篩選器
     const select = $('#q');
     const currentValue = select.value;
@@ -2165,8 +2394,8 @@ let allocationPlannerContext = null;
     };
     
     // 添加所有股票代碼選項
-    DB.stocks
-      .sort((a,b)=> getSortIndex(a.symbol) - getSortIndex(b.symbol))
+    options
+      .sort((a,b)=> getSortIndex(a.sortKey) - getSortIndex(b.sortKey) || (a.sortKey || '').localeCompare(b.sortKey || '', 'zh-Hant', {numeric:true, sensitivity:'base'}))
       .forEach(stock => {
         const option = document.createElement('option');
         option.value = stock.symbol;
@@ -2187,8 +2416,8 @@ let allocationPlannerContext = null;
     selectTxn.innerHTML = '<option value="">全部標的</option>';
     
     // 添加所有股票代碼選項
-    DB.stocks
-      .sort((a,b)=> getSortIndex(a.symbol) - getSortIndex(b.symbol))
+    options
+      .sort((a,b)=> getSortIndex(a.sortKey) - getSortIndex(b.sortKey) || (a.sortKey || '').localeCompare(b.sortKey || '', 'zh-Hant', {numeric:true, sensitivity:'base'}))
       .forEach(stock => {
         const option = document.createElement('option');
         option.value = stock.symbol;
@@ -2224,7 +2453,8 @@ let allocationPlannerContext = null;
   function getStockLabel(stockId){
     const stock = DB.stocks.find(s => s.id === stockId);
     const symbol = stock?.symbol || '';
-    const saved = DB.meta?.stockLabels?.[stockId];
+    const labelKey = getStockLabelKey(stockId);
+    const saved = DB.meta?.stockLabels?.[labelKey] || DB.meta?.stockLabels?.[stockId];
     const defaults = DEFAULT_TIERS[symbol] || { tier: 'watch', strategy: 'tradeable' };
     const merged = { ...defaults, ...(saved || {}) };
     return {
@@ -2237,7 +2467,8 @@ let allocationPlannerContext = null;
 
   function saveStockLabel(stockId, labelObj){
     ensureStockLabelsMeta();
-    DB.meta.stockLabels[stockId] = {
+    const labelKey = getStockLabelKey(stockId);
+    DB.meta.stockLabels[labelKey] = {
       tier: labelObj.tier,
       strategy: labelObj.strategy,
       stopLoss: labelObj.stopLoss,
@@ -2617,6 +2848,272 @@ let allocationPlannerContext = null;
           </table>
         </div>
       </details>`;
+  }
+
+  function formatDataHealthSourceIds(stockIds){
+    if(!Array.isArray(stockIds) || stockIds.length === 0) return '—';
+    return stockIds.map(id => escapeAttr(id)).join(', ');
+  }
+
+  function renderDataHealthDebugTable(rows){
+    if(!rows.length){
+      return '<div class="data-health-debug-empty">目前沒有需要列出的明細。</div>';
+    }
+    return `
+      <div class="data-health-debug-table-wrap">
+        <table class="data-health-debug-table">
+          <thead>
+            <tr>
+              <th>代號</th>
+              <th>名稱</th>
+              <th class="num">整股</th>
+              <th class="num">零股</th>
+              <th class="num">合計股數</th>
+              <th class="num">市價</th>
+              <th class="num">市值</th>
+              <th>更新時間</th>
+              <th class="num">來源筆數</th>
+              <th>來源 ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>${escapeAttr(row.symbol || '—')}</td>
+                <td>${escapeAttr(row.name || '')}</td>
+                <td class="num">${formatHoldingQty(row.wholeLotQty)}</td>
+                <td class="num">${formatHoldingQty(row.oddLotQty)}</td>
+                <td class="num">${formatHoldingQty(row.qty)}</td>
+                <td class="num">${row.missingPrice ? '缺價格' : fmt2.format(row.price)}</td>
+                <td class="num">${fmtInt.format(Math.round(row.marketValue || 0))}</td>
+                <td>${row.quoteTime ? formatStockPriceUpdatedAt(row.quoteTime) : '—'}</td>
+                <td class="num">${fmtInt.format(row.sourceCount || 0)}</td>
+                <td>${formatDataHealthSourceIds(row.stockIds)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderDataHealthIssueBadges(issues){
+    if(!Array.isArray(issues) || issues.length === 0) return '<span class="data-health-issue-badge">—</span>';
+    return issues.map(issue => `<span class="data-health-issue-badge ${issue.type}">${escapeAttr(issue.label)}</span>`).join('');
+  }
+
+  function renderDataHealthReportTable(rows){
+    if(!rows.length){
+      return '<div class="data-health-debug-empty">目前沒有異常標的，資料口徑一致。</div>';
+    }
+    return `
+      <div class="data-health-debug-table-wrap">
+        <table class="data-health-debug-table">
+          <thead>
+            <tr>
+              <th>代號</th>
+              <th>名稱</th>
+              <th>異常類型</th>
+              <th class="num">合計股數</th>
+              <th class="num">市價</th>
+              <th class="num">市值</th>
+              <th>更新時間</th>
+              <th class="num">來源筆數</th>
+              <th>來源 ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>${escapeAttr(row.symbol || '—')}</td>
+                <td>${escapeAttr(row.name || '')}</td>
+                <td><div class="data-health-issue-badges">${renderDataHealthIssueBadges(row.issues)}</div></td>
+                <td class="num">${formatHoldingQty(row.qty)}</td>
+                <td class="num">${row.missingPrice ? '缺價格' : fmt2.format(row.price)}</td>
+                <td class="num">${fmtInt.format(Math.round(row.marketValue || 0))}</td>
+                <td>${row.quoteTime ? formatStockPriceUpdatedAt(row.quoteTime) : '—'}</td>
+                <td class="num">${fmtInt.format(row.sourceCount || 0)}</td>
+                <td>${formatDataHealthSourceIds(row.stockIds)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function buildDataHealthReport(summary = calculatePortfolioSummary()){
+    const lines = [];
+    const nowText = new Date().toLocaleString('zh-TW', { hour12: false });
+    const statusText = summary.validation.isConsistent && !summary.hasSyncWarning && !dataHealthState.storageWriteError
+      ? '健康'
+      : (summary.validation.isConsistent ? '請注意' : '需處理');
+    lines.push(`投資儀表板資料自檢報告`);
+    lines.push(`產生時間：${nowText}`);
+    lines.push(`狀態：${statusText}`);
+    lines.push(`持倉檔數：${summary.heldRows.length}`);
+    lines.push(`持倉市值：${fmtInt.format(Math.round(summary.holdingsMarketValue))}`);
+    lines.push(`明細市值加總：${fmtInt.format(Math.round(summary.detailMarketValueSum))}`);
+    lines.push(`持倉差額：${fmtInt.format(Math.round(summary.holdingsVsDetailsDiff))}`);
+    lines.push(`總資產：${fmtInt.format(Math.round(summary.totalAssets))}`);
+    lines.push(`可用現金：${fmtInt.format(Math.round(summary.cashAvailable))}`);
+    lines.push(`總資產公式差額：${fmtInt.format(Math.round(summary.totalAssetsDiff))}`);
+    lines.push(`缺價格檔數：${summary.missingPriceCount}`);
+    lines.push(`報價不同步檔數：${summary.quoteMismatchCount}`);
+    lines.push(`多來源合併檔數：${summary.duplicateRecordCount}`);
+    if(dataHealthState.storageWriteError){
+      lines.push(`儲存異常：${dataHealthState.storageMessage || 'IndexedDB 寫入失敗'}`);
+    }
+    lines.push('');
+    if(!summary.anomalyRows.length){
+      lines.push('目前沒有異常標的。');
+      return lines.join('\n');
+    }
+    lines.push('異常標的清單：');
+    summary.anomalyRows.forEach((row, index) => {
+      const issueText = row.issues.map(issue => issue.label).join(' / ');
+      const priceText = row.missingPrice ? '缺價格' : fmt2.format(row.price);
+      const quoteText = row.quoteTime ? formatStockPriceUpdatedAt(row.quoteTime) : '—';
+      lines.push(
+        `${index + 1}. ${row.symbol} ${row.name} | ${issueText} | 股數 ${formatHoldingQty(row.qty)} | 市價 ${priceText} | 市值 ${fmtInt.format(Math.round(row.marketValue || 0))} | 更新 ${quoteText} | 來源 ${row.sourceCount} 筆 | IDs ${row.stockIds.join(', ')}`
+      );
+    });
+    return lines.join('\n');
+  }
+
+  async function copyDataHealthReport(){
+    const text = buildDataHealthReport(calculatePortfolioSummary());
+    try{
+      if(navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(text);
+      }else{
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'readonly');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      showBackupStatus('資料自檢報告已複製 ✓');
+    }catch(err){
+      console.warn('複製資料自檢報告失敗：', err);
+      showBackupStatus('資料自檢報告複製失敗', true);
+    }
+  }
+
+  function renderDataHealth(summary = calculatePortfolioSummary()){
+    const panel = $('#data-health-panel');
+    if(!panel) return;
+
+    const issues = [];
+    if(!summary.validation.holdingsMatchesDetails){
+      issues.push({
+        type: 'error',
+        text: `持倉驗算不一致：差額 ${fmtInt.format(Math.round(summary.holdingsVsDetailsDiff))}`
+      });
+    }
+    if(!summary.validation.totalAssetsMatchesEquation){
+      issues.push({
+        type: 'error',
+        text: `總資產公式不一致：差額 ${fmtInt.format(Math.round(summary.totalAssetsDiff))}`
+      });
+    }
+    if(summary.missingPriceCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.missingPriceCount} 檔持倉缺少價格，市值可能被低估`
+      });
+    }
+    if(summary.quoteMismatchCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.quoteMismatchCount} 檔持倉的報價時間不同步`
+      });
+    }
+    if(summary.duplicateRecordCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.duplicateRecordCount} 檔持倉由多筆資料合併`
+      });
+    }
+    if(dataHealthState.storageWriteError){
+      issues.push({
+        type: 'error',
+        text: dataHealthState.storageMessage || '資料儲存失敗，重新整理後可能回到舊資料'
+      });
+    }
+
+    const statusClass = issues.some(x => x.type === 'error') ? 'error' : (issues.length > 0 ? 'warn' : 'ok');
+    const statusText = issues.some(x => x.type === 'error') ? '需處理' : (issues.length > 0 ? '請注意' : '健康');
+    const desc = issues.length
+      ? '以下項目可能導致畫面數值暫時不一致，建議先確認後再判讀報表。'
+      : '目前未發現會直接導致資料錯誤或不一致的高風險訊號。';
+    const quoteSummary = summary.quoteTimes.length > 1
+      ? `${summary.quoteTimes.length} 個報價時間`
+      : (summary.quoteTimes[0] ? `報價更新 ${formatStockPriceUpdatedAt(summary.quoteTimes[0])}` : '尚無持倉報價');
+    const shouldShowDebug = issues.length > 0;
+    const debugSections = [
+      {
+        type: 'error',
+        title: '缺少價格的持倉',
+        desc: '這些標的沒有可用市價，持倉市值會被壓成 0，總資產也會跟著偏低。',
+        rows: summary.missingPriceRows
+      },
+      {
+        type: 'warn',
+        title: '報價時間不同步的持倉',
+        desc: '同一批持倉使用了不同更新時間的價格，或尚未拿到更新時間，短時間內可能造成摘要與外部數據對不上。',
+        rows: summary.quoteMismatchRows
+      },
+      {
+        type: 'warn',
+        title: '由多筆來源合併的持倉',
+        desc: '同一商品分散在多筆 stock 記錄，系統已先合併再計算。若來源資料本身重複，這裡會最先看出來。',
+        rows: summary.duplicateRows
+      }
+    ].filter(section => section.rows.length > 0);
+
+    panel.className = `data-health-panel ${statusClass}`;
+    panel.innerHTML = `
+      <div class="data-health-head">
+        <div class="data-health-head-main">
+          <div class="data-health-title">Data Health</div>
+          <div class="data-health-desc">${desc}</div>
+        </div>
+        <div class="data-health-head-side">
+          <button type="button" class="data-health-action" onclick="copyDataHealthReport()">複製自檢報告</button>
+          <div class="data-health-status">${statusText}</div>
+        </div>
+      </div>
+      <div class="data-health-list">
+        ${issues.length
+          ? issues.map(issue => `<span class="data-health-chip ${issue.type}">${issue.text}</span>`).join('')
+          : '<span class="data-health-chip ok">持倉、總資產與報價口徑目前一致</span>'}
+      </div>
+      <div class="data-health-note">目前追蹤：${quoteSummary}；持倉 ${summary.heldRows.length} 檔；明細加總 ${fmtInt.format(Math.round(summary.detailMarketValueSum))}。</div>
+      <div class="data-health-report">
+        <div class="data-health-report-head">
+          <div>
+            <div class="data-health-report-title">資料自檢報告</div>
+            <div class="data-health-report-desc">將所有異常標的集中成單一清單，方便對帳、截圖或貼給其他人協查。</div>
+          </div>
+        </div>
+        ${renderDataHealthReportTable(summary.anomalyRows)}
+      </div>
+      ${shouldShowDebug ? `
+        <details class="data-health-debug">
+          <summary>展開資料健康明細 debug</summary>
+          <div class="data-health-debug-wrap">
+            ${debugSections.map(section => `
+              <div class="data-health-debug-card ${section.type}">
+                <div class="data-health-debug-title">${section.title}（${section.rows.length}）</div>
+                <div class="data-health-debug-desc">${section.desc}</div>
+                ${renderDataHealthDebugTable(section.rows)}
+              </div>
+            `).join('')}
+          </div>
+        </details>` : ''}`;
   }
 
   function renderHoldings(summary = calculatePortfolioSummary()){
@@ -3013,13 +3510,9 @@ let allocationPlannerContext = null;
   // 計算每檔股票的已實現損益（含息）
   function computeRealizedPnlByStock(summary = calculatePortfolioSummary()){
     const realizedMap = {};
-    const stockIdToInstrumentKey = new Map();
-    summary.rows.forEach(row => {
-      row.stockIds.forEach(id => stockIdToInstrumentKey.set(id, row.instrumentKey));
-    });
     const txList = computeTxnRealizedList();
     for(const t of txList){
-      const instrumentKey = stockIdToInstrumentKey.get(t.stockId);
+      const instrumentKey = t.instrumentKey || findSummaryRowByStockId(t.stockId, summary)?.instrumentKey;
       if(!instrumentKey) continue;
       if(!realizedMap[instrumentKey]){
         realizedMap[instrumentKey] = 0;
@@ -4123,13 +4616,14 @@ let allocationPlannerContext = null;
     return `<td class="col-txn-note" title="${escapeAttr(n)}">${escapeAttr(short)}</td>`;
   }
 
-  function buildTxnPnlCell(t){
+  function buildTxnPnlCell(t, summary = calculatePortfolioSummary()){
     if(t.type === 'buy'){
-      const pos = calcPosition(t.stockId);
-      const cb = pos.costBasis;
-      const unreal = pos.unrealized;
-      const avg = pos.avgCost;
-      if(pos.qty <= 0){
+      const row = findSummaryRowByStockId(t.stockId, summary);
+      const cb = parseN(row?.costBasis);
+      const unreal = parseN(row?.unrealized);
+      const avg = parseN(row?.avgCost);
+      const qty = parseN(row?.qty);
+      if(qty <= 0 || !row){
         const tip = escapeAttr(`持倉成本：已無持倉\n試算損益：—\n試算報酬：—`);
         const html = `<div class="cell-stack"><span class="muted">—</span><span class="mini muted"> </span></div>`;
         return { html, title: tip };
@@ -4245,7 +4739,7 @@ let allocationPlannerContext = null;
   }
 
   // ========= 交易表格 =========
-  function renderTxns(){
+  function renderTxns(summary = calculatePortfolioSummary()){
     renderScoreStats();
 
     const tbody = $('#tbl-txns tbody');
@@ -4285,7 +4779,7 @@ let allocationPlannerContext = null;
       const nameZh = stock ? (stock.name || '').trim() : '';
       const typeCls = txnTypeBadgeClass(t.type);
       const typeLabel = typeNames[t.type] || t.type;
-      const pnl = buildTxnPnlCell(t);
+      const pnl = buildTxnPnlCell(t, summary);
 
       tr.innerHTML = `
         <td class="col-txn-date">${formatTxnDate(t.time)}</td>
@@ -4438,20 +4932,8 @@ let allocationPlannerContext = null;
 
   // ========= 總覽（#view-snapshots）=========
   function qtyBeforeDividendTxn(stockId, targetTxn){
-    const tx = DB.txns
-      .filter(t => t.stockId === stockId)
-      .sort((a, b) => {
-        const d = new Date(a.time).getTime() - new Date(b.time).getTime();
-        if(d !== 0) return d;
-        return String(a.id).localeCompare(String(b.id));
-      });
-    let qty = 0;
-    for(const t of tx){
-      if(t.id === targetTxn.id) break;
-      if(t.type === 'buy') qty += parseN(t.qty);
-      else if(t.type === 'sell') qty -= parseN(t.qty);
-    }
-    return qty;
+    const row = findSummaryRowByStockId(stockId, calculatePortfolioSummary());
+    return getHoldingQtyBeforeTxnForRow(row, targetTxn);
   }
 
   function renderOverview(summary = calculatePortfolioSummary()){
@@ -4745,10 +5227,10 @@ let allocationPlannerContext = null;
   }
 
   function computeCurrentAssetSnapshotBase(dateStr){
-    const pos = computeAllPositions();
-    const holdings = Math.round(Object.values(pos).reduce((a, b) => a + parseN(b.marketValue), 0));
-    const cash = Math.round(DB.accounts.reduce((a, acc) => a + (parseN(acc.actual) + parseN(acc.settlement)), 0));
-    const total = holdings + cash;
+    const summary = calculatePortfolioSummary();
+    const holdings = Math.round(summary.holdingsMarketValue);
+    const cash = Math.round(summary.cashAvailable);
+    const total = Math.round(summary.totalAssets);
     const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(dateStr);
     const returnAmount = Math.round(total - investedCapitalToDate);
     const prev = DB.snapshots
@@ -5703,13 +6185,23 @@ function updateAllocationPlannerSummary(){
     return { received, projected, monthly };
   }
 
-  function getDividendTimeline(){
+  function getHoldingQtyBeforeTxnForRow(row, targetTxn){
+    if(!row || !targetTxn) return 0;
+    return row.txns
+      .filter(t => new Date(t.time) < new Date(targetTxn.time))
+      .reduce((sum, t) => {
+        if(t.type === 'buy') return sum + parseN(t.qty);
+        if(t.type === 'sell') return sum - parseN(t.qty);
+        return sum;
+      }, 0);
+  }
+
+  function getDividendTimeline(summary = calculatePortfolioSummary()){
     const now = new Date();
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const pastStart = new Date(now.getFullYear(), now.getMonth() - 3, 1);
     const futureEnd = new Date(now.getFullYear(), now.getMonth() + 3, 0, 23, 59, 59, 999);
-    const pos = computeAllPositions();
     const items = [];
     const addedFut = new Set();
     const futKey = (d, sym) => `${sym}|${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -5719,9 +6211,10 @@ function updateAllocationPlannerSummary(){
       const dt = new Date(t.time);
       if(Number.isNaN(dt.getTime())) continue;
       if(dt < pastStart || dt > todayEnd) continue;
-      const stock = DB.stocks.find(s => s.id === t.stockId);
+      const row = findSummaryRowByStockId(t.stockId, summary);
+      const stock = row?.stock;
       const sym = stock?.symbol || '—';
-      const q = stock ? parseN((pos[stock.id] || {}).qty) : 0;
+      const q = row ? getHoldingQtyBeforeTxnForRow(row, t) : 0;
       const amt = parseN(t.amount);
       const perSh = q > 0 ? amt / q : null;
       items.push({
@@ -5742,8 +6235,9 @@ function updateAllocationPlannerSummary(){
         .map(x => futKey(x.date, x.symbol))
     );
 
-    for(const stock of DB.stocks){
-      const q = parseN((pos[stock.id] || {}).qty);
+    for(const row of summary.heldRows){
+      const stock = row.stock;
+      const q = parseN(row.qty);
       if(q <= 0) continue;
       const info = getCurrentDividendInfo(stock.symbol);
       const pdStr = info.payDate ? String(info.payDate).trim() : '';
@@ -5754,7 +6248,7 @@ function updateAllocationPlannerSummary(){
           if(actualMonthKeys.has(k)) continue;
           if(addedFut.has(k)) continue;
           addedFut.add(k);
-          const est = estimateProjectedDividendForStock(stock, q);
+          const est = estimateProjectedDividendForHolding(row);
           items.push({
             kind: 'projected',
             date: pd,
@@ -5781,8 +6275,9 @@ function updateAllocationPlannerSummary(){
     for(const slot of monthSlots){
       const fallback = new Date(slot.y, slot.m - 1, slot.day);
       if(fallback <= todayEnd || fallback > futureEnd) continue;
-      for(const stock of DB.stocks){
-        const q = parseN((pos[stock.id] || {}).qty);
+      for(const row of summary.heldRows){
+        const stock = row.stock;
+        const q = parseN(row.qty);
         if(q <= 0) continue;
         if(!getPayoutMonthsForStock(stock.symbol).includes(slot.m)) continue;
         const k = futKey(fallback, stock.symbol);
@@ -5796,7 +6291,7 @@ function updateAllocationPlannerSummary(){
           }
         }
         addedFut.add(k);
-        const est = estimateProjectedDividendForStock(stock, q);
+        const est = estimateProjectedDividendForHolding(row);
         items.push({
           kind: 'projected',
           date: fallback,
@@ -5816,8 +6311,8 @@ function updateAllocationPlannerSummary(){
     return [...futureItems, ...pastItems];
   }
 
-  function renderDividend(){
-    const stats = calcAnnualDividendStats();
+  function renderDividend(summary = calculatePortfolioSummary()){
+    const stats = calcAnnualDividendStats(summary);
     const kpiR = $('#div-kpi-received');
     const kpiP = $('#div-kpi-projected');
     const kpiM = $('#div-kpi-monthly');
@@ -5840,7 +6335,6 @@ function updateAllocationPlannerSummary(){
     const yearEl = $('#dividend-cal-year');
     if(yearEl) yearEl.textContent = String(year);
 
-    const pos = computeAllPositions();
     const customOrder = ['0050', '00878', '00923', '8215', '00646', '00687B', '00719B', '00772B'];
     const sortSym = (a, b) => {
       const ia = customOrder.indexOf(a.symbol);
@@ -5848,8 +6342,8 @@ function updateAllocationPlannerSummary(){
       if(ia >= 0 || ib >= 0) return (ia >= 0 ? ia : 999) - (ib >= 0 ? ib : 999);
       return (a.symbol || '').localeCompare(b.symbol || '', 'zh-Hant', { numeric: true });
     };
-    const heldWithQty = DB.stocks
-      .filter(s => parseN((pos[s.id] || {}).qty) > 0)
+    const heldWithQty = summary.heldRows
+      .map(row => row.stock)
       .sort(sortSym);
 
     const strip = $('#dividend-holdings-strip');
@@ -5869,7 +6363,7 @@ function updateAllocationPlannerSummary(){
     if(grid){
       grid.innerHTML = '';
       for(let month = 1; month <= 12; month++){
-        const { amount, stocks, isActual } = calcMonthlyDividend(month, year);
+        const { amount, stocks, isActual } = calcMonthlyDividend(month, year, summary);
         const hasActual = isActual && amount > 0;
         const hasProjected = !isActual && amount > 0;
         const hasFlow = hasActual || hasProjected;
@@ -5929,7 +6423,7 @@ function updateAllocationPlannerSummary(){
     const tlHost = $('#dividend-timeline');
     if(tlHost){
       tlHost.innerHTML = '';
-      const timeline = getDividendTimeline();
+    const timeline = getDividendTimeline(summary);
       if(timeline.length === 0){
         tlHost.innerHTML = '<div class="empty" style="padding:16px">尚無近期配息紀錄或預估</div>';
       } else {
@@ -7812,15 +8306,16 @@ function updateAllocationPlannerSummary(){
   // ========= 初次渲染 =========
   function fullRender(){
     const summary = calculatePortfolioSummary();
+    renderDataHealth(summary);
     renderOverview(summary);
     updateSearchDropdown();
     refreshKPI(summary);
     renderHoldings(summary);
     renderLongTermMetricsIfOpen(summary);
-    renderTxns();
+    renderTxns(summary);
     renderAccounts();
     renderAllocation(summary);
-    renderDividend();
+    renderDividend(summary);
     renderReturnOverview(summary);
     checkProxyStatus(); // 檢查代理伺服器狀態
     renderWatchlist();
@@ -7847,11 +8342,11 @@ function updateAllocationPlannerSummary(){
 
   // ========= 手動編輯股息資訊 =========
   function openDividendEdit(symbol) {
-    const stock = DB.stocks.find(s => s.symbol === symbol);
+    const summary = calculatePortfolioSummary();
+    const row = summary.rows.find(r => r.stock.symbol === symbol);
+    const stock = row?.stock || DB.stocks.find(s => s.symbol === symbol);
     if (!stock) return;
-    const positions = computeAllPositions();
-    const position = positions[stock.id] || { qty: 0 };
-    const currentQty = parseN(position.qty);
+    const currentQty = parseN(row?.qty);
     
     // 取得目前的股息資訊
     const currentDividendInfo = getCurrentDividendInfo(symbol);
