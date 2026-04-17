@@ -321,12 +321,12 @@
       border:1px solid var(--line);
       background:#fff;
       color:var(--ink);
-      border-radius:14px;
-      padding:10px 12px;
-      min-width:156px;
-      display:grid;
-      gap:3px;
-      text-align:left;
+      border-radius:999px;
+      padding:8px 14px;
+      min-width:0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
       box-shadow:var(--shadow);
       cursor:pointer;
       transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
@@ -335,48 +335,14 @@
       transform:translateY(-1px);
       box-shadow:0 10px 24px rgba(15,23,42,.1);
     }
-    .data-health-trigger-title{
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.04em;
-      text-transform:uppercase;
-    }
-    .data-health-trigger-meta{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
     .data-health-trigger-status{
       font-size:12px;
-      font-weight:700;
-      color:var(--ink);
-    }
-    .data-health-trigger-count{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:28px;
-      height:24px;
-      padding:0 8px;
-      border-radius:999px;
-      font-size:11px;
       font-weight:800;
-      border:1px solid transparent;
-      background:#f8fafc;
       color:var(--ink);
-    }
-    .data-health-trigger-sub{
-      font-size:11px;
-      color:var(--sub);
-      line-height:1.35;
     }
     .data-health-trigger.ok{border-color:#a7f3d0;background:#ecfdf5}
-    .data-health-trigger.ok .data-health-trigger-count{background:#fff;border-color:#a7f3d0;color:#047857}
     .data-health-trigger.warn{border-color:#fcd34d;background:#fffbeb}
-    .data-health-trigger.warn .data-health-trigger-count{background:#fff;border-color:#fcd34d;color:#b45309}
     .data-health-trigger.error{border-color:#fecaca;background:#fef2f2}
-    .data-health-trigger.error .data-health-trigger-count{background:#fff;border-color:#fecaca;color:#b91c1c}
     .data-health-popover-backdrop{
       position:fixed;
       inset:0;
@@ -902,13 +868,9 @@
             aria-haspopup="dialog"
             aria-expanded="false"
             aria-controls="data-health-popover"
+            aria-label="開啟資料健康檢查"
           >
-            <span class="data-health-trigger-title">Data Health</span>
-            <span class="data-health-trigger-meta">
-              <span class="data-health-trigger-status" id="data-health-trigger-status">健康</span>
-              <span class="data-health-trigger-count" id="data-health-trigger-count">0</span>
-            </span>
-            <span class="data-health-trigger-sub" id="data-health-trigger-sub">點開查看資料一致性與異常明細</span>
+            <span class="data-health-trigger-status" id="data-health-trigger-status">健康</span>
           </button>
         </div>
       </div>
@@ -3380,13 +3342,10 @@ let allocationPlannerContext = null;
     if(!trigger) return;
     const vm = buildDataHealthViewModel(summary);
     const statusEl = $('#data-health-trigger-status');
-    const countEl = $('#data-health-trigger-count');
-    const subEl = $('#data-health-trigger-sub');
     trigger.className = `data-health-trigger ${vm.statusClass}`;
     trigger.setAttribute('aria-expanded', dataHealthState.popoverOpen ? 'true' : 'false');
+    trigger.setAttribute('aria-label', `開啟資料健康檢查，目前狀態：${vm.statusText}`);
     if(statusEl) statusEl.textContent = vm.statusText;
-    if(countEl) countEl.textContent = vm.triggerCountText;
-    if(subEl) subEl.textContent = vm.triggerSubText;
   }
 
   function setDataHealthPopoverOpen(open){
