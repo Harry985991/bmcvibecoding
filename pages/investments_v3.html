@@ -307,6 +307,85 @@
     .overview-alert-red{background:rgba(239,68,68,0.08); border-left:3px solid var(--red); color:var(--text)}
     .overview-alert-orange{background:rgba(245,158,11,0.12); border-left:3px solid var(--orange); color:var(--text)}
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
+    .week1-treemap-hybrid{
+      display:grid;
+      grid-template-columns:minmax(0, 1.7fr) minmax(260px, .95fr);
+      gap:14px;
+      align-items:stretch;
+      min-height:320px;
+    }
+    .week1-treemap-main{
+      position:relative;
+      min-height:320px;
+    }
+    .week1-treemap-main-canvas{
+      position:relative;
+      width:100%;
+      height:100%;
+      min-height:320px;
+    }
+    .week1-treemap-side{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:320px;
+    }
+    .week1-treemap-side-item{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      width:100%;
+      min-height:68px;
+      border:0;
+      border-radius:14px;
+      padding:14px 16px;
+      text-align:left;
+      cursor:pointer;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+    }
+    .week1-treemap-side-left{
+      min-width:0;
+      flex:1;
+    }
+    .week1-treemap-side-symbol{
+      font-size:16px;
+      font-weight:800;
+      line-height:1.05;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .week1-treemap-side-name{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.82;
+      line-height:1.25;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .week1-treemap-side-right{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:4px;
+      text-align:right;
+      flex:0 0 auto;
+    }
+    .week1-treemap-side-return{
+      font-size:14px;
+      font-weight:800;
+      line-height:1;
+    }
+    .week1-treemap-side-meta{
+      font-size:11px;
+      font-weight:700;
+      opacity:.9;
+      line-height:1.25;
+      white-space:nowrap;
+    }
     .header-topbar{
       display:flex;
       align-items:flex-start;
@@ -530,6 +609,9 @@
     .data-health-issue-badge.warn{border-color:#fcd34d;color:#b45309}
     body.data-health-modal-open{overflow:hidden}
     @media (max-width:980px){
+      .week1-treemap-hybrid{
+        grid-template-columns:1fr;
+      }
       .header-topbar{
         flex-direction:column;
         align-items:stretch;
@@ -537,6 +619,15 @@
       .header-topbar-side{align-self:flex-end}
     }
     @media (max-width:720px){
+      .week1-treemap-side-item{
+        padding:12px 14px;
+      }
+      .week1-treemap-side-symbol{
+        font-size:15px;
+      }
+      .week1-treemap-side-meta{
+        font-size:10px;
+      }
       .data-health-trigger{
         width:100%;
         min-width:0;
@@ -556,6 +647,24 @@
       .data-health-panel{
         padding:10px 12px;
         max-height:calc(100vh - 148px);
+      }
+      .holdings-validation-trigger{
+        width:100%;
+      }
+      .holdings-validation-popover{
+        top:16px;
+        right:16px;
+        left:16px;
+        width:auto;
+        max-height:calc(100vh - 32px);
+      }
+      .holdings-validation-popover-shell{max-height:calc(100vh - 32px)}
+      .holdings-validation-popover-head{
+        padding:10px 12px;
+      }
+      .holdings-validation-panel{
+        padding:10px 12px;
+        max-height:calc(100vh - 160px);
       }
     }
 
@@ -641,11 +750,14 @@
     .cell-stack{display:flex;flex-direction:column;gap:2px;line-height:1.25;text-align:inherit}
     .cell-stack .sym{font-weight:700;font-size:13px}
     .holdings-validation-panel{
-      margin-bottom:14px;
+      margin:0;
       padding:12px 14px;
       border:1px solid var(--line);
-      border-radius:12px;
+      border-radius:14px;
       background:#f8fafc;
+      box-shadow:0 18px 40px rgba(15,23,42,.14);
+      max-height:calc(100vh - 220px);
+      overflow:auto;
     }
     .holdings-validation-panel.ok{background:#ecfdf5;border-color:#a7f3d0}
     .holdings-validation-panel.warn{background:#fffbeb;border-color:#fcd34d}
@@ -693,6 +805,94 @@
       list-style:none;
     }
     .holdings-validation-panel summary::-webkit-details-marker{display:none}
+    .holdings-validation-trigger{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:8px 14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:12px;
+      font-weight:800;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      white-space:nowrap;
+    }
+    .holdings-validation-trigger:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 24px rgba(15,23,42,.1);
+    }
+    .holdings-validation-trigger.ok{border-color:#a7f3d0;background:#ecfdf5}
+    .holdings-validation-trigger.warn{border-color:#fcd34d;background:#fffbeb}
+    .holdings-validation-trigger.error{border-color:#fecaca;background:#fef2f2}
+    .holdings-validation-popover-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.24);
+      backdrop-filter:blur(2px);
+      z-index:78;
+    }
+    .holdings-validation-popover{
+      position:fixed;
+      top:94px;
+      right:18px;
+      width:min(620px, calc(100vw - 32px));
+      max-height:calc(100vh - 112px);
+      z-index:79;
+    }
+    .holdings-validation-popover-shell{
+      display:grid;
+      gap:10px;
+      grid-template-rows:auto minmax(0,1fr);
+      max-height:calc(100vh - 112px);
+    }
+    .holdings-validation-popover-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.96);
+      box-shadow:0 18px 40px rgba(15,23,42,.14);
+    }
+    .holdings-validation-popover-kicker{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      color:var(--sub);
+    }
+    .holdings-validation-popover-title{
+      margin:4px 0 0;
+      font-size:16px;
+      font-weight:800;
+      color:var(--ink);
+    }
+    .holdings-validation-popover-desc{
+      margin-top:3px;
+      font-size:11px;
+      color:var(--sub);
+      line-height:1.4;
+    }
+    .holdings-validation-popover-close{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .holdings-validation-popover-close:hover{background:#f8fafc}
     .holdings-debug-table-wrap{overflow-x:auto;margin-top:10px}
     .holdings-debug-table{width:100%;border-collapse:collapse;font-size:12px}
     .holdings-debug-table th,.holdings-debug-table td{
@@ -925,11 +1125,33 @@
               <button type="button" class="tier-filter-btn" data-tier="watch">觀察中</button>
             </div>
             <button class="btn danger" id="btn-refresh-all" data-action="refresh-all">即時更新全部</button>
+            <button
+              type="button"
+              id="holdings-validation-trigger"
+              class="holdings-validation-trigger ok"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-controls="holdings-validation-popover"
+              aria-label="開啟持倉驗算"
+            >持倉正確</button>
           </div>
         </div>
         <select id="q" hidden aria-hidden="true"><option value="">全部標的</option></select>
         <div class="hr"></div>
-        <div id="holdings-validation-panel" class="holdings-validation-panel" aria-live="polite"></div>
+        <div id="holdings-validation-popover-backdrop" class="holdings-validation-popover-backdrop" hidden></div>
+        <div id="holdings-validation-popover" class="holdings-validation-popover" role="dialog" aria-modal="true" aria-labelledby="holdings-validation-popover-title" hidden>
+          <div class="holdings-validation-popover-shell">
+            <div class="holdings-validation-popover-head">
+              <div>
+                <div class="holdings-validation-popover-kicker">Holdings Validation</div>
+                <div class="holdings-validation-popover-title" id="holdings-validation-popover-title">持倉驗算</div>
+                <div class="holdings-validation-popover-desc">這裡會集中顯示持倉市值、明細加總、總資產公式與標準化後持倉 debug 資訊。</div>
+              </div>
+              <button type="button" class="holdings-validation-popover-close" id="holdings-validation-popover-close" aria-label="關閉持倉驗算視窗">關閉</button>
+            </div>
+            <div id="holdings-validation-panel" class="holdings-validation-panel" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="table-wrap">
           <table id="tbl-holdings">
             <thead>
@@ -1062,7 +1284,7 @@
         <div id="overview-kpi-row" class="overview-kpi-row"></div>
         <div class="overview-panel" style="margin-bottom:16px">
           <div class="overview-panel-title">持股地圖（市值 × 報酬率）</div>
-          <div id="overview-treemap" style="height:320px"></div>
+          <div id="overview-treemap" style="min-height:320px"></div>
         </div>
         <div class="overview-two-col">
           <div class="overview-panel overview-bars-panel">
@@ -1849,6 +2071,9 @@ let allocationPlannerContext = null;
   const dataHealthState = {
     storageWriteError: false,
     storageMessage: '',
+    popoverOpen: false
+  };
+  const holdingsValidationState = {
     popoverOpen: false
   };
 
@@ -3018,28 +3243,72 @@ let allocationPlannerContext = null;
     };
   }
 
-  function renderHoldingsValidation(summary = calculatePortfolioSummary()){
-    const panel = $('#holdings-validation-panel');
-    if(!panel) return;
-
+  function buildHoldingsValidationViewModel(summary = calculatePortfolioSummary()){
     const diff = summary.holdingsVsDetailsDiff;
     const diffAbs = Math.abs(diff);
-    const statusText = summary.validation.isConsistent ? '正確' : '不一致';
-    const statusClass = !summary.validation.isConsistent ? 'error' : (summary.hasSyncWarning ? 'warn' : 'ok');
+    const hasError = !summary.validation.isConsistent;
+    const hasWarn = !hasError && summary.hasSyncWarning;
+    const statusClass = hasError ? 'error' : (hasWarn ? 'warn' : 'ok');
+    const panelStatusText = hasError ? '需處理' : (hasWarn ? '請注意' : '正確');
+    const triggerText = hasError ? '需處理' : (hasWarn ? '請注意' : '持倉正確');
     const statusDesc = !summary.validation.holdingsMatchesDetails
       ? '持倉市值與明細加總不一致，請檢查零股、重複持倉或資料同步時間'
       : (summary.hasSyncWarning ? '資料更新時間不同，數值可能暫時不一致' : '持倉市值與明細加總一致，摘要卡與表格共用同一份持倉資料');
     const quoteRangeSummary = getQuoteTimeRangeSummary(summary.quoteTimes);
     const heldRows = summary.heldRows.slice().sort((a, b) => b.marketValue - a.marketValue);
 
-    panel.className = `holdings-validation-panel ${statusClass}`;
+    return {
+      diff,
+      diffAbs,
+      statusClass,
+      panelStatusText,
+      triggerText,
+      statusDesc,
+      quoteRangeSummary,
+      heldRows
+    };
+  }
+
+  function renderHoldingsValidationTrigger(summary = calculatePortfolioSummary()){
+    const trigger = $('#holdings-validation-trigger');
+    if(!trigger) return;
+    const vm = buildHoldingsValidationViewModel(summary);
+    trigger.className = `holdings-validation-trigger ${vm.statusClass}`;
+    trigger.textContent = vm.triggerText;
+    trigger.setAttribute('aria-expanded', holdingsValidationState.popoverOpen ? 'true' : 'false');
+    trigger.setAttribute('aria-label', `開啟持倉驗算，目前狀態：${vm.panelStatusText}`);
+  }
+
+  function setHoldingsValidationPopoverOpen(open){
+    const shouldOpen = !!open;
+    const popover = $('#holdings-validation-popover');
+    const backdrop = $('#holdings-validation-popover-backdrop');
+    const trigger = $('#holdings-validation-trigger');
+    if(!popover || !backdrop || !trigger) return;
+    holdingsValidationState.popoverOpen = shouldOpen;
+    popover.hidden = !shouldOpen;
+    backdrop.hidden = !shouldOpen;
+    trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if(shouldOpen){
+      $('#holdings-validation-popover-close')?.focus();
+    }else{
+      trigger.focus();
+    }
+  }
+  window.setHoldingsValidationPopoverOpen = setHoldingsValidationPopoverOpen;
+
+  function renderHoldingsValidation(summary = calculatePortfolioSummary()){
+    const panel = $('#holdings-validation-panel');
+    if(!panel) return;
+    const vm = buildHoldingsValidationViewModel(summary);
+    panel.className = `holdings-validation-panel ${vm.statusClass}`;
     panel.innerHTML = `
       <div class="holdings-validation-head">
         <div>
           <div class="holdings-validation-title">持倉驗算</div>
-          <div class="holdings-validation-desc">${statusDesc}</div>
+          <div class="holdings-validation-desc">${vm.statusDesc}</div>
         </div>
-        <div class="holdings-validation-status">${statusText}</div>
+        <div class="holdings-validation-status">${vm.panelStatusText}</div>
       </div>
       <div class="holdings-validation-grid">
         <div class="holdings-validation-item">
@@ -3052,7 +3321,7 @@ let allocationPlannerContext = null;
         </div>
         <div class="holdings-validation-item">
           <div class="label">差額</div>
-          <div class="value ${diffAbs < 0.5 ? 'ok' : 'error'}">${diff >= 0 ? '+' : ''}${fmtInt.format(Math.round(diff))}</div>
+          <div class="value ${vm.diffAbs < 0.5 ? 'ok' : 'error'}">${vm.diff >= 0 ? '+' : ''}${fmtInt.format(Math.round(vm.diff))}</div>
         </div>
         <div class="holdings-validation-item">
           <div class="label">總資產公式</div>
@@ -3064,7 +3333,7 @@ let allocationPlannerContext = null;
         </div>
         <div class="holdings-validation-item">
           <div class="label">報價更新時間</div>
-          <div class="value ${summary.hasSyncWarning ? 'warn' : ''}" style="font-size:15px">${quoteRangeSummary.text}</div>
+          <div class="value ${summary.hasSyncWarning ? 'warn' : ''}" style="font-size:15px">${vm.quoteRangeSummary.text}</div>
         </div>
       </div>
       <details>
@@ -3086,7 +3355,7 @@ let allocationPlannerContext = null;
               </tr>
             </thead>
             <tbody>
-              ${heldRows.map(row => `
+              ${vm.heldRows.map(row => `
                 <tr>
                   <td>${escapeAttr(row.stock.symbol || '—')}</td>
                   <td>${escapeAttr(row.stock.name || '')}</td>
@@ -3342,10 +3611,11 @@ let allocationPlannerContext = null;
     if(!trigger) return;
     const vm = buildDataHealthViewModel(summary);
     const statusEl = $('#data-health-trigger-status');
+    const triggerText = vm.statusText === '健康' ? '資料健康' : vm.statusText;
     trigger.className = `data-health-trigger ${vm.statusClass}`;
     trigger.setAttribute('aria-expanded', dataHealthState.popoverOpen ? 'true' : 'false');
     trigger.setAttribute('aria-label', `開啟資料健康檢查，目前狀態：${vm.statusText}`);
-    if(statusEl) statusEl.textContent = vm.statusText;
+    if(statusEl) statusEl.textContent = triggerText;
   }
 
   function setDataHealthPopoverOpen(open){
@@ -3417,6 +3687,7 @@ let allocationPlannerContext = null;
     const tbody = $('#tbl-holdings tbody');
     tbody.innerHTML = '';
     $$('#view-holdings .tier-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.tier === activeTierFilter));
+    renderHoldingsValidationTrigger(summary);
     renderHoldingsValidation(summary);
 
     const tierLabelText = { core: '核心', satellite: '衛星', bond: '債券', watch: '觀察' };
@@ -7507,6 +7778,7 @@ function updateAllocationPlannerSummary(){
   $$('.tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
       if(dataHealthState.popoverOpen) setDataHealthPopoverOpen(false);
+      if(holdingsValidationState.popoverOpen) setHoldingsValidationPopoverOpen(false);
       $$('.tab').forEach(t=>t.setAttribute('aria-selected','false'));
       tab.setAttribute('aria-selected','true');
       $$('.view').forEach(v=>v.classList.remove('active'));
@@ -7525,6 +7797,9 @@ function updateAllocationPlannerSummary(){
     })
   });
   $('#data-health-trigger')?.addEventListener('click', ()=>{
+    if(!dataHealthState.popoverOpen && holdingsValidationState.popoverOpen){
+      setHoldingsValidationPopoverOpen(false);
+    }
     setDataHealthPopoverOpen(!dataHealthState.popoverOpen);
   });
   $('#data-health-popover-close')?.addEventListener('click', ()=>{
@@ -7533,9 +7808,25 @@ function updateAllocationPlannerSummary(){
   $('#data-health-popover-backdrop')?.addEventListener('click', ()=>{
     setDataHealthPopoverOpen(false);
   });
+  $('#holdings-validation-trigger')?.addEventListener('click', ()=>{
+    if(!holdingsValidationState.popoverOpen && dataHealthState.popoverOpen){
+      setDataHealthPopoverOpen(false);
+    }
+    setHoldingsValidationPopoverOpen(!holdingsValidationState.popoverOpen);
+  });
+  $('#holdings-validation-popover-close')?.addEventListener('click', ()=>{
+    setHoldingsValidationPopoverOpen(false);
+  });
+  $('#holdings-validation-popover-backdrop')?.addEventListener('click', ()=>{
+    setHoldingsValidationPopoverOpen(false);
+  });
   window.addEventListener('keydown', (event)=>{
     if(event.key === 'Escape' && dataHealthState.popoverOpen){
       setDataHealthPopoverOpen(false);
+      return;
+    }
+    if(event.key === 'Escape' && holdingsValidationState.popoverOpen){
+      setHoldingsValidationPopoverOpen(false);
     }
   });
   $('#q').addEventListener('change', ()=> {
@@ -9325,106 +9616,21 @@ function updateAllocationPlannerSummary(){
     return out;
   }
 
-  function week1RenderTreemapFallback(container, metrics, totalMV){
-    container.style.overflow = 'hidden';
-    const layoutItems = metrics
-      .slice()
-      .sort((a, b) => b.marketValue - a.marketValue)
-      .map((r) => ({ row: r, weight: Math.max(1, r.marketValue) }));
-    const layoutRects = week1BuildTreemapLayout(layoutItems);
+  function week1BuildTreemapDetailTitle(row, totalMV){
+    const returnPct = Number.isFinite(row.totalReturnPct) ? row.totalReturnPct / 100 : 0;
+    const allocation = totalMV > 0 ? row.marketValue / totalMV : 0;
+    const sign = returnPct >= 0 ? '+' : '';
+    return [
+      `${row.stock?.symbol || '—'} ${row.stock?.name || ''}`.trim(),
+      `含息報酬率：${sign}${(returnPct * 100).toFixed(1)}%`,
+      `市值：${Math.round(row.marketValue).toLocaleString()}`,
+      `配置：${(allocation * 100).toFixed(1)}%`,
+      `含息損益：${Math.round(Number.isFinite(row.totalPnlWithFees) ? row.totalPnlWithFees : 0).toLocaleString()}`
+    ].join('\n');
+  }
 
-    const items = layoutRects.map((item) => {
-      const r = item.row;
-      const returnPct = Number.isFinite(r.totalReturnPct) ? r.totalReturnPct / 100 : 0;
-      const allocation = totalMV > 0 ? r.marketValue / totalMV : 0;
-      const sign = returnPct >= 0 ? '+' : '';
-      const bg = week1TreemapColorForReturn(returnPct);
-      const fg = week1TreemapTextColor(bg);
-      const inset = 4;
-      const left = `calc(${item.x.toFixed(4)}% + ${inset}px)`;
-      const top = `calc(${item.y.toFixed(4)}% + ${inset}px)`;
-      const width = `calc(${item.w.toFixed(4)}% - ${inset * 2}px)`;
-      const height = `calc(${item.h.toFixed(4)}% - ${inset * 2}px)`;
-      const small = item.w < 18 || item.h < 18;
-      const tiny = item.w < 12 || item.h < 12;
-      const sizeKey = Math.min(item.w, item.h);
-      const symbolFontSize = Math.max(13, Math.min(22, Math.round(11 + sizeKey * 0.22)));
-      const nameFontSize = Math.max(11, Math.min(15, Math.round(9 + sizeKey * 0.12)));
-      const showName = !tiny && item.h >= 14;
-      const showReturn = item.h >= 11;
-      const detailTitle = [
-        `${r.stock?.symbol || '—'} ${r.stock?.name || ''}`.trim(),
-        `含息報酬率：${sign}${(returnPct * 100).toFixed(1)}%`,
-        `市值：${Math.round(r.marketValue).toLocaleString()}`,
-        `配置：${(allocation * 100).toFixed(1)}%`,
-        `含息損益：${Math.round(Number.isFinite(r.totalPnlWithFees) ? r.totalPnlWithFees : 0).toLocaleString()}`
-      ].join('\n');
-      return `
-        <button
-          type="button"
-          class="week1-treemap-fallback-item"
-          data-stock-id="${week1EscapeHtml(r.stock?.id || '')}"
-          data-tooltip="${week1EscapeHtml(detailTitle)}"
-          aria-label="${week1EscapeHtml(detailTitle)}"
-          style="
-            position:absolute;
-            left:${left};
-            top:${top};
-            width:${width};
-            height:${height};
-            border:0;
-            border-radius:14px;
-            padding:${tiny ? 8 : small ? 10 : 14}px;
-            text-align:left;
-            cursor:pointer;
-            color:${fg};
-            background:${bg};
-            overflow:hidden;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
-          ">
-          <div style="
-            position:absolute;
-            inset:0;
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            justify-content:center;
-            min-width:0;
-            padding:${tiny ? 10 : 14}px;
-            padding-bottom:${showReturn ? (tiny ? 28 : 34) : (tiny ? 10 : 14)}px;
-            text-align:center;
-          ">
-            <div>
-              <div style="font-size:${symbolFontSize}px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(r.stock?.symbol || '—')}</div>
-              ${showName ? `<div style="font-size:${nameFontSize}px;opacity:.82;line-height:1.25;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(r.stock?.name || '')}</div>` : ''}
-            </div>
-          </div>
-          ${showReturn ? `<span style="
-            position:absolute;
-            left:50%;
-            bottom:${tiny ? 8 : 12}px;
-            transform:translateX(-50%);
-            max-width:calc(100% - 16px);
-            font-size:${tiny ? 10 : 12}px;
-            font-weight:800;
-            line-height:1;
-            white-space:nowrap;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            opacity:.96;
-          ">${sign}${(returnPct * 100).toFixed(1)}%</span>` : ''}
-        </button>`;
-    }).join('');
-
-    container.innerHTML = `
-      <div style="
-        position:relative;
-        width:100%;
-        height:100%;
-        min-height:320px;
-      ">${items}</div>`;
-
-    container.querySelectorAll('.week1-treemap-fallback-item').forEach((el) => {
+  function week1BindTreemapInteractions(container){
+    container.querySelectorAll('[data-week1-treemap-item="1"]').forEach((el) => {
       el.addEventListener('click', () => {
         if (typeof goHoldings === 'function') goHoldings();
       });
@@ -9445,6 +9651,139 @@ function updateAllocationPlannerSummary(){
         week1HideTreemapTooltip();
       });
     });
+  }
+
+  function week1RenderTreemapMainTile(item, totalMV){
+    const r = item.row;
+    const returnPct = Number.isFinite(r.totalReturnPct) ? r.totalReturnPct / 100 : 0;
+    const sign = returnPct >= 0 ? '+' : '';
+    const bg = week1TreemapColorForReturn(returnPct);
+    const fg = week1TreemapTextColor(bg);
+    const inset = 4;
+    const left = `calc(${item.x.toFixed(4)}% + ${inset}px)`;
+    const top = `calc(${item.y.toFixed(4)}% + ${inset}px)`;
+    const width = `calc(${item.w.toFixed(4)}% - ${inset * 2}px)`;
+    const height = `calc(${item.h.toFixed(4)}% - ${inset * 2}px)`;
+    const small = item.w < 18 || item.h < 18;
+    const tiny = item.w < 12 || item.h < 12;
+    const sizeKey = Math.min(item.w, item.h);
+    const symbolFontSize = Math.max(13, Math.min(22, Math.round(11 + sizeKey * 0.22)));
+    const nameFontSize = Math.max(11, Math.min(15, Math.round(9 + sizeKey * 0.12)));
+    const showName = !tiny && item.h >= 14;
+    const showReturn = item.h >= 11;
+    const detailTitle = week1BuildTreemapDetailTitle(r, totalMV);
+    return `
+      <button
+        type="button"
+        data-week1-treemap-item="1"
+        data-stock-id="${week1EscapeHtml(r.stock?.id || '')}"
+        data-tooltip="${week1EscapeHtml(detailTitle)}"
+        aria-label="${week1EscapeHtml(detailTitle)}"
+        style="
+          position:absolute;
+          left:${left};
+          top:${top};
+          width:${width};
+          height:${height};
+          border:0;
+          border-radius:14px;
+          padding:${tiny ? 8 : small ? 10 : 14}px;
+          text-align:left;
+          cursor:pointer;
+          color:${fg};
+          background:${bg};
+          overflow:hidden;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+        ">
+        <div style="
+          position:absolute;
+          inset:0;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          min-width:0;
+          padding:${tiny ? 10 : 14}px;
+          padding-bottom:${showReturn ? (tiny ? 28 : 34) : (tiny ? 10 : 14)}px;
+          text-align:center;
+        ">
+          <div>
+            <div style="font-size:${symbolFontSize}px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(r.stock?.symbol || '—')}</div>
+            ${showName ? `<div style="font-size:${nameFontSize}px;opacity:.82;line-height:1.25;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(r.stock?.name || '')}</div>` : ''}
+          </div>
+        </div>
+        ${showReturn ? `<span style="
+          position:absolute;
+          left:50%;
+          bottom:${tiny ? 8 : 12}px;
+          transform:translateX(-50%);
+          max-width:calc(100% - 16px);
+          font-size:${tiny ? 10 : 12}px;
+          font-weight:800;
+          line-height:1;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          opacity:.96;
+        ">${sign}${(returnPct * 100).toFixed(1)}%</span>` : ''}
+      </button>`;
+  }
+
+  function week1RenderTreemapSideItem(row, totalMV){
+    const returnPct = Number.isFinite(row.totalReturnPct) ? row.totalReturnPct / 100 : 0;
+    const allocation = totalMV > 0 ? row.marketValue / totalMV : 0;
+    const sign = returnPct >= 0 ? '+' : '';
+    const bg = week1TreemapColorForReturn(returnPct);
+    const fg = week1TreemapTextColor(bg);
+    const detailTitle = week1BuildTreemapDetailTitle(row, totalMV);
+    return `
+      <button
+        type="button"
+        class="week1-treemap-side-item"
+        data-week1-treemap-item="1"
+        data-stock-id="${week1EscapeHtml(row.stock?.id || '')}"
+        data-tooltip="${week1EscapeHtml(detailTitle)}"
+        aria-label="${week1EscapeHtml(detailTitle)}"
+        style="background:${bg};color:${fg};">
+        <div class="week1-treemap-side-left">
+          <div class="week1-treemap-side-symbol">${week1EscapeHtml(row.stock?.symbol || '—')}</div>
+          <div class="week1-treemap-side-name">${week1EscapeHtml(row.stock?.name || '')}</div>
+        </div>
+        <div class="week1-treemap-side-right">
+          <div class="week1-treemap-side-return">${sign}${(returnPct * 100).toFixed(1)}%</div>
+          <div class="week1-treemap-side-meta">${Math.round(row.marketValue).toLocaleString()} / ${(allocation * 100).toFixed(1)}%</div>
+        </div>
+      </button>`;
+  }
+
+  function week1RenderTreemapHybrid(container, metrics, totalMV){
+    container.style.overflow = 'visible';
+    container.style.height = 'auto';
+
+    const sorted = metrics
+      .slice()
+      .sort((a, b) => b.marketValue - a.marketValue);
+    const mainRows = sorted.slice(0, 5);
+    const sideRows = sorted.slice(5);
+    const layoutItems = mainRows.map((row) => ({ row, weight: Math.max(1, row.marketValue) }));
+    const layoutRects = week1BuildTreemapLayout(layoutItems);
+    const sideHeight = sideRows.length ? (sideRows.length * 78) + ((sideRows.length - 1) * 10) : 0;
+    const mainHeight = Math.max(320, Math.min(520, Math.max(320, sideHeight)));
+
+    const mainHtml = layoutRects.map((item) => week1RenderTreemapMainTile(item, totalMV)).join('');
+    const sideHtml = sideRows.length
+      ? `<div class="week1-treemap-side">${sideRows.map((row) => week1RenderTreemapSideItem(row, totalMV)).join('')}</div>`
+      : '';
+
+    container.innerHTML = `
+      <div class="week1-treemap-hybrid">
+        <div class="week1-treemap-main" style="height:${mainHeight}px">
+          <div class="week1-treemap-main-canvas">${mainHtml}</div>
+        </div>
+        ${sideHtml}
+      </div>`;
+
+    week1BindTreemapInteractions(container);
   }
 
   function week1EnsureHighchartsTreemapModule(){
@@ -9483,7 +9822,6 @@ function updateAllocationPlannerSummary(){
   function renderTreemap(summary = calculatePortfolioSummary()) {
     const container = document.getElementById('overview-treemap');
     if (!container) return;
-    const renderSeq = ++week1TreemapRenderSeq;
     const metrics = computeStockMetrics(summary).filter(r => r.qty > 0 && r.marketValue > 0);
     if (metrics.length === 0) {
       if(week1OverviewTreemapChart){
@@ -9491,92 +9829,16 @@ function updateAllocationPlannerSummary(){
         week1OverviewTreemapChart = null;
       }
       container.style.overflow = 'hidden';
+      container.style.height = 'auto';
       container.innerHTML = '<div class="empty">尚無持股資料</div>';
       return;
     }
     const totalMV = metrics.reduce((s, r) => s + r.marketValue, 0);
-
-    if(week1TreemapPreferFallback){
-      week1RenderTreemapFallback(container, metrics, totalMV);
-      return;
+    if(week1OverviewTreemapChart){
+      try { week1OverviewTreemapChart.destroy(); } catch(e) { /* ignore */ }
+      week1OverviewTreemapChart = null;
     }
-
-    if(!week1OverviewTreemapChart && !container.innerHTML.trim()){
-      container.style.overflow = 'hidden';
-      container.innerHTML = '<div class="empty">載入持股地圖中...</div>';
-    }
-
-    loadHighchartsIfNeeded().then(() => {
-      if(renderSeq !== week1TreemapRenderSeq) return;
-      if (!week1IsTreemapSeriesAvailable()) {
-        week1TreemapPreferFallback = true;
-        week1RenderTreemapFallback(container, metrics, totalMV);
-        return;
-      }
-
-      const data = metrics.map(r => {
-        const returnPct = Number.isFinite(r.totalReturnPct) ? r.totalReturnPct / 100 : 0;
-        return {
-          name: r.stock?.symbol || '—',
-          value: r.marketValue,
-          color: week1TreemapColorForReturn(returnPct),
-          custom: {
-            stockName: r.stock?.name || '',
-            returnPct,
-            allocation: totalMV > 0 ? r.marketValue / totalMV : 0,
-            totalPnl: Number.isFinite(r.totalPnlWithFees) ? r.totalPnlWithFees : 0
-          }
-        };
-      });
-
-      if(week1OverviewTreemapChart){
-        try { week1OverviewTreemapChart.destroy(); } catch(e) { /* ignore */ }
-        week1OverviewTreemapChart = null;
-      }
-
-      container.style.overflow = 'hidden';
-      week1OverviewTreemapChart = Highcharts.chart('overview-treemap', {
-        chart: { backgroundColor: 'transparent' },
-        credits: { enabled: false },
-        title: { text: null },
-        series: [{
-          type: 'treemap',
-          layoutAlgorithm: 'squarified',
-          data: data,
-          dataLabels: {
-            enabled: true,
-            useHTML: true,
-            formatter: function () {
-              const pct = (this.point.custom.returnPct * 100).toFixed(1);
-              const sign = this.point.custom.returnPct >= 0 ? '+' : '';
-              return `${this.point.name}<br>${sign}${pct}%`;
-            }
-          },
-          point: {
-            events: {
-              click: function () {
-                if (typeof goHoldings === 'function') goHoldings();
-              }
-            }
-          }
-        }],
-        tooltip: {
-          useHTML: true,
-          formatter: function () {
-            const c = this.point.custom;
-            const pct = (c.returnPct * 100).toFixed(2);
-            const alloc = (c.allocation * 100).toFixed(1);
-            const sign = c.returnPct >= 0 ? '+' : '';
-            return `${this.point.name} ${c.stockName}<br>市值：${Math.round(this.point.value).toLocaleString()}<br>配置：${alloc}%<br>含息報酬率：${sign}${pct}%<br>含息損益：${Math.round(c.totalPnl).toLocaleString()}`;
-          }
-        }
-      });
-    }).catch((err) => {
-      if(renderSeq !== week1TreemapRenderSeq) return;
-      console.warn('[WEEK1-UPGRADE] renderTreemap failed', err);
-      week1TreemapPreferFallback = true;
-      week1RenderTreemapFallback(container, metrics, totalMV);
-    });
+    week1RenderTreemapHybrid(container, metrics, totalMV);
   }
 
   function computeDrawdownSeries() {
