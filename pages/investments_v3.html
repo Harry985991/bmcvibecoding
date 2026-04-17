@@ -946,19 +946,40 @@
     .holdings-flag.info{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
     .holdings-integrated td.text-start,.holdings-integrated th.text-start{text-align:left!important}
     .holdings-integrated td.text-start .cell-stack,.holdings-integrated th.text-start{text-align:left}
+    #tbl-holdings{table-layout:fixed;width:100%}
+    #tbl-holdings thead th{padding:6px 6px;font-size:11px;line-height:1.1;white-space:nowrap}
+    #tbl-holdings tbody td{padding:4px 8px;vertical-align:middle}
+    #tbl-holdings .cell-stack{gap:1px;line-height:1.15}
+    #tbl-holdings th:nth-child(1),#tbl-holdings td:nth-child(1){width:64px}
+    #tbl-holdings th:nth-child(2),#tbl-holdings td:nth-child(2){width:180px}
+    #tbl-holdings th:nth-child(3),#tbl-holdings td:nth-child(3){width:100px}
+    #tbl-holdings th:nth-child(4),#tbl-holdings td:nth-child(4){width:92px}
+    #tbl-holdings th:nth-child(5),#tbl-holdings td:nth-child(5){width:104px}
+    #tbl-holdings th:nth-child(6),#tbl-holdings td:nth-child(6){width:112px}
+    #tbl-holdings th:nth-child(7),#tbl-holdings td:nth-child(7){width:88px}
+    #tbl-holdings th:nth-child(8),#tbl-holdings td:nth-child(8){width:112px}
+    #tbl-holdings th:nth-child(9),#tbl-holdings td:nth-child(9){width:88px}
+    #tbl-holdings th:nth-child(10),#tbl-holdings td:nth-child(10){width:78px}
+    #tbl-holdings th:nth-child(11),#tbl-holdings td:nth-child(11){width:82px}
+    #tbl-holdings th:nth-child(12),#tbl-holdings td:nth-child(12){width:104px}
+    #tbl-holdings th:nth-child(13),#tbl-holdings td:nth-child(13){width:92px}
+    #tbl-holdings .holding-symbol-main{display:flex;align-items:baseline;gap:6px;min-width:0;overflow:hidden}
+    #tbl-holdings .holding-symbol-main .sym{flex:0 0 auto}
+    #tbl-holdings .holding-symbol-main .mini{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+    #tbl-holdings .holding-flags{display:flex;flex-wrap:wrap;gap:3px;margin-top:1px}
     .price-stale-warn{color:#ea580c;font-weight:600}
     .holdings-sub-hr{opacity:.55;margin:16px 0 0}
     .longterm-compact-title{margin:0;font-size:15px;font-weight:600;color:var(--ink)}
     #tbl-holdings tbody tr.row-stop-hit{background:#fff5f5!important}
     #tbl-holdings tbody tr.row-profit-hit{background:#f0fff4!important}
-    #tbl-holdings .op-btns{display:flex;flex-direction:column;gap:4px;align-items:stretch}
-    #tbl-holdings .op-btns .btn.mini{padding:4px 8px;font-size:11px}
+    #tbl-holdings .op-btns{display:flex;flex-direction:column;gap:2px;align-items:stretch}
+    #tbl-holdings .op-btns .btn.mini{padding:3px 7px;font-size:11px;line-height:1.15}
     #longterm-details > summary{list-style:none}
     #longterm-details summary::-webkit-details-marker{display:none}
     #accounts-details > summary,#allocation-details > summary,#planner-details > summary{list-style:none}
     #accounts-details summary::-webkit-details-marker,#allocation-details summary::-webkit-details-marker,#planner-details summary::-webkit-details-marker{display:none}
 
-    /* 異動紀錄：9 欄精簡版 */
+    /* 異動紀錄：11 欄緊湊版 */
     .score-high{background:#f0fff4;color:#276749;border:1px solid #9ae6b4;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;display:inline-block}
     .score-mid{background:#ebf8ff;color:#2b6cb0;border:1px solid #90cdf4;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;display:inline-block}
     .score-low{background:#fffaf0;color:#c05621;border:1px solid #fbd38d;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;display:inline-block}
@@ -981,18 +1002,25 @@
     .txn-score-stats-placeholder{color:var(--sub)}
     .txn-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
     #tbl-txns{table-layout:fixed;width:100%}
+    #tbl-txns tbody td{padding:4px 8px;vertical-align:middle}
+    #tbl-txns .cell-stack{gap:1px;line-height:1.2}
     #tbl-txns .col-txn-date{width:80px}
-    #tbl-txns .col-txn-symbol{width:168px;min-width:140px;max-width:220px;text-align:left;word-break:break-word}
+    #tbl-txns .col-txn-symbol{width:150px;min-width:150px;max-width:150px;text-align:left;word-break:break-word}
     #tbl-txns th.col-txn-symbol{text-align:left}
-    #tbl-txns td.col-txn-symbol .mini{white-space:normal;line-height:1.35}
+    #tbl-txns td.col-txn-symbol .txn-symbol-inline{display:flex;align-items:baseline;gap:6px;min-width:0;overflow:hidden}
+    #tbl-txns td.col-txn-symbol .txn-symbol-inline .sym{flex:0 0 auto}
+    #tbl-txns td.col-txn-symbol .txn-symbol-inline .mini{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
     #tbl-txns .col-txn-type{width:60px}
-    #tbl-txns .col-txn-amt{width:110px}
-    #tbl-txns .col-txn-score{width:52px}
-    #tbl-txns .col-txn-journal{width:88px;min-width:72px;max-width:112px}
-    #tbl-txns .col-txn-pnl{width:90px}
-    #tbl-txns .col-txn-note{width:80px}
-    #tbl-txns .col-txn-op{width:80px;white-space:normal}
-    #tbl-txns .col-txn-op .btn.mini{display:block;width:100%;margin:3px 0;padding:4px 6px;font-size:11px}
+    #tbl-txns .col-txn-price{width:78px}
+    #tbl-txns .col-txn-qty{width:74px}
+    #tbl-txns .col-txn-score{width:48px}
+    #tbl-txns .col-txn-journal{width:96px;min-width:80px;max-width:120px}
+    #tbl-txns .col-txn-pnl-amt{width:92px}
+    #tbl-txns .col-txn-pnl-rate{width:68px}
+    #tbl-txns .col-txn-note{width:92px}
+    #tbl-txns .col-txn-op{width:88px;white-space:normal}
+    .txn-op-actions{display:flex;justify-content:flex-end;align-items:center;gap:4px}
+    .txn-op-actions .btn.mini{display:inline-flex;align-items:center;justify-content:center;min-width:40px;margin:0;padding:3px 8px;font-size:11px;line-height:1.2}
     #tbl-txns td.col-txn-journal{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
     #txn-journal{resize:vertical;min-height:52px}
 
@@ -1195,16 +1223,15 @@
                 <th class="sortable" data-sort="tier">分層</th>
                 <th class="sortable text-start" data-sort="symbol">代號 / 名稱</th>
                 <th class="num sortable" data-sort="qty">總股數 / 成本</th>
-                <th class="num sortable" data-sort="price">市場實價<br><span class="mini muted" style="font-weight:500;font-size:10px;line-height:1.2">資訊更新時間</span></th>
+                <th class="num sortable" data-sort="price">市場實價</th>
                 <th class="num sortable" data-sort="marketValue">市值</th>
-                <th class="num sortable" data-sort="unrealized">股票損益 / 報酬%</th>
+                <th class="num sortable" data-sort="unrealized">持有損益 / %</th>
                 <th class="num sortable" data-sort="dividends">實領股息</th>
-                <th class="num sortable" data-sort="totalPnl">含息損益 / 報酬%</th>
+                <th class="num sortable" data-sort="totalPnl">含息損益 / %</th>
                 <th class="sortable" data-sort="strategy">策略</th>
                 <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
                 <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
                 <th title="綜合 52 週位置與 MA200 乖離率，提供觀察用的加減碼訊號">訊號建議</th>
-                <th class="num">停損 / 停利</th>
                 <th class="num">操作</th>
               </tr>
             </thead>
@@ -1300,10 +1327,12 @@
                 <th class="col-txn-date">日期</th>
                 <th class="col-txn-symbol">標的</th>
                 <th class="col-txn-type">類型</th>
-                <th class="num col-txn-amt">成交 / 金額</th>
+                <th class="num col-txn-price">成交價</th>
+                <th class="num col-txn-qty">股數</th>
+                <th class="num col-txn-pnl-amt">損益金額</th>
+                <th class="num col-txn-pnl-rate">損益率</th>
                 <th class="num col-txn-score">評分</th>
                 <th class="col-txn-journal">決策備忘</th>
-                <th class="num col-txn-pnl">損益</th>
                 <th class="col-txn-note">備註</th>
                 <th class="num col-txn-op">操作</th>
               </tr>
@@ -3815,10 +3844,6 @@ let allocationPlannerContext = null;
       const color = value < 0 ? '#dc2626' : (value > 0 ? '#059669' : 'inherit');
       return `<span style="color:${color}">${fmtInt.format(Math.round(value))}</span>`;
     };
-    const fmtStopPct = (dec) => {
-      if(dec == null || !Number.isFinite(dec)) return '—';
-      return `${fmt2.format(dec * 100)}%`;
-    };
 
     for(const row of dataset){
       const s = row.stock;
@@ -3869,7 +3894,7 @@ let allocationPlannerContext = null;
 
       tr.innerHTML = `
         <td><span class="tier-tag tier-${tierKey}">${tierShort}</span></td>
-        <td class="text-start"><div class="cell-stack"><span class="sym">${s.symbol}</span><span class="mini muted">${s.name||''}</span>${flags.length ? `<span>${flags.join('')}</span>` : ''}</div></td>
+        <td class="text-start"><div class="cell-stack"><div class="holding-symbol-main"><span class="sym">${s.symbol}</span><span class="mini muted">${s.name||''}</span></div>${flags.length ? `<div class="holding-flags">${flags.join('')}</div>` : ''}</div></td>
         <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${qtyDisplay}</span><span class="mini muted">均價 ${avgCostDisplay}</span></div></td>
         <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${priceHtml}</span><span class="mini muted" title="此筆市場實價的取得或手動儲存時刻">${priceUpdatedNote}</span></div></td>
         <td class="num">${mvDisplay}</td>
@@ -3887,10 +3912,9 @@ let allocationPlannerContext = null;
           </div>
         </td>
         <td><span class="strategy-tag ${stratClass}">${stratText}</span></td>
-        <td class="num"><div class="cell-stack"><span class="mini">${fmtStopPct(label.stopLoss)}</span><span class="mini">${fmtStopPct(label.stopProfit)}</span></div></td>
         <td class="num"><div class="op-btns">
           <button type="button" class="btn mini" data-action="edit-stock" data-id="${s.id}">編輯</button>
-          <button type="button" class="btn mini ghost" data-action="edit-label" data-id="${s.id}">設定標籤</button>
+          <button type="button" class="btn mini ghost" data-action="edit-label" data-id="${s.id}">標籤</button>
         </div></td>`;
       tbody.appendChild(tr);
     }
@@ -3961,25 +3985,14 @@ let allocationPlannerContext = null;
         }
 
         const signal = deriveIndicatorSignal(ind?.pct52w, ind?.ma200Bias);
-        const signalNote = `建議：${signal.note}`;
         if (!ind || ind.pct52w == null || ind.ma200Bias == null) {
-          signalCell.innerHTML = `
-            <div class="cell-stack">
-              <span class="wk1-signal-badge ${signal.cls}" title="${signal.note}">${signal.label}</span>
-              <span class="mini muted wk1-signal-note">${signalNote}</span>
-            </div>
-          `;
+          signalCell.innerHTML = `<span class="wk1-signal-badge ${signal.cls}" title="${signal.note}">${signal.label}</span>`;
         } else {
           const pctText = `${(ind.pct52w * 100).toFixed(0)}%`;
           const biasNum = ind.ma200Bias * 100;
           const biasSign = biasNum >= 0 ? '+' : '';
           const tip = `${signal.note}（52週:${pctText} / MA200:${biasSign}${biasNum.toFixed(1)}%）`;
-          signalCell.innerHTML = `
-            <div class="cell-stack">
-              <span class="wk1-signal-badge ${signal.cls}" title="${tip}">${signal.label}</span>
-              <span class="mini muted wk1-signal-note">${signalNote}</span>
-            </div>
-          `;
+          signalCell.innerHTML = `<span class="wk1-signal-badge ${signal.cls}" title="${tip}">${signal.label}</span>`;
         }
       });
     } catch (e) {
@@ -4462,18 +4475,54 @@ let allocationPlannerContext = null;
   function buildReturnDailyChangeSeries(){
     const points = [];
     const snapshots = getRenderableSnapshots();
+    const cashFlowEvents = buildCashFlowEvents();
+    const cashFlowByDate = new Map();
+
+    cashFlowEvents.forEach((event) => {
+      const date = String(event?.date || '').slice(0, 10);
+      if(!date) return;
+      const amount = parseN(event.amount);
+      if(!Number.isFinite(amount)) return;
+      cashFlowByDate.set(date, (cashFlowByDate.get(date) || 0) + amount);
+    });
 
     let prevTotal = null;
     for(const s of snapshots){
       const ts = Date.parse(`${s.date}T12:00:00`);
       const total = parseN(s.total);
       if(!Number.isFinite(ts) || !Number.isFinite(total)) continue;
-      const delta = Number.isFinite(prevTotal) ? total - prevTotal : 0;
+      const hasPrev = Number.isFinite(prevTotal);
+      const delta = hasPrev ? total - prevTotal : 0;
+      const cashFlow = hasPrev ? Math.round(cashFlowByDate.get(s.date) || 0) : 0;
+      const marketPnl = hasPrev ? Math.round(delta - cashFlow) : 0;
+      const marketPct = hasPrev && prevTotal !== 0 ? (marketPnl / prevTotal) * 100 : null;
+      const marketGain = marketPnl > 0 ? marketPnl : 0;
+      const marketLoss = marketPnl < 0 ? marketPnl : 0;
+      const positiveStackTop = marketGain + Math.max(0, cashFlow);
+      const negativeStackBottom = marketLoss + Math.min(0, cashFlow);
+      const totalDeltaLabelValue = Math.max(0, positiveStackTop);
+      const totalDeltaLabelText = hasPrev
+        ? `${delta >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(delta)))}`
+        : '';
+      const totalDeltaLabelColor = !hasPrev
+        ? '#0f172a'
+        : (delta > 0 ? '#166534' : (delta < 0 ? '#dc2626' : '#0f172a'));
       points.push({
         x: ts,
         date: s.date,
         total: Math.round(total),
-        delta: Math.round(delta)
+        prevTotal: hasPrev ? Math.round(prevTotal) : null,
+        delta: Math.round(delta),
+        cashFlow,
+        marketPnl,
+        marketPct,
+        marketGain,
+        marketLoss,
+        positiveStackTop,
+        negativeStackBottom,
+        totalDeltaLabelValue,
+        totalDeltaLabelText,
+        totalDeltaLabelColor
       });
       prevTotal = total;
     }
@@ -4486,20 +4535,66 @@ let allocationPlannerContext = null;
     const pad = { top: 18, right: 18, bottom: 32, left: 70 };
     const innerW = width - pad.left - pad.right;
     const innerH = height - pad.top - pad.bottom;
-    const maxAbs = Math.max(1, ...points.map(p => Math.abs(parseN(p.delta))));
+    const maxAbs = Math.max(
+      1,
+      ...points.map(p => Math.max(Math.abs(parseN(p.positiveStackTop)), Math.abs(parseN(p.negativeStackBottom))))
+    );
     const yFor = (v) => pad.top + innerH / 2 - (parseN(v) / maxAbs) * (innerH / 2 - 8);
     const zeroY = yFor(0);
     const slotW = innerW / points.length;
     const barW = Math.max(3, Math.min(18, slotW * 0.62));
     const maxLabels = 6;
     const labelStep = Math.max(1, Math.ceil(points.length / maxLabels));
-    const bars = points.map((p, i) => {
-      const x = pad.left + i * slotW + (slotW - barW) / 2;
-      const y = yFor(Math.max(p.delta, 0));
-      const h = Math.max(1, Math.abs(yFor(p.delta) - zeroY));
-      const color = p.delta >= 0 ? '#0f766e' : '#dc2626';
-      const title = `${p.date} ${p.delta >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(p.delta)))}`;
+    const rectForRange = (x, fromValue, toValue, color, title) => {
+      if(!Number.isFinite(fromValue) || !Number.isFinite(toValue) || Math.abs(toValue - fromValue) < 0.0001) return '';
+      const topValue = Math.max(fromValue, toValue);
+      const bottomValue = Math.min(fromValue, toValue);
+      const y = yFor(topValue);
+      const h = Math.max(1, Math.abs(yFor(bottomValue) - yFor(topValue)));
       return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="2" fill="${color}"><title>${title}</title></rect>`;
+    };
+    const labels = points.map((p, i) => {
+      const x = pad.left + i * slotW + (slotW - barW) / 2;
+      const dateText = p.date.replace(/-/g, '/');
+      const bars = [
+        rectForRange(
+          x,
+          0,
+          p.cashFlow > 0 ? p.cashFlow : 0,
+          '#94a3b8',
+          `${dateText} 資金流 ${p.cashFlow >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(p.cashFlow)))}`
+        ),
+        rectForRange(
+          x,
+          Math.max(0, p.cashFlow),
+          Math.max(0, p.cashFlow) + p.marketGain,
+          '#166534',
+          `${dateText} 市場增益 +${fmtInt.format(Math.abs(Math.round(p.marketGain)))}`
+        ),
+        rectForRange(
+          x,
+          0,
+          p.cashFlow < 0 ? p.cashFlow : 0,
+          '#94a3b8',
+          `${dateText} 資金流 ${p.cashFlow >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(p.cashFlow)))}`
+        ),
+        rectForRange(
+          x,
+          Math.min(0, p.cashFlow),
+          Math.min(0, p.cashFlow) + p.marketLoss,
+          '#dc2626',
+          `${dateText} 市場損失 -${fmtInt.format(Math.abs(Math.round(p.marketLoss)))}`
+        )
+      ].join('');
+
+      const showLabel = !!p.totalDeltaLabelText;
+      const labelValue = p.totalDeltaLabelValue;
+      const labelY = yFor(labelValue) - 8;
+      const labelText = showLabel ? p.totalDeltaLabelText : '';
+      const label = showLabel
+        ? `<text x="${(x + barW / 2).toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" font-size="10" font-weight="700" fill="${p.totalDeltaLabelColor || '#0f172a'}">${labelText}</text>`
+        : '';
+      return bars + label;
     }).join('');
     const xLabels = points
       .filter((_, i) => i % labelStep === 0 || i === points.length - 1)
@@ -4513,7 +4608,7 @@ let allocationPlannerContext = null;
     chartDiv.innerHTML = `
       <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" style="display:block;width:100%;height:${height}px" preserveAspectRatio="xMidYMid meet" aria-label="每日總資產增減金額">
         <line x1="${pad.left}" y1="${zeroY.toFixed(2)}" x2="${width - pad.right}" y2="${zeroY.toFixed(2)}" stroke="#cbd5e1" stroke-width="1"></line>
-        ${bars}
+        ${labels}
         ${xLabels}
       </svg>`;
   }
@@ -4574,11 +4669,23 @@ let allocationPlannerContext = null;
     chartDiv.style.display = '';
 
     const categories = points.map(p => p.date.replace(/-/g, '/'));
-    const data = points.map(p => ({
-      y: p.delta,
-      color: p.delta >= 0 ? '#0f766e' : '#dc2626',
-      custom: { total: p.total, date: p.date }
+    const marketGainData = points.map(p => ({
+      y: p.marketGain,
+      custom: { ...p, hasBreakdown: true }
     }));
+    const marketLossData = points.map(p => ({
+      y: p.marketLoss,
+      custom: { ...p, hasBreakdown: true }
+    }));
+    const cashFlowData = points.map(p => ({
+      y: p.cashFlow,
+      custom: { ...p, hasBreakdown: true }
+    }));
+    const totalDeltaLabelData = points.map((p, idx) => (
+      p.totalDeltaLabelText
+        ? { x: idx, y: p.totalDeltaLabelValue, custom: { text: p.totalDeltaLabelText, color: p.totalDeltaLabelColor } }
+        : null
+    ));
 
     clearChart();
     returnDailyChangeChart = Highcharts.chart(chartDiv, {
@@ -4599,21 +4706,75 @@ let allocationPlannerContext = null;
         plotLines: [{ value: 0, color: '#94a3b8', width: 1, dashStyle: 'Dash' }]
       },
       tooltip: {
+        shared: true,
         formatter(){
-          const dateText = (this.point && this.point.custom && this.point.custom.date)
-            ? String(this.point.custom.date).replace(/-/g, '/')
-            : String(this.x || '');
-          const value = Number.isFinite(this.y) ? Math.round(this.y) : 0;
-          const sign = value >= 0 ? '+' : '-';
-          return `<b>${dateText}</b><br/>每日總資產增減：${sign}${fmtInt.format(Math.abs(value))}<br/>總資產：${fmtInt.format(Math.round(this.point.custom.total))}`;
+          const corePoint = (this.points || []).find(pt => pt.point?.custom?.hasBreakdown)?.point;
+          const payload = corePoint?.custom || {};
+          const dateText = payload.date ? String(payload.date).replace(/-/g, '/') : String(this.x || '');
+          const delta = Number.isFinite(payload.delta) ? Math.round(payload.delta) : 0;
+          const marketPnl = Number.isFinite(payload.marketPnl) ? Math.round(payload.marketPnl) : 0;
+          const cashFlow = Number.isFinite(payload.cashFlow) ? Math.round(payload.cashFlow) : 0;
+          const pctText = Number.isFinite(payload.marketPct)
+            ? `${payload.marketPct >= 0 ? '+' : ''}${payload.marketPct.toFixed(2)}%`
+            : '—';
+          return [
+            `<b>${dateText}</b>`,
+            `每日總資產增減：${delta >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(delta))}`,
+            `市場波動金額：${marketPnl >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(marketPnl))}`,
+            `人為入金/出金金額：${cashFlow >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(cashFlow))}`,
+            `漲跌百分比：${pctText}`,
+            `總資產：${fmtInt.format(Math.round(payload.total || 0))}`
+          ].join('<br/>');
         }
       },
       legend: { enabled: false },
       plotOptions: {
-        column: { borderWidth: 0, pointPadding: 0.08, groupPadding: 0.18 },
+        column: { borderWidth: 0, pointPadding: 0.08, groupPadding: 0.18, stacking: 'normal' },
         series: { animation: false }
       },
-      series: [{ name: '每日總資產增減', data }],
+      series: [
+        {
+          name: '資金流',
+          type: 'column',
+          data: cashFlowData,
+          color: '#94a3b8',
+          stack: 'delta'
+        },
+        {
+          name: '市場增益',
+          type: 'column',
+          data: marketGainData,
+          color: '#166534',
+          stack: 'delta'
+        },
+        {
+          name: '市場損失',
+          type: 'column',
+          data: marketLossData,
+          color: '#dc2626',
+          stack: 'delta'
+        },
+        {
+          name: '總資產增減標籤',
+          type: 'scatter',
+          data: totalDeltaLabelData,
+          color: 'transparent',
+          enableMouseTracking: false,
+          showInLegend: false,
+          marker: { enabled: false },
+          dataLabels: {
+            enabled: true,
+            y: -10,
+            style: { fontWeight: '700', textOutline: 'none' },
+            formatter(){
+              return this.point?.custom?.text || '';
+            },
+            color(){
+              return this.point?.custom?.color || '#0f172a';
+            }
+          }
+        }
+      ],
       credits: { enabled: false }
     });
   }
@@ -5313,8 +5474,11 @@ let allocationPlannerContext = null;
       const qty = parseN(row?.qty);
       if(qty <= 0 || !row){
         const tip = escapeAttr(`持倉成本：已無持倉\n試算損益：—\n試算報酬：—`);
-        const html = `<div class="cell-stack"><span class="muted">—</span><span class="mini muted"> </span></div>`;
-        return { html, title: tip };
+        return {
+          amountHtml: '<span class="muted">—</span>',
+          rateHtml: '<span class="muted">—</span>',
+          title: tip
+        };
       }
       const retPct = cb > 0 ? (unreal / cb * 100) : 0;
       const posAmt = unreal >= 0;
@@ -5326,11 +5490,11 @@ let allocationPlannerContext = null;
         `試算損益：${posAmt ? '▲' : '▼'} ${fmtInt.format(Math.round(Math.abs(unreal)))}\n` +
         `試算報酬：${pctStr}`
       );
-      const html = `<div class="cell-stack">
-        <span style="color:${cAmt}">${sign} ${fmtInt.format(Math.round(Math.abs(unreal)))}</span>
-        <span class="mini" style="color:${cAmt}">${pctStr}</span>
-      </div>`;
-      return { html, title: tip };
+      return {
+        amountHtml: `<span style="color:${cAmt}">${sign} ${fmtInt.format(Math.round(Math.abs(unreal)))}</span>`,
+        rateHtml: `<span style="color:${cAmt}">${pctStr}</span>`,
+        title: tip
+      };
     }
     if(t.type === 'sell'){
       const realized = Number.isFinite(t.realized) ? t.realized : 0;
@@ -5345,35 +5509,51 @@ let allocationPlannerContext = null;
         `已實現損益：${posR ? '▲' : '▼'} ${fmtInt.format(Math.round(Math.abs(realized)))}\n` +
         `實現報酬：${pctStrS}`
       );
-      const html = `<div class="cell-stack">
-        <span style="color:${c}">${sign} ${fmtInt.format(Math.round(Math.abs(realized)))}<span class="txn-realized-tag">已實現</span></span>
-        <span class="mini" style="color:${c}">${pctStrS}</span>
-      </div>`;
-      return { html, title: tip };
+      return {
+        amountHtml: `<span style="color:${c}">${sign} ${fmtInt.format(Math.round(Math.abs(realized)))}<span class="txn-realized-tag">已實現</span></span>`,
+        rateHtml: `<span style="color:${c}">${pctStrS}</span>`,
+        title: tip
+      };
     }
     if(t.type === 'dividend'){
       const amt = parseN(t.amount);
-      const html = `<div class="cell-stack"><span style="color:#059669">▲ ${fmtInt.format(Math.round(amt))}</span><span class="mini muted"></span></div>`;
-      return { html, title: escapeAttr(`股息入帳：${fmtInt.format(Math.round(amt))} 元`) };
+      return {
+        amountHtml: `<span style="color:#059669">▲ ${fmtInt.format(Math.round(amt))}</span>`,
+        rateHtml: '<span class="muted">—</span>',
+        title: escapeAttr(`股息入帳：${fmtInt.format(Math.round(amt))} 元`)
+      };
     }
     if(t.type === 'fee'){
       const amt = parseN(t.amount);
-      const html = `<div class="cell-stack"><span style="color:#dc2626">▼ ${fmtInt.format(Math.round(Math.abs(amt)))}</span><span class="mini muted"></span></div>`;
-      return { html, title: escapeAttr(`費用金額：${fmtInt.format(Math.round(Math.abs(amt)))} 元`) };
+      return {
+        amountHtml: `<span style="color:#dc2626">▼ ${fmtInt.format(Math.round(Math.abs(amt)))}</span>`,
+        rateHtml: '<span class="muted">—</span>',
+        title: escapeAttr(`費用金額：${fmtInt.format(Math.round(Math.abs(amt)))} 元`)
+      };
     }
-    return { html: '<div class="cell-stack"><span class="muted">—</span></div>', title: '' };
+    return {
+      amountHtml: '<span class="muted">—</span>',
+      rateHtml: '<span class="muted">—</span>',
+      title: ''
+    };
   }
 
-  function renderTxnAmountCell(t){
+  function renderTxnPriceCell(t){
     if(t.type === 'buy' || t.type === 'sell'){
       const p = parseN(t.price);
-      const q = parseN(t.qty);
       const priceStr = p > 0 ? fmt2.format(p) : '—';
-      const qtyStr = q > 0 ? fmtInt.format(Math.round(q)) : '—';
-      return `<td class="num col-txn-amt"><div class="cell-stack"><span style="font-weight:700">${priceStr}</span><span class="mini muted">× ${qtyStr} 股</span></div></td>`;
+      return `<td class="num col-txn-price"><span style="font-weight:700">${priceStr}</span></td>`;
     }
-    const amt = parseN(t.amount);
-    return `<td class="num col-txn-amt">${Number.isFinite(amt) ? fmtInt.format(Math.round(amt)) : '—'}</td>`;
+    return `<td class="num col-txn-price"><span class="muted">—</span></td>`;
+  }
+
+  function renderTxnQtyCell(t){
+    if(t.type === 'buy' || t.type === 'sell'){
+      const q = parseN(t.qty);
+      const qtyStr = q > 0 ? fmtInt.format(Math.round(q)) : '—';
+      return `<td class="num col-txn-qty">${qtyStr}</td>`;
+    }
+    return `<td class="num col-txn-qty"><span class="muted">—</span></td>`;
   }
 
   function passesTxnScoreFilter(t, scoreFilter){
@@ -5390,7 +5570,7 @@ let allocationPlannerContext = null;
 
     const scoredBuyCount = DB.txns.filter(t => t.type === 'buy' && t.decisionScore != null).length;
     if(scoredBuyCount < 3){
-      host.innerHTML = '<div class="txn-score-stats-placeholder" style="font-size:13px;padding:12px 8px;border:1px dashed var(--line);border-radius:12px;text-align:center">記錄 3 筆以上的決策評分後，這裡會自動計算準確率</div>';
+      host.innerHTML = '<div class="txn-score-stats-placeholder" style="min-height:0;padding:0;border:0;border-radius:0;text-align:center"></div>';
       return;
     }
 
@@ -5456,7 +5636,7 @@ let allocationPlannerContext = null;
 
     if(filteredRows.length === 0){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="9" class="empty">尚無異動紀錄</td>`;
+      tr.innerHTML = `<td colspan="11" class="empty">尚無異動紀錄</td>`;
       tbody.appendChild(tr);
       return;
     }
@@ -5471,16 +5651,20 @@ let allocationPlannerContext = null;
 
       tr.innerHTML = `
         <td class="col-txn-date">${formatTxnDate(t.time)}</td>
-        <td class="col-txn-symbol"><div class="cell-stack"><span class="sym">${sym}</span><span class="mini muted">${nameZh ? escapeAttr(nameZh) : '—'}</span></div></td>
+        <td class="col-txn-symbol"><div class="txn-symbol-inline"><span class="sym">${sym}</span><span class="mini muted" title="${nameZh ? escapeAttr(nameZh) : '—'}">${nameZh ? escapeAttr(nameZh) : '—'}</span></div></td>
         <td class="col-txn-type"><span class="type-badge ${typeCls}">${typeLabel}</span></td>
-        ${renderTxnAmountCell(t)}
+        ${renderTxnPriceCell(t)}
+        ${renderTxnQtyCell(t)}
+        <td class="num col-txn-pnl-amt" title="${pnl.title}">${pnl.amountHtml}</td>
+        <td class="num col-txn-pnl-rate" title="${pnl.title}">${pnl.rateHtml}</td>
         ${renderTxnDecisionScoreCell(t)}
         ${renderTxnJournalCell(t)}
-        <td class="num col-txn-pnl" title="${pnl.title}">${pnl.html}</td>
         ${renderTxnNoteCell(t)}
         <td class="num col-txn-op">
-          <button class="btn mini" data-id="${t.id}" data-action="edit-txn">編輯</button>
-          <button class="btn mini danger" data-id="${t.id}" data-action="del-txn">刪除</button>
+          <div class="txn-op-actions">
+            <button class="btn mini" data-id="${t.id}" data-action="edit-txn">編輯</button>
+            <button class="btn mini danger" data-id="${t.id}" data-action="del-txn">刪除</button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
