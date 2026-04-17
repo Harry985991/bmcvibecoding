@@ -308,10 +308,7 @@
     .overview-alert-orange{background:rgba(245,158,11,0.12); border-left:3px solid var(--orange); color:var(--text)}
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
     .week1-treemap-hybrid{
-      display:grid;
-      grid-template-columns:minmax(0, 1.7fr) minmax(260px, .95fr);
-      gap:14px;
-      align-items:stretch;
+      display:block;
       min-height:320px;
     }
     .week1-treemap-main{
@@ -394,7 +391,14 @@
       margin-top:10px;
     }
     .header-topbar-main{flex:1; min-width:0}
-    .header-topbar-side{flex:0 0 auto}
+    .header-topbar-side{
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
     .data-health-trigger{
       appearance:none;
       border:1px solid var(--line);
@@ -422,6 +426,28 @@
     .data-health-trigger.ok{border-color:#a7f3d0;background:#ecfdf5}
     .data-health-trigger.warn{border-color:#fcd34d;background:#fffbeb}
     .data-health-trigger.error{border-color:#fecaca;background:#fef2f2}
+    .header-export-btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:8px 14px;
+      min-width:0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      font-size:12px;
+      font-weight:800;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .header-export-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 24px rgba(15,23,42,.1);
+      background:#f8fafc;
+    }
     .data-health-popover-backdrop{
       position:fixed;
       inset:0;
@@ -609,9 +635,6 @@
     .data-health-issue-badge.warn{border-color:#fcd34d;color:#b45309}
     body.data-health-modal-open{overflow:hidden}
     @media (max-width:980px){
-      .week1-treemap-hybrid{
-        grid-template-columns:1fr;
-      }
       .header-topbar{
         flex-direction:column;
         align-items:stretch;
@@ -629,6 +652,10 @@
         font-size:10px;
       }
       .data-health-trigger{
+        width:100%;
+        min-width:0;
+      }
+      .header-export-btn{
         width:100%;
         min-width:0;
       }
@@ -990,6 +1017,7 @@
     .div-cal-payout{background:#f0fff4;border-color:#9ae6b4}
     .div-cal-payout-past{background:#bbf7d0;border-color:#166534}
     .div-cal-payout-current{background:#fee2e2;border-color:#dc2626}
+    .div-cal-payout-next{background:#93c5fd;border-color:#2563eb}
     .div-cal-payout-future{background:#eff6ff;border-color:#93c5fd}
     .div-cal-current{border-width:2px;border-color:#dc2626!important}
     .div-cal-current .div-cal-mo{color:#dc2626;font-weight:700}
@@ -999,12 +1027,14 @@
     .div-timeline-row.div-tl-projected{background:#f0fff4}
     .div-timeline-row.div-tl-month-past{background:#bbf7d0;border-color:#166534}
     .div-timeline-row.div-tl-month-current{background:#fee2e2;border-color:#dc2626}
+    .div-timeline-row.div-tl-month-next{background:#93c5fd;border-color:#2563eb}
     .div-timeline-row.div-tl-month-future{background:#eff6ff;border-color:#93c5fd}
     .div-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .div-dot-future{background:#22c55e}
     .div-dot-past{background:#9ca3af}
     .div-dot-month-past{background:#166534}
     .div-dot-month-current{background:#dc2626}
+    .div-dot-month-next{background:#1d4ed8}
     .div-dot-month-future{background:#60a5fa}
     .div-tl-grow{flex:1;min-width:0}
     .div-tl-grow .sym{font-weight:700}
@@ -1072,6 +1102,12 @@
           >
             <span class="data-health-trigger-status" id="data-health-trigger-status">健康</span>
           </button>
+          <button
+            type="button"
+            id="holdings-export-trigger"
+            class="header-export-btn"
+            aria-label="匯出目前持股資料"
+          >匯出</button>
         </div>
       </div>
     </div>
@@ -1158,7 +1194,7 @@
               <tr>
                 <th class="sortable" data-sort="tier">分層</th>
                 <th class="sortable text-start" data-sort="symbol">代號 / 名稱</th>
-                <th class="num sortable" data-sort="qty">股數 / 成本</th>
+                <th class="num sortable" data-sort="qty">總股數 / 成本</th>
                 <th class="num sortable" data-sort="price">市場實價<br><span class="mini muted" style="font-weight:500;font-size:10px;line-height:1.2">資訊更新時間</span></th>
                 <th class="num sortable" data-sort="marketValue">市值</th>
                 <th class="num sortable" data-sort="unrealized">股票損益 / 報酬%</th>
@@ -3186,6 +3222,20 @@ let allocationPlannerContext = null;
     return t.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false });
   }
 
+  function formatStockPriceUpdatedAtFull(iso){
+    if(iso == null || String(iso).trim() === '') return '—';
+    const t = new Date(iso);
+    if(Number.isNaN(t.getTime())) return '—';
+    return t.toLocaleString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).replace(',', '');
+  }
+
   function formatQuoteTimeDiff(ms){
     if(!Number.isFinite(ms) || ms < 0) return '—';
     const totalMinutes = Math.round(ms / 60000);
@@ -3583,8 +3633,7 @@ let allocationPlannerContext = null;
     return lines.join('\n');
   }
 
-  async function copyDataHealthReport(){
-    const text = buildDataHealthReport(calculatePortfolioSummary());
+  async function copyTextToClipboard(text){
     try{
       if(navigator.clipboard?.writeText){
         await navigator.clipboard.writeText(text);
@@ -3599,10 +3648,66 @@ let allocationPlannerContext = null;
         document.execCommand('copy');
         textarea.remove();
       }
-      showBackupStatus('資料自檢報告已複製 ✓');
+      return true;
     }catch(err){
-      console.warn('複製資料自檢報告失敗：', err);
+      console.warn('複製文字失敗：', err);
+      return false;
+    }
+  }
+
+  function buildHoldingsExportText(summary = calculatePortfolioSummary()){
+    const dataset = computeStockMetrics(summary)
+      .filter(row => row.qty > 0)
+      .map(row => {
+        const label = getStockLabel(row.stock.id);
+        return { ...row, _label: label };
+      });
+
+    dataset.sort(compareHoldingsRows);
+
+    const lines = [
+      ['代號', '名稱', '總股數', '平均成本', '市場時價', '市值', '股票損益', '含息損益', '更新時間'].join('\t')
+    ];
+
+    dataset.forEach((row) => {
+      const stock = row.stock || {};
+      const price = parseN(stock.price);
+      const avgCost = parseN(row.avgCost);
+      const unrealized = Number.isFinite(row.unrealized) ? Math.round(row.unrealized) : null;
+      const totalPnl = Number.isFinite(row.totalPnlWithFees) ? Math.round(row.totalPnlWithFees) : null;
+      lines.push([
+        stock.symbol || '—',
+        stock.name || '',
+        formatHoldingQty(row.qty),
+        avgCost > 0 ? fmt2.format(avgCost) : '—',
+        !row.missingPrice && Number.isFinite(price) && price > 0 ? fmt2.format(price) : '—',
+        Number.isFinite(row.marketValue) ? fmtInt.format(Math.round(row.marketValue)) : '—',
+        unrealized != null ? fmtInt.format(unrealized) : '—',
+        totalPnl != null ? fmtInt.format(totalPnl) : '—',
+        formatStockPriceUpdatedAtFull(stock.lastPriceAt)
+      ].join('\t'));
+    });
+
+    return lines.join('\n');
+  }
+
+  async function copyDataHealthReport(){
+    const text = buildDataHealthReport(calculatePortfolioSummary());
+    const copied = await copyTextToClipboard(text);
+    if(copied){
+      showBackupStatus('資料自檢報告已複製 ✓');
+    }else{
       showBackupStatus('資料自檢報告複製失敗', true);
+    }
+  }
+
+  async function copyHoldingsExport(){
+    const text = buildHoldingsExportText(calculatePortfolioSummary());
+    const copied = await copyTextToClipboard(text);
+    if(copied){
+      showBackupStatus('持股資料已複製 ✓');
+    }else{
+      showBackupStatus('持股資料複製失敗', true);
     }
   }
 
@@ -3754,8 +3859,6 @@ let allocationPlannerContext = null;
       const stratText = label.strategy === 'hold-for-dividend' ? '領息不賣' : '可進出';
 
       const qtyDisplay = formatHoldingQty(row.qty);
-      const wholeLotDisplay = formatHoldingQty(row.wholeLotQty);
-      const oddLotDisplay = formatHoldingQty(row.oddLotQty);
       const avgCostDisplay = avgCost ? fmt2.format(avgCost) : '—';
       const mvDisplay = Number.isFinite(row.marketValue) ? fmtInt.format(Math.round(row.marketValue)) : '—';
       const divDisplay = row.dividends > 0 ? fmtInt.format(Math.round(row.dividends)) : '—';
@@ -3767,7 +3870,7 @@ let allocationPlannerContext = null;
       tr.innerHTML = `
         <td><span class="tier-tag tier-${tierKey}">${tierShort}</span></td>
         <td class="text-start"><div class="cell-stack"><span class="sym">${s.symbol}</span><span class="mini muted">${s.name||''}</span>${flags.length ? `<span>${flags.join('')}</span>` : ''}</div></td>
-        <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${qtyDisplay}</span><span class="mini muted">整股 ${wholeLotDisplay} / 零股 ${oddLotDisplay}</span><span class="mini muted">均價 ${avgCostDisplay}</span></div></td>
+        <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${qtyDisplay}</span><span class="mini muted">均價 ${avgCostDisplay}</span></div></td>
         <td class="num"><div class="cell-stack" style="align-items:flex-end"><span>${priceHtml}</span><span class="mini muted" title="此筆市場實價的取得或手動儲存時刻">${priceUpdatedNote}</span></div></td>
         <td class="num">${mvDisplay}</td>
         <td class="num">
@@ -4470,8 +4573,8 @@ let allocationPlannerContext = null;
     if(msgEl) msgEl.style.display = 'none';
     chartDiv.style.display = '';
 
+    const categories = points.map(p => p.date.replace(/-/g, '/'));
     const data = points.map(p => ({
-      x: p.x,
       y: p.delta,
       color: p.delta >= 0 ? '#0f766e' : '#dc2626',
       custom: { total: p.total, date: p.date }
@@ -4481,7 +4584,13 @@ let allocationPlannerContext = null;
     returnDailyChangeChart = Highcharts.chart(chartDiv, {
       chart: { type: 'column', height: 220, backgroundColor: 'transparent' },
       title: { text: null },
-      xAxis: { type: 'datetime', labels: { format: '{value:%Y/%m/%d}' } },
+      xAxis: {
+        categories,
+        tickmarkPlacement: 'on',
+        labels: {
+          formatter(){ return this.value; }
+        }
+      },
       yAxis: {
         title: { text: null },
         labels: {
@@ -4491,7 +4600,9 @@ let allocationPlannerContext = null;
       },
       tooltip: {
         formatter(){
-          const dateText = Highcharts.dateFormat('%Y/%m/%d', this.x);
+          const dateText = (this.point && this.point.custom && this.point.custom.date)
+            ? String(this.point.custom.date).replace(/-/g, '/')
+            : String(this.x || '');
           const value = Number.isFinite(this.y) ? Math.round(this.y) : 0;
           const sign = value >= 0 ? '+' : '-';
           return `<b>${dateText}</b><br/>每日總資產增減：${sign}${fmtInt.format(Math.abs(value))}<br/>總資產：${fmtInt.format(Math.round(this.point.custom.total))}`;
@@ -4610,14 +4721,27 @@ let allocationPlannerContext = null;
     if(msgEl) msgEl.style.display = 'none';
     chartDiv.style.display = '';
 
-    const totalPoints = points.map(p => [p.x, p.total]);
-    const gainPoints = points.map(p => [p.x, p.gain]);
+    const categories = points.map(p => p.date.replace(/-/g, '/'));
+    const totalPoints = points.map(p => ({
+      y: p.total,
+      custom: { date: p.date }
+    }));
+    const gainPoints = points.map(p => ({
+      y: p.gain,
+      custom: { date: p.date }
+    }));
 
     clearChart();
     returnAssetTrendChart = Highcharts.chart(chartDiv, {
       chart: { height: 220, backgroundColor: 'transparent' },
       title: { text: null },
-      xAxis: { type: 'datetime', labels: { format: '{value:%Y/%m/%d}' } },
+      xAxis: {
+        categories,
+        tickmarkPlacement: 'on',
+        labels: {
+          formatter(){ return this.value; }
+        }
+      },
       yAxis: [
         {
           title: { text: null },
@@ -4637,7 +4761,9 @@ let allocationPlannerContext = null;
       tooltip: {
         shared: true,
         formatter(){
-          const dateText = Highcharts.dateFormat('%Y/%m/%d', this.x);
+          const dateText = (this.points && this.points[0] && this.points[0].point && this.points[0].point.custom && this.points[0].point.custom.date)
+            ? String(this.points[0].point.custom.date).replace(/-/g, '/')
+            : String(this.x || '');
           const lines = [`<b>${dateText}</b>`];
           (this.points || []).forEach(pt => {
             const y = Number.isFinite(pt.y) ? Math.round(pt.y) : 0;
@@ -6780,7 +6906,22 @@ function updateAllocationPlannerSummary(){
     return { amount: 0, perShareEff: null };
   }
 
-  function buildMonthlyDividendSnapshot(month, year, summary = calculatePortfolioSummary()){
+  function getProjectedDividendMonthSnapshotFromTimeline(month, year, timeline = []){
+    const projectedItems = (timeline || []).filter(item => {
+      if(item?.kind !== 'projected') return false;
+      const dt = item.date instanceof Date ? item.date : new Date(item.date);
+      if(Number.isNaN(dt.getTime())) return false;
+      return dt.getFullYear() === year && dt.getMonth() + 1 === month;
+    });
+    if(!projectedItems.length){
+      return { amount: 0, stocks: [] };
+    }
+    const amount = projectedItems.reduce((sum, item) => sum + parseN(item.amount), 0);
+    const stocks = [...new Set(projectedItems.map(item => item.symbol).filter(Boolean))];
+    return { amount, stocks };
+  }
+
+  function buildMonthlyDividendSnapshot(month, year, summary = calculatePortfolioSummary(), timeline = null){
     const projectedStocks = [];
     let projected = 0;
     for(const row of summary.heldRows){
@@ -6804,12 +6945,18 @@ function updateAllocationPlannerSummary(){
     }
 
     const isActual = actual > 0;
+    const projectedFromTimeline = getProjectedDividendMonthSnapshotFromTimeline(
+      month,
+      year,
+      Array.isArray(timeline) ? timeline : getDividendTimeline(summary)
+    );
+
     return {
-      amount: isActual ? actual : projected,
-      stocks: isActual ? actualSyms : projectedStocks,
+      amount: isActual ? actual : (projectedFromTimeline.amount > 0 ? projectedFromTimeline.amount : projected),
+      stocks: isActual ? actualSyms : (projectedFromTimeline.amount > 0 ? projectedFromTimeline.stocks : projectedStocks),
       isActual,
       actual,
-      projected
+      projected: projectedFromTimeline.amount > 0 ? projectedFromTimeline.amount : projected
     };
   }
 
@@ -6819,8 +6966,8 @@ function updateAllocationPlannerSummary(){
     return buildMonthlyDividendSnapshot(month, year, summary);
   }
 
-  function calcMonthlyDividend(month, year, summary = calculatePortfolioSummary()){
-    const snapshot = buildMonthlyDividendSnapshot(month, year, summary);
+  function calcMonthlyDividend(month, year, summary = calculatePortfolioSummary(), timeline = null){
+    const snapshot = buildMonthlyDividendSnapshot(month, year, summary, timeline);
     return { amount: snapshot.amount, stocks: snapshot.stocks, isActual: snapshot.isActual };
   }
 
@@ -6987,10 +7134,12 @@ function updateAllocationPlannerSummary(){
     const now = new Date();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfFollowingMonth = new Date(now.getFullYear(), now.getMonth() + 2, 1);
     const getTimelineMonthTone = (dateObj) => {
       if(!dateObj || Number.isNaN(dateObj.getTime())) return '';
       if(dateObj < startOfCurrentMonth) return 'past';
       if(dateObj >= startOfCurrentMonth && dateObj < startOfNextMonth) return 'current';
+      if(dateObj >= startOfNextMonth && dateObj < startOfFollowingMonth) return 'next';
       if(dateObj >= startOfNextMonth) return 'future';
       return '';
     };
@@ -7007,6 +7156,7 @@ function updateAllocationPlannerSummary(){
     const heldWithQty = summary.heldRows
       .map(row => row.stock)
       .sort(sortSym);
+    const timeline = getDividendTimeline(summary);
 
     const strip = $('#dividend-holdings-strip');
     const emptyLbl = $('#dividend-holdings-empty');
@@ -7025,7 +7175,7 @@ function updateAllocationPlannerSummary(){
     if(grid){
       grid.innerHTML = '';
       for(let month = 1; month <= 12; month++){
-        const { amount, stocks, isActual } = calcMonthlyDividend(month, year, summary);
+        const { amount, stocks, isActual } = calcMonthlyDividend(month, year, summary, timeline);
         const hasActual = isActual && amount > 0;
         const hasProjected = !isActual && amount > 0;
         const hasFlow = hasActual || hasProjected;
@@ -7036,6 +7186,8 @@ function updateAllocationPlannerSummary(){
           cell.classList.add('div-cal-payout');
           if(month <= curMonth - 1){
             cell.classList.add('div-cal-payout-past');
+          } else if(month === curMonth + 1){
+            cell.classList.add('div-cal-payout-next');
           } else if(month >= curMonth + 1){
             cell.classList.add('div-cal-payout-future');
           } else if(month === curMonth){
@@ -7085,7 +7237,6 @@ function updateAllocationPlannerSummary(){
     const tlHost = $('#dividend-timeline');
     if(tlHost){
       tlHost.innerHTML = '';
-    const timeline = getDividendTimeline(summary);
       if(timeline.length === 0){
         tlHost.innerHTML = '<div class="empty" style="padding:16px">尚無近期配息紀錄或預估</div>';
       } else {
@@ -7807,6 +7958,9 @@ function updateAllocationPlannerSummary(){
   });
   $('#data-health-popover-backdrop')?.addEventListener('click', ()=>{
     setDataHealthPopoverOpen(false);
+  });
+  $('#holdings-export-trigger')?.addEventListener('click', ()=>{
+    copyHoldingsExport();
   });
   $('#holdings-validation-trigger')?.addEventListener('click', ()=>{
     if(!holdingsValidationState.popoverOpen && dataHealthState.popoverOpen){
@@ -9756,6 +9910,94 @@ function updateAllocationPlannerSummary(){
       </button>`;
   }
 
+  function week1BuildConfirmedTreemapLayout(sorted, totalMV){
+    const layout = [];
+    if(!sorted.length || !Number.isFinite(totalMV) || totalMV <= 0) return layout;
+
+    const totalArea = 10000;
+    const toArea = (row) => Math.max(0, (Math.max(0, Number(row.marketValue) || 0) / totalMV) * totalArea);
+    const first = sorted[0];
+    const second = sorted[1];
+    const bottomRows = sorted.slice(2, 5);
+    const extraRows = sorted.slice(5);
+    const firstArea = toArea(first);
+    const leftW = Math.max(0, Math.min(100, firstArea / 100));
+
+    if(first){
+      layout.push({ kind: 'main', row: first, x: 0, y: 0, w: leftW, h: 100 });
+    }
+    if(sorted.length === 1 || leftW >= 100){
+      return layout;
+    }
+
+    const rightX = leftW;
+    const rightW = 100 - leftW;
+    const secondArea = second ? toArea(second) : 0;
+    const topH = second && rightW > 0 ? Math.max(0, Math.min(100, secondArea / rightW)) : 0;
+
+    if(second){
+      layout.push({ kind: 'main', row: second, x: rightX, y: 0, w: rightW, h: topH });
+    }
+
+    const bottomY = topH;
+    const bottomH = 100 - topH;
+    if(bottomH <= 0 || (!bottomRows.length && !extraRows.length)){
+      return layout;
+    }
+
+    const bottomItems = bottomRows.map((row) => ({
+      kind: 'main',
+      row,
+      area: toArea(row)
+    }));
+    if(extraRows.length){
+      bottomItems.push({
+        kind: 'side-group',
+        rows: extraRows,
+        area: extraRows.reduce((sum, row) => sum + toArea(row), 0)
+      });
+    }
+
+    let cursorX = rightX;
+    bottomItems.forEach((item, index) => {
+      const isLast = index === bottomItems.length - 1;
+      const exactWidth = bottomH > 0 ? item.area / bottomH : 0;
+      const width = isLast ? (100 - cursorX) : exactWidth;
+      if(width <= 0) return;
+
+      if(item.kind === 'side-group'){
+        let cursorY = bottomY;
+        item.rows.forEach((row, rowIndex) => {
+          const isLastRow = rowIndex === item.rows.length - 1;
+          const exactHeight = width > 0 ? toArea(row) / width : 0;
+          const height = isLastRow ? ((bottomY + bottomH) - cursorY) : exactHeight;
+          layout.push({
+            kind: 'side',
+            row,
+            x: cursorX,
+            y: cursorY,
+            w: width,
+            h: Math.max(0, height)
+          });
+          cursorY += height;
+        });
+      }else{
+        layout.push({
+          kind: 'main',
+          row: item.row,
+          x: cursorX,
+          y: bottomY,
+          w: width,
+          h: bottomH
+        });
+      }
+
+      cursorX += width;
+    });
+
+    return layout;
+  }
+
   function week1RenderTreemapHybrid(container, metrics, totalMV){
     container.style.overflow = 'visible';
     container.style.height = 'auto';
@@ -9763,24 +10005,79 @@ function updateAllocationPlannerSummary(){
     const sorted = metrics
       .slice()
       .sort((a, b) => b.marketValue - a.marketValue);
-    const mainRows = sorted.slice(0, 5);
-    const sideRows = sorted.slice(5);
-    const layoutItems = mainRows.map((row) => ({ row, weight: Math.max(1, row.marketValue) }));
-    const layoutRects = week1BuildTreemapLayout(layoutItems);
-    const sideHeight = sideRows.length ? (sideRows.length * 78) + ((sideRows.length - 1) * 10) : 0;
-    const mainHeight = Math.max(320, Math.min(520, Math.max(320, sideHeight)));
+    const mobile = window.innerWidth <= 980;
+    const mainHeight = 360;
 
-    const mainHtml = layoutRects.map((item) => week1RenderTreemapMainTile(item, totalMV)).join('');
-    const sideHtml = sideRows.length
-      ? `<div class="week1-treemap-side">${sideRows.map((row) => week1RenderTreemapSideItem(row, totalMV)).join('')}</div>`
-      : '';
+    if(mobile){
+      const sideHtml = sorted.map((row) => week1RenderTreemapSideItem(row, totalMV)).join('');
+      container.innerHTML = `
+        <div class="week1-treemap-hybrid">
+          <div class="week1-treemap-side">${sideHtml}</div>
+        </div>`;
+      week1BindTreemapInteractions(container);
+      return;
+    }
+
+    const layoutRects = week1BuildConfirmedTreemapLayout(sorted, totalMV);
+    const mainHtml = layoutRects.map((item) => {
+      if(item.kind === 'side'){
+        const row = item.row;
+        const returnPct = Number.isFinite(row.totalReturnPct) ? row.totalReturnPct / 100 : 0;
+        const sign = returnPct >= 0 ? '+' : '';
+        const bg = week1TreemapColorForReturn(returnPct);
+        const fg = week1TreemapTextColor(bg);
+        const detailTitle = week1BuildTreemapDetailTitle(row, totalMV);
+        const inset = 4;
+        const left = `calc(${item.x.toFixed(4)}% + ${inset}px)`;
+        const top = `calc(${item.y.toFixed(4)}% + ${inset}px)`;
+        const width = `calc(${item.w.toFixed(4)}% - ${inset * 2}px)`;
+        const height = `calc(${item.h.toFixed(4)}% - ${inset * 2}px)`;
+        const tiny = item.h < 12;
+        const showName = item.h >= 16;
+        const showReturn = item.h >= 10;
+        const symbolFontSize = Math.max(11, Math.min(14, Math.round(9 + item.h * 0.12)));
+        const returnFontSize = Math.max(9, Math.min(11, Math.round(8 + item.h * 0.08)));
+        return `
+          <button
+            type="button"
+            data-week1-treemap-item="1"
+            data-stock-id="${week1EscapeHtml(row.stock?.id || '')}"
+            data-tooltip="${week1EscapeHtml(detailTitle)}"
+            aria-label="${week1EscapeHtml(detailTitle)}"
+            style="
+              position:absolute;
+              left:${left};
+              top:${top};
+              width:${width};
+              height:${height};
+              border:0;
+              border-radius:12px;
+              padding:${tiny ? 6 : 8}px;
+              text-align:center;
+              cursor:pointer;
+              color:${fg};
+              background:${bg};
+              overflow:hidden;
+              box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+              display:flex;
+              flex-direction:column;
+              align-items:center;
+              justify-content:center;
+              gap:3px;
+            ">
+            <div style="font-size:${symbolFontSize}px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(row.stock?.symbol || '—')}</div>
+            ${showName ? `<div style="font-size:10px;opacity:.8;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${week1EscapeHtml(row.stock?.name || '')}</div>` : ''}
+            ${showReturn ? `<div style="font-size:${returnFontSize}px;font-weight:800;line-height:1">${sign}${(returnPct * 100).toFixed(1)}%</div>` : ''}
+          </button>`;
+      }
+      return week1RenderTreemapMainTile(item, totalMV);
+    }).join('');
 
     container.innerHTML = `
       <div class="week1-treemap-hybrid">
         <div class="week1-treemap-main" style="height:${mainHeight}px">
           <div class="week1-treemap-main-canvas">${mainHtml}</div>
         </div>
-        ${sideHtml}
       </div>`;
 
     week1BindTreemapInteractions(container);
