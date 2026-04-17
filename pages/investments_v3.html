@@ -307,13 +307,149 @@
     .overview-alert-red{background:rgba(239,68,68,0.08); border-left:3px solid var(--red); color:var(--text)}
     .overview-alert-orange{background:rgba(245,158,11,0.12); border-left:3px solid var(--orange); color:var(--text)}
     .overview-alert-green{background:rgba(16,185,129,0.1); border-left:3px solid var(--green); color:var(--text)}
-    .data-health-panel{
-      margin-bottom:14px;
+    .header-topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-top:10px;
+    }
+    .header-topbar-main{flex:1; min-width:0}
+    .header-topbar-side{flex:0 0 auto}
+    .data-health-trigger{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:14px;
+      padding:10px 12px;
+      min-width:156px;
+      display:grid;
+      gap:3px;
+      text-align:left;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .data-health-trigger:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 24px rgba(15,23,42,.1);
+    }
+    .data-health-trigger-title{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .data-health-trigger-meta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .data-health-trigger-status{
+      font-size:12px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .data-health-trigger-count{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:28px;
+      height:24px;
+      padding:0 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      border:1px solid transparent;
+      background:#f8fafc;
+      color:var(--ink);
+    }
+    .data-health-trigger-sub{
+      font-size:11px;
+      color:var(--sub);
+      line-height:1.35;
+    }
+    .data-health-trigger.ok{border-color:#a7f3d0;background:#ecfdf5}
+    .data-health-trigger.ok .data-health-trigger-count{background:#fff;border-color:#a7f3d0;color:#047857}
+    .data-health-trigger.warn{border-color:#fcd34d;background:#fffbeb}
+    .data-health-trigger.warn .data-health-trigger-count{background:#fff;border-color:#fcd34d;color:#b45309}
+    .data-health-trigger.error{border-color:#fecaca;background:#fef2f2}
+    .data-health-trigger.error .data-health-trigger-count{background:#fff;border-color:#fecaca;color:#b91c1c}
+    .data-health-popover-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.24);
+      backdrop-filter:blur(2px);
+      z-index:80;
+    }
+    .data-health-popover{
+      position:fixed;
+      top:78px;
+      right:18px;
+      width:min(560px, calc(100vw - 32px));
+      max-height:calc(100vh - 96px);
+      z-index:81;
+    }
+    .data-health-popover-shell{
+      display:grid;
+      gap:10px;
+      grid-template-rows:auto minmax(0,1fr);
+      max-height:calc(100vh - 96px);
+    }
+    .data-health-popover-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
       padding:12px 14px;
       border:1px solid var(--line);
-      border-radius:12px;
+      border-radius:14px;
+      background:rgba(255,255,255,.96);
+      box-shadow:0 18px 40px rgba(15,23,42,.14);
+    }
+    .data-health-popover-kicker{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      color:var(--sub);
+    }
+    .data-health-popover-title{
+      margin:4px 0 0;
+      font-size:16px;
+      font-weight:800;
+      color:var(--ink);
+    }
+    .data-health-popover-desc{
+      margin-top:3px;
+      font-size:11px;
+      color:var(--sub);
+      line-height:1.4;
+    }
+    .data-health-popover-close{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .data-health-popover-close:hover{background:#f8fafc}
+    .data-health-panel{
+      margin:0;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:14px;
       background:#f8fafc;
-      box-shadow:var(--shadow);
+      box-shadow:0 18px 40px rgba(15,23,42,.14);
+      max-height:calc(100vh - 190px);
+      overflow:auto;
     }
     .data-health-panel.ok{background:#ecfdf5;border-color:#a7f3d0}
     .data-health-panel.warn{background:#fffbeb;border-color:#fcd34d}
@@ -426,6 +562,36 @@
     }
     .data-health-issue-badge.error{border-color:#fecaca;color:#b91c1c}
     .data-health-issue-badge.warn{border-color:#fcd34d;color:#b45309}
+    body.data-health-modal-open{overflow:hidden}
+    @media (max-width:980px){
+      .header-topbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .header-topbar-side{align-self:flex-end}
+    }
+    @media (max-width:720px){
+      .data-health-trigger{
+        width:100%;
+        min-width:0;
+      }
+      .header-topbar-side{align-self:stretch}
+      .data-health-popover{
+        top:16px;
+        right:16px;
+        left:16px;
+        width:auto;
+        max-height:calc(100vh - 32px);
+      }
+      .data-health-popover-shell{max-height:calc(100vh - 32px)}
+      .data-health-popover-head{
+        padding:10px 12px;
+      }
+      .data-health-panel{
+        padding:10px 12px;
+        max-height:calc(100vh - 148px);
+      }
+    }
 
     /* 報酬檢視：績效分析 */
     .return-kpi-row{display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-bottom:12px}
@@ -712,19 +878,38 @@
 <body>
   <header>
     <div class="wrap">
-      <div class="stack" style="margin-top:10px">
-        <div class="kpi-mini" id="kpi-mini-strip" aria-label="關鍵指標快覽">
-          <span class="kpi-mini-item"><span class="kpi-mini-label">總資產</span><span class="kpi-mini-value" id="mini-total-asset">—</span></span>
-          <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">持倉市值</span><span class="kpi-mini-value" id="mini-holdings-mv">—</span></span>
-          <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">可用現金</span><span class="kpi-mini-value" id="mini-cash">—</span></span>
-          <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">含息報酬金額</span><span class="kpi-mini-value" id="mini-net-gain">—</span></span>
-          <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">含息報酬率</span><span class="kpi-mini-value" id="mini-total-return">—</span></span>
-          <span class="kpi-mini-sep">|</span>
-          <span class="kpi-mini-item"><span class="kpi-mini-label">本月配息</span><span class="kpi-mini-value" id="mini-month-div">—</span></span>
+      <div class="header-topbar">
+        <div class="header-topbar-main">
+          <div class="kpi-mini" id="kpi-mini-strip" aria-label="關鍵指標快覽">
+            <span class="kpi-mini-item"><span class="kpi-mini-label">總資產</span><span class="kpi-mini-value" id="mini-total-asset">—</span></span>
+            <span class="kpi-mini-sep">|</span>
+            <span class="kpi-mini-item"><span class="kpi-mini-label">持倉市值</span><span class="kpi-mini-value" id="mini-holdings-mv">—</span></span>
+            <span class="kpi-mini-sep">|</span>
+            <span class="kpi-mini-item"><span class="kpi-mini-label">可用現金</span><span class="kpi-mini-value" id="mini-cash">—</span></span>
+            <span class="kpi-mini-sep">|</span>
+            <span class="kpi-mini-item"><span class="kpi-mini-label">含息報酬金額</span><span class="kpi-mini-value" id="mini-net-gain">—</span></span>
+            <span class="kpi-mini-sep">|</span>
+            <span class="kpi-mini-item"><span class="kpi-mini-label">含息報酬率</span><span class="kpi-mini-value" id="mini-total-return">—</span></span>
+            <span class="kpi-mini-sep">|</span>
+            <span class="kpi-mini-item"><span class="kpi-mini-label">本月配息</span><span class="kpi-mini-value" id="mini-month-div">—</span></span>
+          </div>
+        </div>
+        <div class="header-topbar-side">
+          <button
+            type="button"
+            id="data-health-trigger"
+            class="data-health-trigger ok"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="data-health-popover"
+          >
+            <span class="data-health-trigger-title">Data Health</span>
+            <span class="data-health-trigger-meta">
+              <span class="data-health-trigger-status" id="data-health-trigger-status">健康</span>
+              <span class="data-health-trigger-count" id="data-health-trigger-count">0</span>
+            </span>
+            <span class="data-health-trigger-sub" id="data-health-trigger-sub">點開查看資料一致性與異常明細</span>
+          </button>
         </div>
       </div>
     </div>
@@ -735,7 +920,20 @@
   </header>
 
   <main>
-    <div id="data-health-panel" class="data-health-panel" aria-live="polite"></div>
+    <div id="data-health-popover-backdrop" class="data-health-popover-backdrop" hidden></div>
+    <div id="data-health-popover" class="data-health-popover" role="dialog" aria-modal="true" aria-labelledby="data-health-popover-title" hidden>
+      <div class="data-health-popover-shell">
+        <div class="data-health-popover-head">
+          <div>
+            <div class="data-health-popover-kicker">Data Health</div>
+            <div class="data-health-popover-title" id="data-health-popover-title">資料健康檢查</div>
+            <div class="data-health-popover-desc">這裡會集中顯示口徑一致性、報價同步狀態與需要對帳的異常標的。</div>
+          </div>
+          <button type="button" class="data-health-popover-close" id="data-health-popover-close" aria-label="關閉資料健康視窗">關閉</button>
+        </div>
+        <div id="data-health-panel" class="data-health-panel" aria-live="polite"></div>
+      </div>
+    </div>
     <div class="tabs" role="tablist" aria-label="主導覽">
       <button class="tab" role="tab" aria-selected="true" data-target="#view-snapshots">總覽</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-holdings">持有標的</button>
@@ -1688,7 +1886,8 @@ let allocationPlannerContext = null;
   // ── 狀態列備份提示 ────────────────────────────────────────
   const dataHealthState = {
     storageWriteError: false,
-    storageMessage: ''
+    storageMessage: '',
+    popoverOpen: false
   };
 
   function showBackupStatus(msg, isError = false) {
@@ -3034,15 +3233,95 @@ let allocationPlannerContext = null;
       </div>`;
   }
 
+  function buildDataHealthViewModel(summary = calculatePortfolioSummary()){
+    const issues = [];
+    if(!summary.validation.holdingsMatchesDetails){
+      issues.push({
+        type: 'error',
+        text: `持倉驗算不一致：差額 ${fmtInt.format(Math.round(summary.holdingsVsDetailsDiff))}`
+      });
+    }
+    if(!summary.validation.totalAssetsMatchesEquation){
+      issues.push({
+        type: 'error',
+        text: `總資產公式不一致：差額 ${fmtInt.format(Math.round(summary.totalAssetsDiff))}`
+      });
+    }
+    if(summary.missingPriceCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.missingPriceCount} 檔持倉缺少價格，市值可能被低估`
+      });
+    }
+    if(summary.quoteMismatchCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.quoteMismatchCount} 檔持倉的報價時間不同步`
+      });
+    }
+    if(summary.duplicateRecordCount > 0){
+      issues.push({
+        type: 'warn',
+        text: `${summary.duplicateRecordCount} 檔持倉由多筆資料合併`
+      });
+    }
+    if(dataHealthState.storageWriteError){
+      issues.push({
+        type: 'error',
+        text: dataHealthState.storageMessage || '資料儲存失敗，重新整理後可能回到舊資料'
+      });
+    }
+
+    const hasError = issues.some(x => x.type === 'error');
+    const statusClass = hasError ? 'error' : (issues.length > 0 ? 'warn' : 'ok');
+    const statusText = hasError ? '需處理' : (issues.length > 0 ? '請注意' : '健康');
+    const desc = issues.length
+      ? '以下項目可能導致畫面數值暫時不一致，建議先確認後再判讀報表。'
+      : '目前未發現會直接導致資料錯誤或不一致的高風險訊號。';
+    const quoteRangeSummary = getQuoteTimeRangeSummary(summary.quoteTimes);
+    const debugSections = [
+      {
+        type: 'error',
+        title: '缺少價格的持倉',
+        desc: '這些標的沒有可用市價，持倉市值會被壓成 0，總資產也會跟著偏低。',
+        rows: summary.missingPriceRows
+      },
+      {
+        type: 'warn',
+        title: '報價時間不同步的持倉',
+        desc: '同一批持倉使用了不同更新時間的價格，或尚未拿到更新時間，短時間內可能造成摘要與外部數據對不上。',
+        rows: summary.quoteMismatchRows
+      },
+      {
+        type: 'warn',
+        title: '由多筆來源合併的持倉',
+        desc: '同一商品分散在多筆 stock 記錄，系統已先合併再計算。若來源資料本身重複，這裡會最先看出來。',
+        rows: summary.duplicateRows
+      }
+    ].filter(section => section.rows.length > 0);
+
+    return {
+      issues,
+      statusClass,
+      statusText,
+      desc,
+      quoteRangeSummary,
+      debugSections,
+      shouldShowDebug: issues.length > 0,
+      triggerCountText: issues.length > 0 ? String(issues.length) : '0',
+      triggerSubText: issues.length > 0
+        ? `${summary.heldRows.length} 檔持倉，${quoteRangeSummary.summary}`
+        : '點開查看資料一致性與異常明細'
+    };
+  }
+
   function buildDataHealthReport(summary = calculatePortfolioSummary()){
+    const vm = buildDataHealthViewModel(summary);
     const lines = [];
     const nowText = new Date().toLocaleString('zh-TW', { hour12: false });
-    const statusText = summary.validation.isConsistent && !summary.hasSyncWarning && !dataHealthState.storageWriteError
-      ? '健康'
-      : (summary.validation.isConsistent ? '請注意' : '需處理');
     lines.push(`投資儀表板資料自檢報告`);
     lines.push(`產生時間：${nowText}`);
-    lines.push(`狀態：${statusText}`);
+    lines.push(`狀態：${vm.statusText}`);
     lines.push(`持倉檔數：${summary.heldRows.length}`);
     lines.push(`持倉市值：${fmtInt.format(Math.round(summary.holdingsMarketValue))}`);
     lines.push(`明細市值加總：${fmtInt.format(Math.round(summary.detailMarketValueSum))}`);
@@ -3096,94 +3375,61 @@ let allocationPlannerContext = null;
     }
   }
 
+  function renderDataHealthTrigger(summary = calculatePortfolioSummary()){
+    const trigger = $('#data-health-trigger');
+    if(!trigger) return;
+    const vm = buildDataHealthViewModel(summary);
+    const statusEl = $('#data-health-trigger-status');
+    const countEl = $('#data-health-trigger-count');
+    const subEl = $('#data-health-trigger-sub');
+    trigger.className = `data-health-trigger ${vm.statusClass}`;
+    trigger.setAttribute('aria-expanded', dataHealthState.popoverOpen ? 'true' : 'false');
+    if(statusEl) statusEl.textContent = vm.statusText;
+    if(countEl) countEl.textContent = vm.triggerCountText;
+    if(subEl) subEl.textContent = vm.triggerSubText;
+  }
+
+  function setDataHealthPopoverOpen(open){
+    const shouldOpen = !!open;
+    const popover = $('#data-health-popover');
+    const backdrop = $('#data-health-popover-backdrop');
+    const trigger = $('#data-health-trigger');
+    if(!popover || !backdrop || !trigger) return;
+    dataHealthState.popoverOpen = shouldOpen;
+    popover.hidden = !shouldOpen;
+    backdrop.hidden = !shouldOpen;
+    document.body.classList.toggle('data-health-modal-open', shouldOpen);
+    trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if(shouldOpen){
+      $('#data-health-popover-close')?.focus();
+    }else{
+      trigger.focus();
+    }
+  }
+  window.setDataHealthPopoverOpen = setDataHealthPopoverOpen;
+
   function renderDataHealth(summary = calculatePortfolioSummary()){
     const panel = $('#data-health-panel');
     if(!panel) return;
-
-    const issues = [];
-    if(!summary.validation.holdingsMatchesDetails){
-      issues.push({
-        type: 'error',
-        text: `持倉驗算不一致：差額 ${fmtInt.format(Math.round(summary.holdingsVsDetailsDiff))}`
-      });
-    }
-    if(!summary.validation.totalAssetsMatchesEquation){
-      issues.push({
-        type: 'error',
-        text: `總資產公式不一致：差額 ${fmtInt.format(Math.round(summary.totalAssetsDiff))}`
-      });
-    }
-    if(summary.missingPriceCount > 0){
-      issues.push({
-        type: 'warn',
-        text: `${summary.missingPriceCount} 檔持倉缺少價格，市值可能被低估`
-      });
-    }
-    if(summary.quoteMismatchCount > 0){
-      issues.push({
-        type: 'warn',
-        text: `${summary.quoteMismatchCount} 檔持倉的報價時間不同步`
-      });
-    }
-    if(summary.duplicateRecordCount > 0){
-      issues.push({
-        type: 'warn',
-        text: `${summary.duplicateRecordCount} 檔持倉由多筆資料合併`
-      });
-    }
-    if(dataHealthState.storageWriteError){
-      issues.push({
-        type: 'error',
-        text: dataHealthState.storageMessage || '資料儲存失敗，重新整理後可能回到舊資料'
-      });
-    }
-
-    const statusClass = issues.some(x => x.type === 'error') ? 'error' : (issues.length > 0 ? 'warn' : 'ok');
-    const statusText = issues.some(x => x.type === 'error') ? '需處理' : (issues.length > 0 ? '請注意' : '健康');
-    const desc = issues.length
-      ? '以下項目可能導致畫面數值暫時不一致，建議先確認後再判讀報表。'
-      : '目前未發現會直接導致資料錯誤或不一致的高風險訊號。';
-    const quoteRangeSummary = getQuoteTimeRangeSummary(summary.quoteTimes);
-    const shouldShowDebug = issues.length > 0;
-    const debugSections = [
-      {
-        type: 'error',
-        title: '缺少價格的持倉',
-        desc: '這些標的沒有可用市價，持倉市值會被壓成 0，總資產也會跟著偏低。',
-        rows: summary.missingPriceRows
-      },
-      {
-        type: 'warn',
-        title: '報價時間不同步的持倉',
-        desc: '同一批持倉使用了不同更新時間的價格，或尚未拿到更新時間，短時間內可能造成摘要與外部數據對不上。',
-        rows: summary.quoteMismatchRows
-      },
-      {
-        type: 'warn',
-        title: '由多筆來源合併的持倉',
-        desc: '同一商品分散在多筆 stock 記錄，系統已先合併再計算。若來源資料本身重複，這裡會最先看出來。',
-        rows: summary.duplicateRows
-      }
-    ].filter(section => section.rows.length > 0);
-
-    panel.className = `data-health-panel ${statusClass}`;
+    const vm = buildDataHealthViewModel(summary);
+    panel.className = `data-health-panel ${vm.statusClass}`;
     panel.innerHTML = `
       <div class="data-health-head">
         <div class="data-health-head-main">
           <div class="data-health-title">Data Health</div>
-          <div class="data-health-desc">${desc}</div>
+          <div class="data-health-desc">${vm.desc}</div>
         </div>
         <div class="data-health-head-side">
           <button type="button" class="data-health-action" onclick="copyDataHealthReport()">複製自檢報告</button>
-          <div class="data-health-status">${statusText}</div>
+          <div class="data-health-status">${vm.statusText}</div>
         </div>
       </div>
       <div class="data-health-list">
-        ${issues.length
-          ? issues.map(issue => `<span class="data-health-chip ${issue.type}">${issue.text}</span>`).join('')
+        ${vm.issues.length
+          ? vm.issues.map(issue => `<span class="data-health-chip ${issue.type}">${issue.text}</span>`).join('')
           : '<span class="data-health-chip ok">持倉、總資產與報價口徑目前一致</span>'}
       </div>
-      <div class="data-health-note">目前追蹤：${quoteRangeSummary.detail}；持倉 ${summary.heldRows.length} 檔；明細加總 ${fmtInt.format(Math.round(summary.detailMarketValueSum))}。</div>
+      <div class="data-health-note">目前追蹤：${vm.quoteRangeSummary.detail}；持倉 ${summary.heldRows.length} 檔；明細加總 ${fmtInt.format(Math.round(summary.detailMarketValueSum))}。</div>
       <div class="data-health-report">
         <div class="data-health-report-head">
           <div>
@@ -3193,11 +3439,11 @@ let allocationPlannerContext = null;
         </div>
         ${renderDataHealthReportTable(summary.anomalyRows)}
       </div>
-      ${shouldShowDebug ? `
+      ${vm.shouldShowDebug ? `
         <details class="data-health-debug">
           <summary>展開資料健康明細 debug</summary>
           <div class="data-health-debug-wrap">
-            ${debugSections.map(section => `
+            ${vm.debugSections.map(section => `
               <div class="data-health-debug-card ${section.type}">
                 <div class="data-health-debug-title">${section.title}（${section.rows.length}）</div>
                 <div class="data-health-debug-desc">${section.desc}</div>
@@ -5371,6 +5617,7 @@ let allocationPlannerContext = null;
     { date: '2026-04-02', holdings: 4119078, cash: -207040, total: 3912038, deltaAmt: -55724 },
     { date: '2026-04-07', holdings: 3951650, cash: 244940, total: 4196590, deltaAmt: 54552 },
     { date: '2026-04-08', holdings: 4083698, cash: 244940, total: 4328638, deltaAmt: 132048 },
+    { date: '2026-04-09', holdings: 4076822, cash: 244940, total: 4321762, deltaAmt: -6876 },
     { date: '2026-04-10', holdings: 3813526, cash: 550945, total: 4364471, deltaAmt: 42709 },
     { date: '2026-04-13', holdings: 3970524, cash: 377980, total: 4348504, deltaAmt: -15967 },
     { date: '2026-04-14', holdings: 4358338, cash: 52364, total: 4410702, deltaAmt: 62198 },
@@ -5383,7 +5630,7 @@ let allocationPlannerContext = null;
     if(!DB.meta || typeof DB.meta !== 'object') DB.meta = {};
     if(!DB.meta.seedFlags || typeof DB.meta.seedFlags !== 'object') DB.meta.seedFlags = {};
 
-    const seedKey = 'historicalSnapshots_202604_trading_days_v2';
+    const seedKey = 'historicalSnapshots_202604_trading_days_v3';
     if(DB.meta.seedFlags[seedKey]) return false;
 
     const importNote = '匯入：2026-04-01~2026-04-16 歷史快照（僅交易日）';
@@ -7300,6 +7547,7 @@ function updateAllocationPlannerSummary(){
   // ========= 互動：Tabs / 搜尋 =========
   $$('.tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
+      if(dataHealthState.popoverOpen) setDataHealthPopoverOpen(false);
       $$('.tab').forEach(t=>t.setAttribute('aria-selected','false'));
       tab.setAttribute('aria-selected','true');
       $$('.view').forEach(v=>v.classList.remove('active'));
@@ -7316,6 +7564,20 @@ function updateAllocationPlannerSummary(){
       if(tab.dataset.target==='#view-watchlist'){ renderWatchlist(); }
       if(tab.dataset.target==='#view-snapshots'){ renderOverview(); }
     })
+  });
+  $('#data-health-trigger')?.addEventListener('click', ()=>{
+    setDataHealthPopoverOpen(!dataHealthState.popoverOpen);
+  });
+  $('#data-health-popover-close')?.addEventListener('click', ()=>{
+    setDataHealthPopoverOpen(false);
+  });
+  $('#data-health-popover-backdrop')?.addEventListener('click', ()=>{
+    setDataHealthPopoverOpen(false);
+  });
+  window.addEventListener('keydown', (event)=>{
+    if(event.key === 'Escape' && dataHealthState.popoverOpen){
+      setDataHealthPopoverOpen(false);
+    }
   });
   $('#q').addEventListener('change', ()=> {
     renderHoldings();
@@ -8491,6 +8753,7 @@ function updateAllocationPlannerSummary(){
   // ========= 初次渲染 =========
   function fullRender(){
     const summary = calculatePortfolioSummary();
+    renderDataHealthTrigger(summary);
     renderDataHealth(summary);
     renderOverview(summary);
     updateSearchDropdown();
