@@ -3799,7 +3799,7 @@ let allocationPlannerContext = null;
   }
 
   function getTotalAssetOnDate(dateStr){
-    const sorted = [...(DB.snapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = getRenderableSnapshots();
     let best = null;
     for(const s of sorted){
       if(s.date <= dateStr) best = s;
@@ -3882,9 +3882,7 @@ let allocationPlannerContext = null;
 
   function buildReturnDailyChangeSeries(){
     const points = [];
-    const snapshots = [...(DB.snapshots || [])]
-      .filter(s => s && s.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const snapshots = getRenderableSnapshots();
 
     let prevTotal = null;
     for(const s of snapshots){
@@ -4043,9 +4041,7 @@ let allocationPlannerContext = null;
     })();
     const points = [];
     const seen = new Set();
-    const snapshots = [...(DB.snapshots || [])]
-      .filter(s => s && s.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const snapshots = getRenderableSnapshots();
     for(const s of snapshots){
       const ts = Date.parse(`${s.date}T12:00:00`);
       const val = parseN(s.total);
@@ -4297,9 +4293,7 @@ let allocationPlannerContext = null;
       const day = String(d.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     })();
-    const snapshotsAsc = [...(DB.snapshots || [])]
-      .filter(s => s && s.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const snapshotsAsc = getRenderableSnapshots();
     let dailyBase = null;
     let dailyBaseDate = '';
     if(snapshotsAsc.length > 0){
@@ -5238,7 +5232,7 @@ let allocationPlannerContext = null;
     const tbody = $('#tbl-snapshots tbody');
     if(!tbody) return;
     tbody.innerHTML = '';
-    const list = DB.snapshots.slice().sort((a,b)=> a.date<b.date?1:-1);
+    const list = getRenderableSnapshots().sort((a,b)=> a.date<b.date?1:-1);
     if(list.length===0){ 
       tbody.innerHTML = `<tr><td colspan="8" class="empty">尚無紀錄</td></tr>`; 
       const changeContainer = $('#change-chart-svg-container');
@@ -5311,11 +5305,49 @@ let allocationPlannerContext = null;
   let _autoSnapshotIntervalId = null;
   let _autoSnapshotDeadlineId = null;
 
-  function isAutoSnapshotDateAllowed(dateStr){
+  const TWSE_MARKET_HOLIDAYS_2026 = new Set([
+    '2026-01-01',
+    '2026-02-12',
+    '2026-02-13',
+    '2026-02-15',
+    '2026-02-16',
+    '2026-02-17',
+    '2026-02-18',
+    '2026-02-19',
+    '2026-02-20',
+    '2026-02-27',
+    '2026-04-03',
+    '2026-04-04',
+    '2026-04-05',
+    '2026-04-06',
+    '2026-05-01',
+    '2026-06-19',
+    '2026-09-25',
+    '2026-09-28',
+    '2026-10-09',
+    '2026-10-10',
+    '2026-10-25',
+    '2026-10-26',
+    '2026-12-25'
+  ]);
+
+  function isSnapshotDisplayDateAllowed(dateStr){
     const d = parseLocalDateOnly(dateStr);
     if(!d) return false;
     const day = d.getDay();
-    return day !== 0 && day !== 6;
+    if(day === 0 || day === 6) return false;
+    if(TWSE_MARKET_HOLIDAYS_2026.has(dateStr)) return false;
+    return true;
+  }
+
+  function getRenderableSnapshots(){
+    return [...(DB.snapshots || [])]
+      .filter(s => s && s.date && isSnapshotDisplayDateAllowed(s.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function isAutoSnapshotDateAllowed(dateStr){
+    return isSnapshotDisplayDateAllowed(dateStr);
   }
 
   function computeCurrentAssetSnapshotBase(dateStr){
@@ -5325,13 +5357,74 @@ let allocationPlannerContext = null;
     const total = Math.round(summary.totalAssets);
     const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(dateStr);
     const returnAmount = Math.round(total - investedCapitalToDate);
-    const prev = DB.snapshots
+    const prev = getRenderableSnapshots()
       .filter(s => s.date < dateStr)
       .sort((a, b) => a.date < b.date ? 1 : -1)[0];
     const prevTotal = prev ? parseN(prev.total) : 0;
     const deltaAmt = prev ? (total - prevTotal) : 0;
     const deltaPct = prev && prevTotal !== 0 ? (deltaAmt / prevTotal) : 0;
     return { date: dateStr, holdings, cash, total, returnAmount, deltaAmt, deltaPct };
+  }
+
+  const HISTORICAL_SNAPSHOT_IMPORT_202604_TRADING_DAYS = [
+    { date: '2026-04-01', holdings: 3949131, cash: 18631, total: 3967762, deltaAmt: null },
+    { date: '2026-04-02', holdings: 4119078, cash: -207040, total: 3912038, deltaAmt: -55724 },
+    { date: '2026-04-07', holdings: 3951650, cash: 244940, total: 4196590, deltaAmt: 54552 },
+    { date: '2026-04-08', holdings: 4083698, cash: 244940, total: 4328638, deltaAmt: 132048 },
+    { date: '2026-04-10', holdings: 3813526, cash: 550945, total: 4364471, deltaAmt: 42709 },
+    { date: '2026-04-13', holdings: 3970524, cash: 377980, total: 4348504, deltaAmt: -15967 },
+    { date: '2026-04-14', holdings: 4358338, cash: 52364, total: 4410702, deltaAmt: 62198 },
+    { date: '2026-04-15', holdings: 4094550, cash: 353568, total: 4448118, deltaAmt: 37416 },
+    { date: '2026-04-16', holdings: 4235839, cash: 252774, total: 4488613, deltaAmt: 40495 }
+  ];
+
+  async function importHistoricalSnapshots202604TradingDays(){
+    if(!DB || !Array.isArray(DB.snapshots)) return false;
+    if(!DB.meta || typeof DB.meta !== 'object') DB.meta = {};
+    if(!DB.meta.seedFlags || typeof DB.meta.seedFlags !== 'object') DB.meta.seedFlags = {};
+
+    const seedKey = 'historicalSnapshots_202604_trading_days_v2';
+    if(DB.meta.seedFlags[seedKey]) return false;
+
+    const importNote = '匯入：2026-04-01~2026-04-16 歷史快照（僅交易日）';
+
+    HISTORICAL_SNAPSHOT_IMPORT_202604_TRADING_DAYS.forEach((row, index) => {
+      const prevImported = index > 0 ? HISTORICAL_SNAPSHOT_IMPORT_202604_TRADING_DAYS[index - 1] : null;
+      const deltaAmt = row.deltaAmt == null ? 0 : Math.round(parseN(row.deltaAmt));
+      const deltaPct = prevImported && parseN(prevImported.total) !== 0
+        ? (deltaAmt / parseN(prevImported.total))
+        : 0;
+      const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(row.date);
+      const returnAmount = Math.round(parseN(row.total) - investedCapitalToDate);
+      const idx = DB.snapshots.findIndex(snapshot => snapshot.date === row.date);
+      const existing = idx >= 0 ? (DB.snapshots[idx] || {}) : {};
+      const note = existing.note
+        ? (existing.note.includes(importNote) ? existing.note : `${existing.note}｜${importNote}`)
+        : importNote;
+
+      const payload = {
+        ...existing,
+        date: row.date,
+        holdings: Math.round(parseN(row.holdings)),
+        cash: Math.round(parseN(row.cash)),
+        total: Math.round(parseN(row.total)),
+        returnAmount,
+        deltaAmt,
+        deltaPct,
+        note
+      };
+
+      if(idx >= 0) DB.snapshots[idx] = payload;
+      else DB.snapshots.push(payload);
+    });
+
+    DB.meta.seedFlags[seedKey] = {
+      importedAt: nowISO(),
+      count: HISTORICAL_SNAPSHOT_IMPORT_202604_TRADING_DAYS.length
+    };
+
+    await saveDB({backup:true});
+    return true;
   }
 
   function upsertAutoDailySnapshot(reason = 'auto', force = false){
@@ -7830,7 +7923,7 @@ function updateAllocationPlannerSummary(){
       const cash = Math.round(parseN($('#snapshot-cash').value));
       const total = holdings + cash;
       const note = $('#snapshot-note').value.trim();
-      const prev = DB.snapshots.filter(s=>s.date<date).sort((a,b)=> a.date<b.date?1:-1)[0];
+      const prev = getRenderableSnapshots().filter(s=>s.date<date).sort((a,b)=> a.date<b.date?1:-1)[0];
       const deltaAmt = prev? total - prev.total : 0;
       const deltaPct = prev? (deltaAmt / (prev.total||1)) : 0;
       const investedCapitalToDate = getInitialCapitalAmount() + sumCapitalAdjustments(date);
@@ -8626,7 +8719,8 @@ function updateAllocationPlannerSummary(){
   };
 
   // ── 等待 IndexedDB 就緒後才渲染（取代同步 fullRender）────
-  _dbReady.then(() => {
+  _dbReady.then(async () => {
+    await importHistoricalSnapshots202604TradingDays();
     updateTargetLabels(getAllocationTarget(), getRegionTarget());
     fullRender();
     startAutoDailySnapshotWatcher();
@@ -9264,9 +9358,10 @@ function updateAllocationPlannerSummary(){
   }
 
   function computeDrawdownSeries() {
-    if (!DB.snapshots || DB.snapshots.length < 2) return [];
+    const renderableSnapshots = getRenderableSnapshots();
+    if (renderableSnapshots.length < 2) return [];
 
-    const sorted = [...DB.snapshots].sort((a, b) => {
+    const sorted = [...renderableSnapshots].sort((a, b) => {
       const da = new Date(a.date || a.time).getTime();
       const db = new Date(b.date || b.time).getTime();
       return da - db;
