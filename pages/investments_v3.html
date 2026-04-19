@@ -277,8 +277,9 @@
     .overview-kpi-card .overview-kpi-val.pos{color:var(--green)}
     .overview-kpi-card .overview-kpi-val.neg{color:var(--red)}
     .overview-kpi-card .overview-kpi-val.blue{color:var(--blue)}
-    .overview-two-col{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px}
-    @media (max-width:900px){ .overview-two-col{ grid-template-columns:1fr; } }
+    .overview-two-col{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; margin-bottom:16px}
+    @media (max-width:1100px){ .overview-two-col{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    @media (max-width:720px){ .overview-two-col{ grid-template-columns:1fr; } }
     .overview-panel{
       background:var(--card);
       border:1px solid var(--border);
@@ -751,8 +752,7 @@
     }
     .tier-core{background:#f0fff4;color:#276749;border:1px solid #9ae6b4}
     .tier-satellite{background:#ebf8ff;color:#2b6cb0;border:1px solid #90cdf4}
-    .tier-bond{background:#fffaf0;color:#c05621;border:1px solid #fbd38d}
-    .tier-watch{background:#fff5f5;color:#c53030;border:1px solid #feb2b2}
+    .tier-flex{background:#fffaf0;color:#c05621;border:1px solid #fbd38d}
     .strategy-tag{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}
     .strategy-hold{background:#f0fff4;color:#276749}
     .strategy-trade{background:#ebf8ff;color:#2b6cb0}
@@ -1120,6 +1120,27 @@
     .market-link-footer .stack{gap:8px}
     .market-link-empty{color:#b45309;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
     .market-hub-note{font-size:12px;color:var(--sub);line-height:1.6;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:12px}
+    #dlg-stock-label{width:min(760px, calc(100% - 24px))}
+    #dlg-stock-label form{max-height:min(88vh, 920px);display:flex;flex-direction:column}
+    #dlg-stock-label .dlg-body{overflow:auto}
+    .label-dialog-stack{display:grid;gap:12px}
+    .label-dialog-readonly{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#f9fafb;font-weight:600}
+    .label-dialog-section{border:1px solid var(--line);border-radius:10px;padding:12px;margin:0}
+    .label-dialog-section legend{padding:0 6px;font-weight:600;color:var(--sub)}
+    .label-dialog-option{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;column-gap:10px;margin:6px 0;cursor:pointer;line-height:1.55}
+    .label-dialog-option input{margin:0;width:16px;height:16px;align-self:center}
+    .label-dialog-option-text{display:flex;align-items:center;min-height:20px}
+    .label-dialog-grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px}
+    .label-dialog-percent{display:flex;align-items:center;gap:8px}
+    .label-dialog-percent input{min-width:0;flex:1}
+    @media (max-width:720px){
+      #dlg-stock-label .dlg-head,
+      #dlg-stock-label .dlg-body,
+      #dlg-stock-label .footer{padding-left:14px;padding-right:14px}
+      #dlg-stock-label .footer{flex-wrap:wrap}
+      #dlg-stock-label .footer .btn{flex:1 1 140px}
+      .label-dialog-grid{grid-template-columns:1fr}
+    }
   </style>
 </head>
 <body>
@@ -1207,10 +1228,9 @@
           <div class="stack" style="gap:10px;align-items:center;flex-wrap:wrap">
             <div class="holdings-tier-filters" role="group" aria-label="分層篩選">
               <button type="button" class="tier-filter-btn active" data-tier="all">全部</button>
-              <button type="button" class="tier-filter-btn" data-tier="core">核心層</button>
-              <button type="button" class="tier-filter-btn" data-tier="satellite">衛星層</button>
-              <button type="button" class="tier-filter-btn" data-tier="bond">債券對沖</button>
-              <button type="button" class="tier-filter-btn" data-tier="watch">觀察中</button>
+              <button type="button" class="tier-filter-btn" data-tier="core">核心</button>
+              <button type="button" class="tier-filter-btn" data-tier="satellite">衛星</button>
+              <button type="button" class="tier-filter-btn" data-tier="flex">靈活</button>
             </div>
             <button class="btn danger" id="btn-refresh-all" data-action="refresh-all">即時更新全部</button>
             <button
@@ -1386,6 +1406,13 @@
               <div id="overview-donut" class="overview-donut" aria-hidden="true"></div>
             </div>
             <div id="overview-donut-legend" class="overview-donut-legend"></div>
+          </div>
+          <div class="overview-panel overview-donut-panel">
+            <div class="overview-panel-title">分層比例</div>
+            <div class="overview-donut-wrap">
+              <div id="overview-tier-donut" class="overview-donut" aria-hidden="true"></div>
+            </div>
+            <div id="overview-tier-donut-legend" class="overview-donut-legend"></div>
           </div>
         </div>
         <div id="overview-alert" class="overview-alert" role="button" tabindex="0" title="前往持有標的"></div>
@@ -1822,50 +1849,54 @@
     <form method="dialog">
       <div class="dlg-head"><div>標籤設定</div><button class="btn ghost" value="cancel">✕</button></div>
       <div class="dlg-body">
-        <div class="field col-12" style="margin-bottom:12px">
-          <label>標的</label>
-          <div id="label-stock-readonly" class="mini" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#f9fafb;font-weight:600"></div>
-        </div>
-        <fieldset class="field col-12" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px">
-          <legend class="mini" style="padding:0 6px;font-weight:600;color:var(--sub)">分層標籤</legend>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-tier" value="core" /> 核心層（長期持有，是組合骨幹）
-          </label>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-tier" value="satellite" /> 衛星層（戰術靈活進出）
-          </label>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-tier" value="bond" /> 債券對沖（與股票低相關，平衡風險）
-          </label>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-tier" value="watch" /> 觀察中（試水，尚未確定定位）
-          </label>
-        </fieldset>
-        <fieldset class="field col-12" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px">
-          <legend class="mini" style="padding:0 6px;font-weight:600;color:var(--sub)">策略</legend>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-strategy" value="hold-for-dividend" /> 領息不賣（不觸發停損，以收息為主要目的）
-          </label>
-          <label class="mini" style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;cursor:pointer">
-            <input type="radio" name="label-strategy" value="tradeable" /> 可進出（遵守停損停利規則）
-          </label>
-        </fieldset>
-        <div class="grid">
-          <div class="field col-6">
-            <label>停損觸發（跌幅達到時警示）</label>
-            <div class="stack" style="align-items:center">
-              <input id="label-stop-loss" type="number" step="0.1" placeholder="-8" style="flex:1" />
-              <span class="mini muted">%</span>
-            </div>
-            <div class="mini note" style="margin-top:6px">輸入負數，例如 -8 代表從持倉成本跌 8% 時觸發警示</div>
+        <div class="label-dialog-stack">
+          <div class="field">
+            <label>標的</label>
+            <div id="label-stock-readonly" class="mini label-dialog-readonly"></div>
           </div>
-          <div class="field col-6">
-            <label>停利觸發（漲幅達到時警示）</label>
-            <div class="stack" style="align-items:center">
-              <input id="label-stop-profit" type="number" step="0.1" placeholder="20" style="flex:1" />
-              <span class="mini muted">%</span>
+          <fieldset class="field mini label-dialog-section">
+            <legend>分層標籤</legend>
+            <label class="label-dialog-option">
+              <input type="radio" name="label-tier" value="core" />
+              <span class="label-dialog-option-text">核心，是長期持有、定期加碼、盡量不常換的主體部位。重點是穩定、代表性高、適合累積資產。</span>
+            </label>
+            <label class="label-dialog-option">
+              <input type="radio" name="label-tier" value="satellite" />
+              <span class="label-dialog-option-text">衛星，是用來加強某個主題或提高報酬彈性的部位，例如科技、半導體、主動成長。可以持有，但比重不宜太大。</span>
+            </label>
+            <label class="label-dialog-option">
+              <input type="radio" name="label-tier" value="flex" />
+              <span class="label-dialog-option-text">靈活，是戰術操作、觀察倉、短中期機會倉。這類部位可以進出、可以調整，不適合放太大，也不建議當主力。</span>
+            </label>
+          </fieldset>
+          <fieldset class="field mini label-dialog-section">
+            <legend>策略</legend>
+            <label class="label-dialog-option">
+              <input type="radio" name="label-strategy" value="hold-for-dividend" />
+              <span class="label-dialog-option-text">領息不賣（不觸發停損，以收息為主要目的）</span>
+            </label>
+            <label class="label-dialog-option">
+              <input type="radio" name="label-strategy" value="tradeable" />
+              <span class="label-dialog-option-text">可進出（遵守停損停利規則）</span>
+            </label>
+          </fieldset>
+          <div class="label-dialog-grid">
+            <div class="field">
+              <label>停損觸發（跌幅達到時警示）</label>
+              <div class="label-dialog-percent">
+                <input id="label-stop-loss" type="number" step="0.1" placeholder="-8" />
+                <span class="mini muted">%</span>
+              </div>
+              <div class="mini note" style="margin-top:6px">輸入負數，例如 -8 代表從持倉成本跌 8% 時觸發警示</div>
             </div>
-            <div class="mini note" style="margin-top:6px">輸入正數</div>
+            <div class="field">
+              <label>停利觸發（漲幅達到時警示）</label>
+              <div class="label-dialog-percent">
+                <input id="label-stop-profit" type="number" step="0.1" placeholder="20" />
+                <span class="mini muted">%</span>
+              </div>
+              <div class="mini note" style="margin-top:6px">輸入正數</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2970,14 +3001,20 @@ let allocationPlannerContext = null;
     '0050':   { tier: 'core',      strategy: 'hold-for-dividend' },
     '00878':  { tier: 'core',      strategy: 'hold-for-dividend' },
     '00646':  { tier: 'satellite', strategy: 'tradeable' },
-    '00662':  { tier: 'watch',     strategy: 'tradeable' },
-    '00687B': { tier: 'bond',      strategy: 'hold-for-dividend' },
-    '00772B': { tier: 'bond',      strategy: 'hold-for-dividend' },
+    '00662':  { tier: 'flex',      strategy: 'tradeable' },
+    '00687B': { tier: 'core',      strategy: 'hold-for-dividend' },
+    '00772B': { tier: 'core',      strategy: 'hold-for-dividend' },
   };
-  const holdingsTierOrder = { core: 1, satellite: 2, bond: 3, watch: 4 };
+  const holdingsTierOrder = { core: 1, satellite: 2, flex: 3 };
   const holdingsStrategyOrder = { 'hold-for-dividend': 1, tradeable: 2 };
   let activeTierFilter = 'all';
   let labelDialogStockId = null;
+
+  function normalizeTierValue(raw){
+    if(raw === 'bond') return 'core';
+    if(raw === 'watch') return 'flex';
+    return ['core', 'satellite', 'flex'].includes(raw) ? raw : 'flex';
+  }
 
   function ensureStockLabelsMeta(){
     if(!DB.meta) DB.meta = {};
@@ -2989,10 +3026,10 @@ let allocationPlannerContext = null;
     const symbol = stock?.symbol || '';
     const labelKey = getStockLabelKey(stockId);
     const saved = DB.meta?.stockLabels?.[labelKey] || DB.meta?.stockLabels?.[stockId];
-    const defaults = DEFAULT_TIERS[symbol] || { tier: 'watch', strategy: 'tradeable' };
+    const defaults = DEFAULT_TIERS[symbol] || { tier: 'flex', strategy: 'tradeable' };
     const merged = { ...defaults, ...(saved || {}) };
     return {
-      tier: merged.tier || 'watch',
+      tier: normalizeTierValue(merged.tier),
       strategy: merged.strategy || 'tradeable',
       stopLoss: merged.stopLoss != null && Number.isFinite(Number(merged.stopLoss)) ? Number(merged.stopLoss) : null,
       stopProfit: merged.stopProfit != null && Number.isFinite(Number(merged.stopProfit)) ? Number(merged.stopProfit) : null,
@@ -3003,7 +3040,7 @@ let allocationPlannerContext = null;
     ensureStockLabelsMeta();
     const labelKey = getStockLabelKey(stockId);
     DB.meta.stockLabels[labelKey] = {
-      tier: labelObj.tier,
+      tier: normalizeTierValue(labelObj.tier),
       strategy: labelObj.strategy,
       stopLoss: labelObj.stopLoss,
       stopProfit: labelObj.stopProfit,
@@ -3120,7 +3157,7 @@ let allocationPlannerContext = null;
     totalReturnPct: 'desc',
     strategy: 'asc'
   };
-  let holdingsSort = { key: 'marketValue', dir: 'desc' };
+  let holdingsSort = { key: 'tier', dir: 'asc' };
 
   function getHoldingsSortValue(row, key){
     const label = row._label || getStockLabel(row.stock.id);
@@ -3175,6 +3212,13 @@ let allocationPlannerContext = null;
       const safeB = Number.isFinite(bNum) ? bNum : (dir === 'asc' ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
       if(safeA !== safeB) return safeA > safeB ? dirFactor : -dirFactor;
     }
+
+    if(key === 'tier'){
+      const mvA = Number.isFinite(Number(a.marketValue)) ? Number(a.marketValue) : Number.NEGATIVE_INFINITY;
+      const mvB = Number.isFinite(Number(b.marketValue)) ? Number(b.marketValue) : Number.NEGATIVE_INFINITY;
+      if(mvA !== mvB) return mvB - mvA;
+    }
+
     return (a.stock.symbol || '').localeCompare(b.stock.symbol || '', 'zh-Hant', {numeric:true, sensitivity:'base'});
   }
 
@@ -3868,7 +3912,7 @@ let allocationPlannerContext = null;
     renderHoldingsValidationTrigger(summary);
     renderHoldingsValidation(summary);
 
-    const tierLabelText = { core: '核心', satellite: '衛星', bond: '債券', watch: '觀察' };
+    const tierLabelText = { core: '核心', satellite: '衛星', flex: '靈活' };
 
     let dataset = computeStockMetrics(summary)
       .filter(row => row.qty > 0)
@@ -3922,7 +3966,7 @@ let allocationPlannerContext = null;
       if(stopHit) tr.classList.add('row-stop-hit');
       else if(profitHit) tr.classList.add('row-profit-hit');
 
-      const tierKey = label.tier || 'watch';
+      const tierKey = normalizeTierValue(label.tier);
       const tierShort = tierLabelText[tierKey] || tierKey;
       const stratClass = label.strategy === 'hold-for-dividend' ? 'strategy-hold' : 'strategy-trade';
       const stratText = label.strategy === 'hold-for-dividend' ? '領息不賣' : '可進出';
@@ -5861,6 +5905,7 @@ let allocationPlannerContext = null;
     const barsEl = $('#overview-alloc-bars');
     const donutEl = $('#overview-donut');
     const donutLeg = $('#overview-donut-legend');
+    const tierBreakdownEl = $('#overview-tier-breakdown');
     const alertEl = $('#overview-alert');
     if(!kpiRow || !barsEl || !donutEl || !donutLeg || !alertEl) return;
 
@@ -5986,6 +6031,32 @@ let allocationPlannerContext = null;
     donutLeg.innerHTML = `
       <div>股票 <strong>${stockPctActual.toFixed(2)}%</strong>／債券 <strong>${bondPctActual.toFixed(2)}%</strong>（實際）</div>
       <div>目標　股票 <strong>${Number(tgt.equity).toFixed(2)}%</strong>／債券 <strong>${Number(tgt.bond).toFixed(2)}%</strong></div>`;
+
+    const tierLabelText = { core: '核心', satellite: '衛星', flex: '靈活' };
+    const tierBuckets = { core: 0, satellite: 0, flex: 0 };
+    for(const row of summary.heldRows){
+      const mv = parseN(row.marketValue);
+      if(mv <= 0) continue;
+      const tier = normalizeTierValue(getStockLabel(row.stock.id)?.tier);
+      tierBuckets[tier] = (tierBuckets[tier] || 0) + mv;
+    }
+    const tierTotal = tierBuckets.core + tierBuckets.satellite + tierBuckets.flex;
+    if(tierBreakdownEl){
+      const renderTierRow = (tierKey) => {
+        const value = tierBuckets[tierKey] || 0;
+        const pct = tierTotal > 0 ? ((value / tierTotal) * 100).toFixed(2) : '—';
+        return `<div class="overview-tier-row">
+          <span class="overview-tier-dot ${tierKey}" aria-hidden="true"></span>
+          <span class="overview-tier-name">${tierLabelText[tierKey]}</span>
+          <span class="overview-tier-pct">${pct === '—' ? pct : `${pct}%`}</span>
+        </div>`;
+      };
+      tierBreakdownEl.innerHTML = `
+        <div class="overview-tier-title">分層比例</div>
+        ${renderTierRow('core')}
+        ${renderTierRow('satellite')}
+        ${renderTierRow('flex')}`;
+    }
 
     let redMsg = null;
     let orangeMsg = null;
@@ -8451,7 +8522,7 @@ function updateAllocationPlannerSummary(){
     const label = getStockLabel(stockId);
     const dlg = $('#dlg-stock-label');
     $('#label-stock-readonly').textContent = `${stock.symbol} ${stock.name || ''}`.trim();
-    const tierVal = ['core','satellite','bond','watch'].includes(label.tier) ? label.tier : 'watch';
+    const tierVal = normalizeTierValue(label.tier);
     const stratVal = ['hold-for-dividend','tradeable'].includes(label.strategy) ? label.strategy : 'tradeable';
     dlg.querySelectorAll('input[name="label-tier"]').forEach(r => { r.checked = r.value === tierVal; });
     dlg.querySelectorAll('input[name="label-strategy"]').forEach(r => { r.checked = r.value === stratVal; });
@@ -8467,7 +8538,7 @@ function updateAllocationPlannerSummary(){
       const sid = labelDialogStockId;
       labelDialogStockId = null;
       if(!sid) return;
-      const tier = dlg.querySelector('input[name="label-tier"]:checked')?.value || 'watch';
+      const tier = normalizeTierValue(dlg.querySelector('input[name="label-tier"]:checked')?.value || 'flex');
       const strategy = dlg.querySelector('input[name="label-strategy"]:checked')?.value || 'tradeable';
       const sl = parseStopLossPercentInput($('#label-stop-loss').value);
       const tp = parseStopProfitPercentInput($('#label-stop-profit').value);
