@@ -1097,6 +1097,29 @@
     .wl-empty{text-align:center;padding:48px 20px;color:var(--sub)}
     .wl-live-tag{font-size:9px;background:#ebf8ff;color:#2b6cb0;border:1px solid #90cdf4;border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:middle}
     .wl-quote-hint{font-size:10px;color:var(--sub);margin-top:4px;text-align:right}
+    .market-hub-stack{display:grid;gap:14px}
+    .market-hub-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .market-hub-header-main{min-width:0}
+    .market-hub-kicker{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--sub);margin-bottom:4px}
+    .market-hub-desc{font-size:12px;color:var(--sub);line-height:1.55;margin-top:4px}
+    .market-hub-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .market-hub-grid{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:14px}
+    @media (max-width:900px){ .market-hub-grid{grid-template-columns:1fr} }
+    .market-link-card{display:grid;gap:12px;min-height:220px;padding:18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.95));box-shadow:var(--shadow)}
+    .market-link-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .market-link-badge{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid var(--line);background:#f8fafc;color:var(--text);white-space:nowrap}
+    .market-link-badge.local{background:#ecfeff;border-color:#a5f3fc;color:#155e75}
+    .market-link-badge.cloud{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+    .market-link-index{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:var(--sub)}
+    .market-link-title{font-size:18px;font-weight:700;color:var(--text);line-height:1.3}
+    .market-link-note{font-size:13px;color:var(--sub);line-height:1.6}
+    .market-link-url{font-size:12px;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px 12px;word-break:break-all}
+    .market-link-meta{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .market-link-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--line);flex:0 0 auto}
+    .market-link-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:auto}
+    .market-link-footer .stack{gap:8px}
+    .market-link-empty{color:#b45309;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
+    .market-hub-note{font-size:12px;color:var(--sub);line-height:1.6;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:12px}
   </style>
 </head>
 <body>
@@ -1167,6 +1190,7 @@
       <button class="tab" role="tab" aria-selected="false" data-target="#view-dividend">股息規劃</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-return">報酬檢視</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-watchlist">投資筆記</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-market-hub">看盤中心</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-settings">設定</button>
   </div>
 
@@ -1524,6 +1548,26 @@
           </div>
         </div>
         <div id="watchlist-body"></div>
+      </div>
+    </section>
+
+    <section id="view-market-hub" class="view" role="tabpanel">
+      <div class="card market-hub-stack">
+        <div class="market-hub-header">
+          <div class="market-hub-header-main">
+            <div class="market-hub-kicker">Market Hub</div>
+            <h3 style="margin:0;font-size:18px;font-weight:600">看盤中心</h3>
+            <div class="market-hub-desc">把每日常用的評分模型、五檔追蹤、投資心法與 AI 對話入口集中在同一頁，減少切換成本。</div>
+          </div>
+          <div class="market-hub-actions">
+            <button class="btn" id="btn-market-copy-all" type="button">複製全部連結</button>
+            <button class="btn primary" id="btn-market-open-all" type="button">全部開啟</button>
+          </div>
+        </div>
+        <div id="market-hub-body" class="market-hub-grid"></div>
+        <div class="market-hub-note">
+          本頁預設接到本機工具與雲端入口。若 `localhost` 類連結打不開，代表對應服務尚未啟動；目前五檔追蹤預設使用 `5002`，需要先啟動 `stock-tracker` 後端。
+        </div>
       </div>
     </section>
     
@@ -5434,6 +5478,10 @@ let allocationPlannerContext = null;
     return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   }
 
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function renderTxnDecisionScoreCell(t){
     if(t.type !== 'buy' && t.type !== 'sell'){
       return `<td class="num col-txn-score muted">—</td>`;
@@ -8128,6 +8176,7 @@ function updateAllocationPlannerSummary(){
       // 切到報酬檢視時，確保重算
       if(tab.dataset.target==='#view-return'){ renderReturnOverview(); }
       if(tab.dataset.target==='#view-watchlist'){ renderWatchlist(); }
+      if(tab.dataset.target==='#view-market-hub'){ renderMarketHub(); }
       if(tab.dataset.target==='#view-snapshots'){ renderOverview(); }
     })
   });
@@ -8955,6 +9004,158 @@ function updateAllocationPlannerSummary(){
   // ║  投資筆記模組                                              ║
   // ╚══════════════════════════════════════════════════════════╝
 
+  const DEFAULT_MARKET_LINKS = Object.freeze([
+    {
+      key: 'score-swing',
+      title: '評分模型 Swing 版',
+      url: 'http://localhost:5052/',
+      note: '查看波段評分、交易摘要與當前決策訊號。',
+      type: 'local'
+    },
+    {
+      key: 'tw-five-level',
+      title: '台股五檔追蹤',
+      url: 'http://localhost:5002/',
+      note: '追蹤即時價格與買賣五檔深度，盤中觀察主力掛單節奏。',
+      type: 'local'
+    },
+    {
+      key: 'playbook-watchlist',
+      title: '投資心法及觀察名單',
+      url: 'http://localhost:5050/memo',
+      note: '快速回看交易日誌、投資心法、觀察名單與盤前 SOP。',
+      type: 'local'
+    },
+    {
+      key: 'claude-ai',
+      title: 'Claude AI',
+      url: 'https://claude.ai/',
+      note: '開啟 Claude 做盤前整理、盤後復盤與臨場判斷討論。',
+      type: 'cloud'
+    }
+  ]);
+
+  function ensureMarketLinks(){
+    if(!DB.meta || typeof DB.meta !== 'object') DB.meta = {};
+    const existing = Array.isArray(DB.meta.marketLinks) ? DB.meta.marketLinks : [];
+    const existingMap = new Map();
+    existing.forEach(item => {
+      if(item && typeof item === 'object' && item.key){
+        existingMap.set(item.key, item);
+      }
+    });
+    DB.meta.marketLinks = DEFAULT_MARKET_LINKS.map(item => {
+      const saved = existingMap.get(item.key) || {};
+      const title = typeof saved.title === 'string' && saved.title.trim() ? saved.title.trim() : item.title;
+      const url = typeof saved.url === 'string' && saved.url.trim() ? saved.url.trim() : item.url;
+      const note = typeof saved.note === 'string' && saved.note.trim() ? saved.note.trim() : item.note;
+      return {
+        ...item,
+        ...saved,
+        title,
+        url,
+        note,
+        type: saved.type === 'cloud' ? 'cloud' : item.type
+      };
+    });
+    return DB.meta.marketLinks;
+  }
+
+  function isLocalMarketLink(url){
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(String(url || '').trim());
+  }
+
+  function buildMarketLinkCard(item, index){
+    const url = String(item.url || '').trim();
+    const hasUrl = Boolean(url);
+    const type = item.type === 'cloud' ? 'cloud' : (isLocalMarketLink(url) ? 'local' : 'cloud');
+    const badgeText = type === 'local' ? '本機服務' : '雲端服務';
+    const safeUrl = hasUrl ? escapeHtml(url) : '尚未設定';
+    const safeTitle = escapeHtml(item.title || '未命名入口');
+    const safeNote = escapeHtml(item.note || '尚無說明');
+    const openDisabled = hasUrl ? '' : 'disabled';
+    const copyDisabled = hasUrl ? '' : 'disabled';
+
+    const div = document.createElement('article');
+    div.className = 'market-link-card';
+    div.innerHTML = `
+      <div class="market-link-top">
+        <div>
+          <div class="market-link-index">0${index + 1}</div>
+          <div class="market-link-title">${safeTitle}</div>
+        </div>
+        <span class="market-link-badge ${type}">${badgeText}</span>
+      </div>
+      <div class="market-link-note">${safeNote}</div>
+      ${hasUrl
+        ? `<div class="market-link-url">${safeUrl}</div>`
+        : `<div class="market-link-empty">此入口尚未設定網址，之後可在設定頁補上。</div>`
+      }
+      <div class="market-link-meta">
+        <span>${type === 'local' ? '適合固定工作流' : '跨裝置可用'}</span>
+        <span class="dot" aria-hidden="true"></span>
+        <span>${hasUrl ? '已配置入口' : '待補連結'}</span>
+      </div>
+      <div class="market-link-footer">
+        <div class="stack">
+          <button type="button" class="btn primary" data-action="market-open" data-url="${escapeAttr(url)}" ${openDisabled}>開啟</button>
+          <button type="button" class="btn" data-action="market-copy" data-url="${escapeAttr(url)}" ${copyDisabled}>複製連結</button>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+
+  function renderMarketHub(){
+    const container = document.getElementById('market-hub-body');
+    if(!container) return;
+    const links = ensureMarketLinks();
+    container.innerHTML = '';
+    links.forEach((item, index) => {
+      container.appendChild(buildMarketLinkCard(item, index));
+    });
+  }
+
+  function openMarketLink(url){
+    const targetUrl = String(url || '').trim();
+    if(!targetUrl){
+      showBackupStatus('此入口尚未設定網址', true);
+      return false;
+    }
+    const opened = window.open(targetUrl, '_blank', 'noopener');
+    if(!opened){
+      showBackupStatus('瀏覽器封鎖了新分頁，請允許彈出視窗', true);
+      return false;
+    }
+    return true;
+  }
+
+  async function copyAllMarketLinks(){
+    const links = ensureMarketLinks().filter(item => item.url);
+    if(!links.length){
+      showBackupStatus('目前沒有可複製的連結', true);
+      return;
+    }
+    const text = links.map((item, index) => `${index + 1}. ${item.title}\n${item.url}`).join('\n\n');
+    const copied = await copyTextToClipboard(text);
+    showBackupStatus(copied ? '已複製全部連結' : '複製全部連結失敗', !copied);
+  }
+
+  function openAllMarketLinks(){
+    const links = ensureMarketLinks().filter(item => item.url);
+    if(!links.length){
+      showBackupStatus('目前沒有可開啟的連結', true);
+      return;
+    }
+    let openedCount = 0;
+    links.forEach(item => {
+      if(openMarketLink(item.url)) openedCount += 1;
+    });
+    if(openedCount){
+      showBackupStatus(`已嘗試開啟 ${openedCount} 個入口`);
+    }
+  }
+
   // 確保 DB.watchlist 存在
   function normalizeWatchSide(side) {
     return side === 'sell' ? 'sell' : 'buy';
@@ -9328,6 +9529,25 @@ function updateAllocationPlannerSummary(){
   document.getElementById('watchlist-filter')?.addEventListener('change', () => {
     renderWatchlist();
   });
+  document.getElementById('btn-market-copy-all')?.addEventListener('click', () => {
+    copyAllMarketLinks();
+  });
+  document.getElementById('btn-market-open-all')?.addEventListener('click', () => {
+    openAllMarketLinks();
+  });
+  document.getElementById('view-market-hub')?.addEventListener('click', async (event) => {
+    const btn = event.target.closest('button[data-action^="market-"]');
+    if(!btn) return;
+    const url = btn.dataset.url || '';
+    if(btn.dataset.action === 'market-open'){
+      openMarketLink(url);
+      return;
+    }
+    if(btn.dataset.action === 'market-copy'){
+      const copied = await copyTextToClipboard(url);
+      showBackupStatus(copied ? '已複製連結' : '複製連結失敗', !copied);
+    }
+  });
 
   // Dialog 欄位即時計算
   document.getElementById('wl-side')?.addEventListener('change', updateWatchDialogLabels);
@@ -9355,6 +9575,7 @@ function updateAllocationPlannerSummary(){
     renderReturnOverview(summary);
     checkProxyStatus(); // 檢查代理伺服器狀態
     renderWatchlist();
+    renderMarketHub();
   }
   
   function ensureDividendMonthOptions(){
