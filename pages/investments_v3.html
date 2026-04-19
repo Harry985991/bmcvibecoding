@@ -950,19 +950,20 @@
     #tbl-holdings thead th{padding:6px 6px;font-size:11px;line-height:1.1;white-space:nowrap}
     #tbl-holdings tbody td{padding:4px 8px;vertical-align:middle}
     #tbl-holdings .cell-stack{gap:1px;line-height:1.15}
-    #tbl-holdings th:nth-child(1),#tbl-holdings td:nth-child(1){width:64px}
-    #tbl-holdings th:nth-child(2),#tbl-holdings td:nth-child(2){width:180px}
-    #tbl-holdings th:nth-child(3),#tbl-holdings td:nth-child(3){width:100px}
-    #tbl-holdings th:nth-child(4),#tbl-holdings td:nth-child(4){width:92px}
-    #tbl-holdings th:nth-child(5),#tbl-holdings td:nth-child(5){width:104px}
-    #tbl-holdings th:nth-child(6),#tbl-holdings td:nth-child(6){width:112px}
-    #tbl-holdings th:nth-child(7),#tbl-holdings td:nth-child(7){width:88px}
-    #tbl-holdings th:nth-child(8),#tbl-holdings td:nth-child(8){width:112px}
-    #tbl-holdings th:nth-child(9),#tbl-holdings td:nth-child(9){width:88px}
-    #tbl-holdings th:nth-child(10),#tbl-holdings td:nth-child(10){width:78px}
-    #tbl-holdings th:nth-child(11),#tbl-holdings td:nth-child(11){width:82px}
-    #tbl-holdings th:nth-child(12),#tbl-holdings td:nth-child(12){width:104px}
-    #tbl-holdings th:nth-child(13),#tbl-holdings td:nth-child(13){width:92px}
+    #tbl-holdings th:nth-child(1),#tbl-holdings td:nth-child(1){width:58px}
+    #tbl-holdings th:nth-child(2),#tbl-holdings td:nth-child(2){width:168px}
+    #tbl-holdings th:nth-child(3),#tbl-holdings td:nth-child(3){width:96px}
+    #tbl-holdings th:nth-child(4),#tbl-holdings td:nth-child(4){width:84px}
+    #tbl-holdings th:nth-child(5),#tbl-holdings td:nth-child(5){width:96px}
+    #tbl-holdings th:nth-child(6),#tbl-holdings td:nth-child(6){width:100px}
+    #tbl-holdings th:nth-child(7),#tbl-holdings td:nth-child(7){width:76px}
+    #tbl-holdings th:nth-child(8),#tbl-holdings td:nth-child(8){width:100px}
+    #tbl-holdings th:nth-child(9),#tbl-holdings td:nth-child(9){width:116px}
+    #tbl-holdings th:nth-child(10),#tbl-holdings td:nth-child(10){width:74px}
+    #tbl-holdings th:nth-child(11),#tbl-holdings td:nth-child(11){width:68px}
+    #tbl-holdings th:nth-child(12),#tbl-holdings td:nth-child(12){width:72px}
+    #tbl-holdings th:nth-child(13),#tbl-holdings td:nth-child(13){width:90px}
+    #tbl-holdings th:nth-child(14),#tbl-holdings td:nth-child(14){width:82px}
     #tbl-holdings .holding-symbol-main{display:flex;align-items:baseline;gap:6px;min-width:0;overflow:hidden}
     #tbl-holdings .holding-symbol-main .sym{flex:0 0 auto}
     #tbl-holdings .holding-symbol-main .mini{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
@@ -1272,6 +1273,7 @@
                 <th class="num sortable" data-sort="unrealized">持有損益 / %</th>
                 <th class="num sortable" data-sort="dividends">實領股息</th>
                 <th class="num sortable" data-sort="totalPnl">含息損益 / %</th>
+                <th class="num sortable" data-sort="cycleMonthlyReturnPct" title="以本輪持倉起點換算的月化與週化報酬率。本輪起點為最近一次庫存歸零後重新建倉的第一筆買進。">持有效率</th>
                 <th class="sortable" data-sort="strategy">策略</th>
                 <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
                 <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
@@ -2614,6 +2616,90 @@ let allocationPlannerContext = null;
     };
   }
 
+  function getCurrentHoldingCycleTxns(txns){
+    const sorted = txns.slice().sort((a,b)=>new Date(a.time)-new Date(b.time));
+    const EPS = 1e-8;
+    let qty = 0;
+    let avgCost = 0;
+    let costBasis = 0;
+    let cycleStartIndex = -1;
+
+    for(let i = 0; i < sorted.length; i += 1){
+      const txn = sorted[i];
+      if(txn.type === 'buy'){
+        if(qty <= EPS){
+          cycleStartIndex = i;
+        }
+        const buyQty = parseN(txn.qty);
+        const amount = parseN(txn.price) * buyQty;
+        costBasis += amount;
+        qty += buyQty;
+        avgCost = qty > EPS ? costBasis / qty : 0;
+      }else if(txn.type === 'sell'){
+        const sellQty = parseN(txn.qty);
+        costBasis -= avgCost * sellQty;
+        qty -= sellQty;
+        if(qty <= EPS){
+          qty = 0;
+          avgCost = 0;
+          costBasis = 0;
+          cycleStartIndex = -1;
+        }else{
+          avgCost = costBasis / qty;
+        }
+      }else if(txn.type === 'fee'){
+        if(cycleStartIndex >= 0){
+          costBasis += parseN(txn.amount);
+          avgCost = qty > EPS ? costBasis / qty : 0;
+        }
+      }
+    }
+
+    return cycleStartIndex >= 0 ? sorted.slice(cycleStartIndex) : [];
+  }
+
+  function computeHoldingCycleMetrics(row, asOf = new Date()){
+    const cycleTxns = getCurrentHoldingCycleTxns(row.txns || []);
+    if(!cycleTxns.length){
+      return {
+        startTime: '',
+        holdingDays: null,
+        totalReturnPct: null,
+        monthlyReturnPct: null,
+        weeklyReturnPct: null,
+        isShortSample: false
+      };
+    }
+
+    const startTime = cycleTxns.find(txn => txn.type === 'buy')?.time || cycleTxns[0]?.time || '';
+    const startMs = startTime ? new Date(startTime).getTime() : NaN;
+    const asOfMs = asOf instanceof Date ? asOf.getTime() : new Date(asOf).getTime();
+    const holdingDays = Number.isFinite(startMs) && Number.isFinite(asOfMs)
+      ? Math.max(1, Math.ceil((asOfMs - startMs) / 86400000))
+      : null;
+    const cyclePosition = buildMergedPosition(cycleTxns);
+    const currentMarketValue = parseN(row.marketValue);
+    const sellFee = estimateFee(currentMarketValue);
+    const totalPnlWithFees = currentMarketValue - cyclePosition.costBasis - sellFee + cyclePosition.dividends;
+    const totalReturnPct = cyclePosition.costBasis > 0 ? (totalPnlWithFees / cyclePosition.costBasis * 100) : null;
+
+    const normalizePeriodPct = (periodDays) => {
+      if(!Number.isFinite(totalReturnPct) || !Number.isFinite(holdingDays) || holdingDays <= 0) return null;
+      const base = 1 + (totalReturnPct / 100);
+      if(base <= 0) return null;
+      return (Math.pow(base, periodDays / holdingDays) - 1) * 100;
+    };
+
+    return {
+      startTime,
+      holdingDays,
+      totalReturnPct,
+      monthlyReturnPct: normalizePeriodPct(30.44),
+      weeklyReturnPct: normalizePeriodPct(7),
+      isShortSample: Number.isFinite(holdingDays) && holdingDays < 14
+    };
+  }
+
   function buildHoldingSourceStates(stocks, txns){
     const txnsByStockId = new Map();
     for(const txn of txns){
@@ -2706,6 +2792,10 @@ let allocationPlannerContext = null;
       const costBasisWithBuyFee = mergedPosition.costBasis + buyFee;
       const stockReturnPct = costBasisWithBuyFee > 0 ? (stockPnlWithFees / costBasisWithBuyFee * 100) : 0;
       const totalReturnPct = costBasisWithBuyFee > 0 ? (totalPnlWithFees / costBasisWithBuyFee * 100) : 0;
+      const cycleMetrics = computeHoldingCycleMetrics({
+        txns: group.txns.slice(),
+        marketValue
+      });
       const quoteTime = quoteTimes
         .slice()
         .sort((a, b) => getQuoteTimeValue(b) - getQuoteTimeValue(a))[0] || (displayStock.lastPriceAt || '');
@@ -2755,7 +2845,13 @@ let allocationPlannerContext = null;
         stockPnlWithFees,
         stockReturnPct,
         totalPnlWithFees,
-        totalReturnPct
+        totalReturnPct,
+        cycleStartTime: cycleMetrics.startTime,
+        cycleHoldingDays: cycleMetrics.holdingDays,
+        cycleTotalReturnPct: cycleMetrics.totalReturnPct,
+        cycleMonthlyReturnPct: cycleMetrics.monthlyReturnPct,
+        cycleWeeklyReturnPct: cycleMetrics.weeklyReturnPct,
+        cycleShortSample: cycleMetrics.isShortSample
       };
     }).sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0));
   }
@@ -3154,6 +3250,7 @@ let allocationPlannerContext = null;
     unrealizedPct: 'desc',
     dividends: 'desc',
     totalPnl: 'desc',
+    cycleMonthlyReturnPct: 'desc',
     totalReturnPct: 'desc',
     strategy: 'asc'
   };
@@ -3188,6 +3285,7 @@ let allocationPlannerContext = null;
       case 'unrealizedPct': return Number.isFinite(unrealPct) ? unrealPct : Number.NEGATIVE_INFINITY;
       case 'dividends': return row.dividends;
       case 'totalPnl': return Number.isFinite(totPnl) ? totPnl : Number.NEGATIVE_INFINITY;
+      case 'cycleMonthlyReturnPct': return Number.isFinite(row.cycleMonthlyReturnPct) ? row.cycleMonthlyReturnPct : Number.NEGATIVE_INFINITY;
       case 'totalReturnPct': return Number.isFinite(totPct) ? totPct : Number.NEGATIVE_INFINITY;
       case 'strategy': return holdingsStrategyOrder[label.strategy] || 99;
       default: return 0;
@@ -3254,6 +3352,12 @@ let allocationPlannerContext = null;
       stockReturnPct: row.stockReturnPct,
       totalPnlWithFees: row.totalPnlWithFees,
       totalReturnPct: row.totalReturnPct,
+      cycleStartTime: row.cycleStartTime,
+      cycleHoldingDays: row.cycleHoldingDays,
+      cycleTotalReturnPct: row.cycleTotalReturnPct,
+      cycleMonthlyReturnPct: row.cycleMonthlyReturnPct,
+      cycleWeeklyReturnPct: row.cycleWeeklyReturnPct,
+      cycleShortSample: row.cycleShortSample,
       dividends: row.dividends,
       avgCost: row.avgCost,
       qty: row.qty,
@@ -3975,6 +4079,19 @@ let allocationPlannerContext = null;
       const avgCostDisplay = avgCost ? fmt2.format(avgCost) : '—';
       const mvDisplay = Number.isFinite(row.marketValue) ? fmtInt.format(Math.round(row.marketValue)) : '—';
       const divDisplay = row.dividends > 0 ? fmtInt.format(Math.round(row.dividends)) : '—';
+      const cycleMonthly = row.cycleMonthlyReturnPct;
+      const cycleWeekly = row.cycleWeeklyReturnPct;
+      const cycleHoldingDays = row.cycleHoldingDays;
+      const cycleRateColor = Number.isFinite(cycleMonthly)
+        ? (cycleMonthly < 0 ? '#dc2626' : cycleMonthly > 0 ? '#059669' : 'inherit')
+        : 'inherit';
+      const cycleMonthlyDisplay = Number.isFinite(cycleMonthly)
+        ? `${cycleMonthly >= 0 ? '+' : ''}${fmt2.format(cycleMonthly)}%`
+        : '—';
+      const cycleWeeklyDisplay = Number.isFinite(cycleWeekly)
+        ? `${cycleWeekly >= 0 ? '+' : ''}${fmt2.format(cycleWeekly)}%`
+        : '—';
+      const cycleDaysDisplay = Number.isFinite(cycleHoldingDays) ? `${fmtInt.format(cycleHoldingDays)}天` : '—';
       const flags = [];
       if(row.hasDuplicateRecords) flags.push('<span class="holdings-flag warn">合併重複</span>');
       if(row.missingPrice) flags.push('<span class="holdings-flag error">缺價格</span>');
@@ -3997,6 +4114,12 @@ let allocationPlannerContext = null;
           <div class="cell-stack" style="align-items:flex-end">
             <span title="含息損益">${formatPnlInt(totPnl)}</span>
             <span class="mini" style="color:${totPct != null ? (totPct < 0 ? '#dc2626' : totPct > 0 ? '#059669' : 'inherit') : 'inherit'}">${totPct != null ? (totPct >= 0 ? '+' : '') + fmt2.format(totPct) + '%' : '—'}</span>
+          </div>
+        </td>
+        <td class="num">
+          <div class="cell-stack" style="align-items:flex-end">
+            <span style="color:${cycleRateColor}" title="本輪持倉月化報酬率">月化 ${cycleMonthlyDisplay}</span>
+            <span class="mini" style="color:${cycleRateColor}" title="本輪持倉週化報酬率與持有天數">週化 ${cycleWeeklyDisplay} · ${cycleDaysDisplay}${row.cycleShortSample ? ' · 樣本短' : ''}</span>
           </div>
         </td>
         <td><span class="strategy-tag ${stratClass}">${stratText}</span></td>
@@ -4029,8 +4152,8 @@ let allocationPlannerContext = null;
         if (!pctCell) {
           pctCell = document.createElement('td');
           pctCell.className = 'num wk1-pct52w';
-          // Insert after strategy column (base row index 8)
-          const refCell = tr.children[8];
+          // Insert after strategy column
+          const refCell = tr.children[9];
           if (refCell && refCell.nextSibling) {
             tr.insertBefore(pctCell, refCell.nextSibling);
           } else {
@@ -5905,9 +6028,10 @@ let allocationPlannerContext = null;
     const barsEl = $('#overview-alloc-bars');
     const donutEl = $('#overview-donut');
     const donutLeg = $('#overview-donut-legend');
-    const tierBreakdownEl = $('#overview-tier-breakdown');
+    const tierDonutEl = $('#overview-tier-donut');
+    const tierDonutLeg = $('#overview-tier-donut-legend');
     const alertEl = $('#overview-alert');
-    if(!kpiRow || !barsEl || !donutEl || !donutLeg || !alertEl) return;
+    if(!kpiRow || !barsEl || !donutEl || !donutLeg || !tierDonutEl || !tierDonutLeg || !alertEl) return;
 
     const holdingsMv = summary.holdingsMarketValue;
     const cashAvail = summary.cashAvailable;
@@ -6032,6 +6156,9 @@ let allocationPlannerContext = null;
       <div>股票 <strong>${stockPctActual.toFixed(2)}%</strong>／債券 <strong>${bondPctActual.toFixed(2)}%</strong>（實際）</div>
       <div>目標　股票 <strong>${Number(tgt.equity).toFixed(2)}%</strong>／債券 <strong>${Number(tgt.bond).toFixed(2)}%</strong></div>`;
 
+    const COL_CORE = '#0F766E';
+    const COL_SATELLITE = '#2563EB';
+    const COL_FLEX = '#D97706';
     const tierLabelText = { core: '核心', satellite: '衛星', flex: '靈活' };
     const tierBuckets = { core: 0, satellite: 0, flex: 0 };
     for(const row of summary.heldRows){
@@ -6041,22 +6168,28 @@ let allocationPlannerContext = null;
       tierBuckets[tier] = (tierBuckets[tier] || 0) + mv;
     }
     const tierTotal = tierBuckets.core + tierBuckets.satellite + tierBuckets.flex;
-    if(tierBreakdownEl){
-      const renderTierRow = (tierKey) => {
-        const value = tierBuckets[tierKey] || 0;
-        const pct = tierTotal > 0 ? ((value / tierTotal) * 100).toFixed(2) : '—';
-        return `<div class="overview-tier-row">
-          <span class="overview-tier-dot ${tierKey}" aria-hidden="true"></span>
-          <span class="overview-tier-name">${tierLabelText[tierKey]}</span>
-          <span class="overview-tier-pct">${pct === '—' ? pct : `${pct}%`}</span>
-        </div>`;
-      };
-      tierBreakdownEl.innerHTML = `
-        <div class="overview-tier-title">分層比例</div>
-        ${renderTierRow('core')}
-        ${renderTierRow('satellite')}
-        ${renderTierRow('flex')}`;
+    let corePct = 0, satellitePct = 0, flexPct = 0;
+    if(tierTotal > 0){
+      corePct = Math.round((tierBuckets.core / tierTotal) * 10000) / 100;
+      satellitePct = Math.round((tierBuckets.satellite / tierTotal) * 10000) / 100;
+      flexPct = Math.round((tierBuckets.flex / tierTotal) * 10000) / 100;
+      const sum = corePct + satellitePct + flexPct;
+      if(Math.abs(sum - 100) > 0.02){
+        flexPct = Math.round((100 - corePct - satellitePct) * 100) / 100;
+      }
     }
+    const t1 = corePct;
+    const t2 = corePct + satellitePct;
+    if(tierTotal <= 0){
+      tierDonutEl.style.background = 'conic-gradient(var(--muted) 0% 100%)';
+    }else{
+      tierDonutEl.style.background = `conic-gradient(${COL_CORE} 0% ${t1}%, ${COL_SATELLITE} ${t1}% ${t2}%, ${COL_FLEX} ${t2}% 100%)`;
+    }
+    tierDonutLeg.innerHTML = tierTotal > 0
+      ? `<div>核心 <strong>${corePct.toFixed(2)}%</strong>／衛星 <strong>${satellitePct.toFixed(2)}%</strong>／靈活 <strong>${flexPct.toFixed(2)}%</strong></div>
+         <div>口徑　目前持倉市值</div>`
+      : `<div>核心 <strong>—</strong>／衛星 <strong>—</strong>／靈活 <strong>—</strong></div>
+         <div>口徑　目前持倉市值</div>`;
 
     let redMsg = null;
     let orangeMsg = null;
