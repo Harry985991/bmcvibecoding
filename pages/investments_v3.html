@@ -1794,7 +1794,7 @@
           <button class="btn" id="btn-check-proxy" onclick="checkProxyStatus()">重新檢查</button>
         </div>
         <ul class="mini" style="margin:0;color:var(--sub)">
-          <li>股價自動更新需要本地代理伺服器：<code>cd ~/Documents/VibeCoding && npm start</code></li>
+          <li>股價自動更新需要本地代理伺服器：<code>cd /Users/harrychao/claude-workspace/tools/vibecoding && npm start</code></li>
           <li>代理未啟動時，可手動在「持有標的」頁面更新單一股價。</li>
         </ul>
         <div class="hr"></div>
@@ -2353,6 +2353,17 @@ let allocationPlannerContext = null;
     const entry = ensureInitialCapitalEntry();
     return entry ? parseN(entry.amount) : 0;
   };
+  const LOCAL_PROXY_PROJECT_DIR = '/Users/harrychao/claude-workspace/tools/vibecoding';
+  const LOCAL_PROXY_START_COMMAND = `cd ${LOCAL_PROXY_PROJECT_DIR} && npm start`;
+  const toTradeDateKey = (input) => {
+    const ms = typeof input === 'number' ? input : new Date(input).getTime();
+    if (!Number.isFinite(ms)) return null;
+    const dt = new Date(ms);
+    const y = dt.getUTCFullYear();
+    const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(dt.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
   const sumCapitalAdjustments = (upTo) => {
     let cutoffTime = null;
     if(upTo){
@@ -2382,7 +2393,7 @@ let allocationPlannerContext = null;
 
   // ========= 價格供應器（本地代理專用）=========
   // 僅使用本地 Node.js proxy server，不再依賴 jina / allorigins 等外部服務。
-  // 啟動方式：cd ~/Documents/VibeCoding && npm start
+  // 啟動方式：cd /Users/harrychao/claude-workspace/tools/vibecoding && npm start
   const priceProvider = {
     async fetch(symbol) {
       if (!symbol) return null;
@@ -2400,8 +2411,30 @@ let allocationPlannerContext = null;
         symbolsToTry.push(`${origSym}.TW`);
       }
 
-      const parseV8 = (j) => { try { const m = j?.chart?.result?.[0]?.meta; return m?.regularMarketPrice ?? m?.previousClose ?? null; } catch { return null; } };
-      const parseV7 = (j) => { try { const r = j?.quoteResponse?.result?.[0]; return r?.regularMarketPrice ?? r?.regularMarketPreviousClose ?? null; } catch { return null; } };
+      const parseV8 = (j) => {
+        try {
+          const m = j?.chart?.result?.[0]?.meta;
+          const price = m?.regularMarketPrice ?? m?.previousClose ?? null;
+          const marketTime = Number(m?.regularMarketTime);
+          if (price == null || isNaN(Number(price))) return null;
+          return {
+            price: Number(price),
+            marketTime: Number.isFinite(marketTime) ? marketTime : null
+          };
+        } catch { return null; }
+      };
+      const parseV7 = (j) => {
+        try {
+          const r = j?.quoteResponse?.result?.[0];
+          const price = r?.regularMarketPrice ?? r?.regularMarketPreviousClose ?? null;
+          const marketTime = Number(r?.regularMarketTime);
+          if (price == null || isNaN(Number(price))) return null;
+          return {
+            price: Number(price),
+            marketTime: Number.isFinite(marketTime) ? marketTime : null
+          };
+        } catch { return null; }
+      };
 
       for (const sym of symbolsToTry) {
         // 端點 1：/quote2
@@ -2409,8 +2442,10 @@ let allocationPlannerContext = null;
           const res = await fetch(`${LOCAL}/quote2?symbol=${encodeURIComponent(sym)}`, { cache: 'no-store' });
           if (res.ok) {
             const j = await res.json();
-            const p = parseV8(j) ?? parseV7(j);
-            if (p != null && !isNaN(p)) return { price: Number(p), via: 'local-quote2', symbol: sym };
+            const q = parseV8(j) ?? parseV7(j);
+            if (q && typeof q.price === 'number' && !isNaN(q.price)) {
+              return { price: Number(q.price), marketTime: q.marketTime, via: 'local-quote2', symbol: sym };
+            }
           }
         } catch { /* 代理未啟動，繼續嘗試下一端點 */ }
 
@@ -2419,8 +2454,10 @@ let allocationPlannerContext = null;
           const res = await fetch(`${LOCAL}/quote?symbol=${encodeURIComponent(sym)}`, { cache: 'no-store' });
           if (res.ok) {
             const j = await res.json();
-            const p = parseV7(j) ?? parseV8(j);
-            if (p != null && !isNaN(p)) return { price: Number(p), via: 'local-quote', symbol: sym };
+            const q = parseV7(j) ?? parseV8(j);
+            if (q && typeof q.price === 'number' && !isNaN(q.price)) {
+              return { price: Number(q.price), marketTime: q.marketTime, via: 'local-quote', symbol: sym };
+            }
           }
         } catch { /* 繼續 */ }
       }
@@ -8566,13 +8603,22 @@ function updateAllocationPlannerSummary(){
 
     let successCount = 0;
     const failedSymbols = [];
+    const staleSymbols = [];
 
     try{
       const tasks = DB.stocks.map(async (s) => {
         const q = await priceProvider.fetch(s.symbol);
         if (q && !q.error && typeof q.price === 'number') {
+          const incomingTimeMs = Number.isFinite(Number(q.marketTime)) ? Number(q.marketTime) * 1000 : Number.NaN;
+          const existingTimeMs = s.lastPriceAt ? new Date(s.lastPriceAt).getTime() : Number.NaN;
+          const incomingTradeDate = toTradeDateKey(incomingTimeMs);
+          const existingTradeDate = toTradeDateKey(existingTimeMs);
+          if (incomingTradeDate && existingTradeDate && incomingTradeDate < existingTradeDate) {
+            staleSymbols.push(s.symbol);
+            return { ok: false, symbol: s.symbol, message: '來源交易日較舊，未覆蓋現有價格' };
+          }
           s.price = q.price;
-          s.lastPriceAt = nowISO();
+          s.lastPriceAt = Number.isFinite(incomingTimeMs) ? new Date(incomingTimeMs).toISOString() : nowISO();
           successCount++;
           return { ok: true, symbol: s.symbol };
         }
@@ -8594,16 +8640,36 @@ function updateAllocationPlannerSummary(){
     }
 
     if (!isAutoRefresh) {
-      if (failedSymbols.length > 0 && successCount === 0) {
+      if ((failedSymbols.length > 0 || staleSymbols.length > 0) && successCount === 0) {
+        if (staleSymbols.length > 0 && failedSymbols.length === 0) {
+          alert(
+            '股價更新未覆蓋任何資料，因為代理回傳的交易日比目前資料更舊。\n\n' +
+            `受影響標的：${staleSymbols.join(', ')}\n\n` +
+            '請先確認資料來源是否為最新交易日。'
+          );
+        } else {
         alert(
           '股價更新失敗，本地代理伺服器無回應。\n\n' +
-          '請在終端機執行：\ncd ~/Documents/VibeCoding && npm start\n\n' +
+          `請在終端機執行：\n${LOCAL_PROXY_START_COMMAND}\n\n` +
           '然後重新點擊「即時更新全部」。'
         );
-      } else if (failedSymbols.length > 0) {
-        showBackupStatus(`更新完成：${successCount} 成功，${failedSymbols.length} 失敗（${failedSymbols.join(', ')}）`, true);
+        }
+      } else if (failedSymbols.length > 0 || staleSymbols.length > 0) {
+        const parts = [];
+        if (failedSymbols.length > 0) parts.push(`${failedSymbols.length} 失敗（${failedSymbols.join(', ')}）`);
+        if (staleSymbols.length > 0) parts.push(`${staleSymbols.length} 較舊未覆蓋（${staleSymbols.join(', ')}）`);
+        showBackupStatus(`更新完成：${successCount} 成功，${parts.join('；')}`, true);
       } else {
         showBackupStatus(`股價已更新 ${successCount} 個標的 ✓`);
+      }
+    } else if ((failedSymbols.length > 0 || staleSymbols.length > 0) && successCount === 0) {
+      if (staleSymbols.length > 0 && failedSymbols.length === 0) {
+        showBackupStatus(`自動更新略過：來源較舊，未覆蓋現有市場實價（${staleSymbols.join(', ')}）`, true);
+      } else {
+      showBackupStatus(`自動更新失敗：本地代理伺服器未啟動，市場實價未更新。請執行 ${LOCAL_PROXY_START_COMMAND}`, true);
+      checkProxyStatus().catch(err => {
+        console.warn('[proxy] check after auto refresh failure failed:', err);
+      });
       }
     }
 
@@ -9089,7 +9155,7 @@ function updateAllocationPlannerSummary(){
       }
     } else {
       // 在瀏覽器環境中，提供手動啟動指引
-      alert('請在終端機中執行以下指令來啟動代理伺服器：\n\ncd /Users/harrychao/Documents/VibeCoding\nnode scripts/proxy-server.js\n\n或者使用 Electron 版本：\nnpm run electron');
+      alert(`請在終端機中執行以下指令來啟動代理伺服器：\n\n${LOCAL_PROXY_START_COMMAND}\n\n或者使用 Electron 版本：\ncd ${LOCAL_PROXY_PROJECT_DIR}\nnpm run electron`);
     }
   }
   

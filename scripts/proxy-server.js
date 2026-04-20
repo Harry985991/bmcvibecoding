@@ -460,12 +460,17 @@ function buildCandidates(input) {
 
   const hasSuffix = orig.endsWith('.TW') || orig.endsWith('.TWO');
   const base = hasSuffix ? orig.replace(/\.(TW|TWO)$/,'') : orig;
+  const isBondETF = /B$/.test(base);
   const isTWCodeLike = /^[0-9]{3,6}[A-Z]?$/.test(base);
 
   if (hasSuffix) {
     add(orig);
     add(base + (orig.endsWith('.TW') ? '.TWO' : '.TW'));
     add(base); // in case Yahoo accepts bare code
+  } else if (isBondETF) {
+    add(base);
+    add(base + '.TW');
+    add(base + '.TWO');
   } else if (isTWCodeLike) {
     // TW listing priority: TW first, then TWO, then bare code.
     add(base + '.TW');
@@ -492,6 +497,128 @@ function parseV7Price(j) {
     const p = r?.regularMarketPrice ?? r?.regularMarketPreviousClose ?? null;
     return Number.isFinite(p) ? Number(p) : null;
   } catch { return null; }
+}
+
+function getTaipeiDateString(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const y = parts.find((p) => p.type === 'year')?.value;
+  const m = parts.find((p) => p.type === 'month')?.value;
+  const d = parts.find((p) => p.type === 'day')?.value;
+  return (y && m && d) ? `${y}-${m}-${d}` : null;
+}
+
+function parseIsoDateParts(dateStr) {
+  const match = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3])
+  };
+}
+
+function diffCalendarDays(dateStrA, dateStrB) {
+  const a = parseIsoDateParts(dateStrA);
+  const b = parseIsoDateParts(dateStrB);
+  if (!a || !b) return Number.NaN;
+  const utcA = Date.UTC(a.year, a.month - 1, a.day);
+  const utcB = Date.UTC(b.year, b.month - 1, b.day);
+  return Math.round((utcB - utcA) / 86400000);
+}
+
+function isTaiwanQuoteSymbol(input) {
+  const orig = String(input || '').trim().toUpperCase();
+  const base = orig.replace(/\.(TW|TWO)$/, '');
+  return /^[0-9]{3,6}[A-Z]?$/.test(base);
+}
+
+function extractYahooQuoteSnapshot(payload) {
+  try {
+    const r = payload?.quoteResponse?.result?.[0];
+    if (r) {
+      const price = r.regularMarketPrice ?? r.regularMarketPreviousClose ?? null;
+      const marketTime = Number(r.regularMarketTime);
+      if (Number.isFinite(price)) {
+        return {
+          price: Number(price),
+          marketTime: Number.isFinite(marketTime) ? marketTime : null,
+          date: Number.isFinite(marketTime) ? formatTaipeiDateFromUnix(marketTime) : null
+        };
+      }
+    }
+  } catch { /* noop */ }
+
+  try {
+    const m = payload?.chart?.result?.[0]?.meta;
+    const price = m?.regularMarketPrice ?? m?.previousClose ?? null;
+    const marketTime = Number(m?.regularMarketTime);
+    if (Number.isFinite(price)) {
+      return {
+        price: Number(price),
+        marketTime: Number.isFinite(marketTime) ? marketTime : null,
+        date: Number.isFinite(marketTime) ? formatTaipeiDateFromUnix(marketTime) : null
+      };
+    }
+  } catch { /* noop */ }
+
+  return null;
+}
+
+async function fetchLatestOfficialClose(symbol) {
+  const base = String(symbol || '').trim().toUpperCase().replace(/\.(TW|TWO)$/, '');
+  let twseData = null;
+  let tpexData = null;
+
+  try {
+    twseData = await fetchFromTwse(base, 10);
+  } catch (e) {
+    logError('twse-quote', `latest close failed for ${base}`, e);
+  }
+
+  try {
+    tpexData = await fetchFromTpex(base, 10);
+  } catch (e) {
+    logError('tpex-quote', `latest close failed for ${base}`, e);
+  }
+
+  const merged = dedupeAndSortHistory([...(twseData || []), ...(tpexData || [])]);
+  if (!merged.length) return null;
+
+  const latest = merged[merged.length - 1];
+  const prev = merged[merged.length - 2] || latest;
+  const marketTimeMs = Date.parse(`${latest.date}T13:30:00+08:00`);
+
+  return {
+    symbol: base,
+    date: latest.date,
+    close: latest.close,
+    prevClose: prev.close,
+    marketTime: Number.isFinite(marketTimeMs) ? Math.floor(marketTimeMs / 1000) : null,
+    source: 'official-eod'
+  };
+}
+
+function buildOfficialQuotePayload(symbol, officialQuote) {
+  return {
+    quoteResponse: {
+      result: [{
+        symbol: officialQuote.symbol || String(symbol || '').trim().toUpperCase(),
+        regularMarketPrice: officialQuote.close,
+        regularMarketPreviousClose: officialQuote.prevClose,
+        regularMarketTime: officialQuote.marketTime,
+        marketState: 'CLOSED',
+        sourceInterval: '1d',
+        _source: officialQuote.source,
+        _tradeDate: officialQuote.date
+      }],
+      error: null
+    }
+  };
 }
 
 async function fetchYahooOnce(url) {
@@ -533,12 +660,59 @@ async function tryYahoo(symbol) {
   return { ok: false, error: lastErr || new Error('No candidate succeeded') };
 }
 
+async function resolveQuote(symbol) {
+  const normalized = String(symbol || '').trim().toUpperCase();
+  const isTaiwanSymbol = isTaiwanQuoteSymbol(normalized);
+  const officialPromise = isTaiwanSymbol ? fetchLatestOfficialClose(normalized) : Promise.resolve(null);
+  const yahooPromise = tryYahoo(normalized);
+
+  const [officialQuote, yahooResult] = await Promise.all([
+    officialPromise.catch((e) => {
+      logError('official-quote', `failed for ${normalized}`, e);
+      return null;
+    }),
+    yahooPromise.catch((e) => ({ ok: false, error: e }))
+  ]);
+
+  if (!isTaiwanSymbol) {
+    return yahooResult;
+  }
+
+  const yahooSnapshot = yahooResult.ok ? extractYahooQuoteSnapshot(yahooResult.data) : null;
+  if (officialQuote && yahooSnapshot?.date) {
+    if (officialQuote.date >= yahooSnapshot.date) {
+      return {
+        ok: true,
+        via: officialQuote.source,
+        symbol: officialQuote.symbol,
+        data: buildOfficialQuotePayload(normalized, officialQuote)
+      };
+    }
+    return yahooResult;
+  }
+
+  if (officialQuote) {
+    return {
+      ok: true,
+      via: officialQuote.source,
+      symbol: officialQuote.symbol,
+      data: buildOfficialQuotePayload(normalized, officialQuote)
+    };
+  }
+
+  if (yahooResult.ok) {
+    return yahooResult;
+  }
+
+  return yahooResult;
+}
+
 // 股價查詢端點（整合候選符號與多端點備援）
 app.get('/quote', async (req, res) => {
   const { symbol } = req.query;
   if (!symbol) return res.status(400).json({ error: '缺少 symbol 參數' });
   console.log(`[quote] 查詢: ${symbol}`);
-  const r = await tryYahoo(symbol);
+  const r = await resolveQuote(symbol);
   if (r.ok) {
     res.set('X-Used-Symbol', r.symbol);
     res.set('X-Used-Endpoint', r.via);
@@ -553,7 +727,7 @@ app.get('/quote2', async (req, res) => {
   const { symbol } = req.query;
   if (!symbol) return res.status(400).json({ error: '缺少 symbol 參數' });
   console.log(`[quote2] 查詢: ${symbol}`);
-  const r = await tryYahoo(symbol);
+  const r = await resolveQuote(symbol);
   if (r.ok) {
     res.set('X-Used-Symbol', r.symbol);
     res.set('X-Used-Endpoint', r.via);
