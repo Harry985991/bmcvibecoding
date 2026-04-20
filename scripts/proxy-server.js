@@ -499,6 +499,10 @@ function parseV7Price(j) {
   } catch { return null; }
 }
 
+function getTaipeiNow(date = new Date()) {
+  return new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+}
+
 function getTaipeiDateString(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Taipei',
@@ -535,6 +539,224 @@ function isTaiwanQuoteSymbol(input) {
   const orig = String(input || '').trim().toUpperCase();
   const base = orig.replace(/\.(TW|TWO)$/, '');
   return /^[0-9]{3,6}[A-Z]?$/.test(base);
+}
+
+function parseTwNumeric(value) {
+  if (value == null) return null;
+  const text = String(value).replace(/,/g, '').trim();
+  if (!text || text === '-') return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseTwDataDate(rawDate) {
+  const digits = String(rawDate || '').replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
+function fallbackTwTradeDate(now = new Date()) {
+  const twNow = getTaipeiNow(now);
+  const candidate = new Date(twNow.getFullYear(), twNow.getMonth(), twNow.getDate());
+  const mins = twNow.getHours() * 60 + twNow.getMinutes();
+  if (mins < 9 * 60) {
+    candidate.setDate(candidate.getDate() - 1);
+  }
+  while (candidate.getDay() === 0 || candidate.getDay() === 6) {
+    candidate.setDate(candidate.getDate() - 1);
+  }
+  return [
+    candidate.getFullYear(),
+    String(candidate.getMonth() + 1).padStart(2, '0'),
+    String(candidate.getDate()).padStart(2, '0')
+  ].join('-');
+}
+
+function getTwDataDate(msg) {
+  const explicitDate = parseTwDataDate(msg?.d);
+  if (explicitDate) return explicitDate;
+
+  const twNow = getTaipeiNow();
+  const mins = twNow.getHours() * 60 + twNow.getMinutes();
+  const isWeekday = twNow.getDay() >= 1 && twNow.getDay() <= 5;
+  if (isWeekday && mins >= 9 * 60 && mins <= 13 * 60 + 30) {
+    return getTaipeiDateString();
+  }
+  return fallbackTwTradeDate();
+}
+
+function isTwPreopen(now = new Date()) {
+  const twNow = getTaipeiNow(now);
+  const mins = twNow.getHours() * 60 + twNow.getMinutes();
+  return twNow.getDay() >= 1 && twNow.getDay() <= 5 && mins >= 8 * 60 + 30 && mins < 9 * 60;
+}
+
+function detectTwMarketPhase(now, price, isPreopen) {
+  const twNow = getTaipeiNow(now);
+  if (isPreopen) return 'preopen';
+  const mins = twNow.getHours() * 60 + twNow.getMinutes();
+  if (twNow.getDay() >= 1 && twNow.getDay() <= 5 && mins >= 9 * 60 && mins <= 13 * 60 + 30 && price != null) {
+    return 'regular';
+  }
+  return 'closed';
+}
+
+function splitOrderbookLevels(raw) {
+  if (!raw || raw === '-') return [];
+  return String(raw)
+    .split('_')
+    .map((part) => part.trim())
+    .filter((part) => part && part !== '-');
+}
+
+function parseOrderbookLevels(pricesRaw, volumesRaw) {
+  const prices = splitOrderbookLevels(pricesRaw);
+  const volumes = splitOrderbookLevels(volumesRaw);
+  return prices.slice(0, 5).map((price, idx) => ({
+    level: idx + 1,
+    price,
+    volume: volumes[idx] || null
+  }));
+}
+
+function normalizeTwTradeTime(rawTime) {
+  const text = String(rawTime || '').trim();
+  if (!text || text === '-') return null;
+  if (/^\d{6}$/.test(text)) {
+    return `${text.slice(0, 2)}:${text.slice(2, 4)}:${text.slice(4, 6)}`;
+  }
+  if (/^\d{4}$/.test(text)) {
+    return `${text.slice(0, 2)}:${text.slice(2, 4)}:00`;
+  }
+  if (/^\d{2}:\d{2}:\d{2}$/.test(text)) return text;
+  if (/^\d{2}:\d{2}$/.test(text)) return `${text}:00`;
+  return null;
+}
+
+function buildTaipeiUnixSeconds(dateStr, timeStr, marketPhase) {
+  if (!dateStr) return null;
+  const fallbackTime = marketPhase === 'preopen' ? '08:59:00' : '13:30:00';
+  const resolvedTime = normalizeTwTradeTime(timeStr) || fallbackTime;
+  const ms = Date.parse(`${dateStr}T${resolvedTime}+08:00`);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+}
+
+function parseTwseMisMessage(msg, requestedCode) {
+  const chMatch = String(msg?.ch || '').match(/(?:tse|otc)_([^.]+)\.tw/i);
+  const code = String(msg?.c || chMatch?.[1] || requestedCode || '').trim().toUpperCase();
+  if (!code) return null;
+
+  const now = new Date();
+  const latestTrade = msg?.z;
+  const trialPrice = msg?.pz;
+  const prevCloseRaw = msg?.y;
+  const openRaw = msg?.o;
+  const highRaw = msg?.h;
+  const lowRaw = msg?.l;
+  const totalVolumeRaw = msg?.v;
+  const tradeTime = normalizeTwTradeTime(msg?.t);
+  const askLevels = parseOrderbookLevels(msg?.a, msg?.f);
+  const bidLevels = parseOrderbookLevels(msg?.b, msg?.g);
+  const ask1 = askLevels[0]?.price ?? null;
+  const preopen = isTwPreopen(now) && parseTwNumeric(trialPrice) != null;
+
+  const priceCandidates = preopen ? [trialPrice, latestTrade, ask1, openRaw] : [latestTrade, ask1, openRaw];
+  let priceRaw = null;
+  for (const candidate of priceCandidates) {
+    if (parseTwNumeric(candidate) != null) {
+      priceRaw = candidate;
+      break;
+    }
+  }
+
+  const price = parseTwNumeric(priceRaw);
+  const prevClose = parseTwNumeric(prevCloseRaw);
+  const openPrice = parseTwNumeric(openRaw);
+  const highPrice = parseTwNumeric(highRaw);
+  const lowPrice = parseTwNumeric(lowRaw);
+  const dataDate = getTwDataDate(msg);
+  const marketPhase = detectTwMarketPhase(now, price, preopen);
+  const resolvedPrice = price ?? prevClose;
+
+  let priceSource = 'unknown';
+  if (preopen && parseTwNumeric(trialPrice) != null) priceSource = 'trial';
+  else if (parseTwNumeric(latestTrade) != null) priceSource = 'trade';
+  else if (parseTwNumeric(ask1) != null) priceSource = 'ask1';
+  else if (openPrice != null) priceSource = 'open';
+  else if (prevClose != null) priceSource = 'prev_close';
+
+  const marketTime = buildTaipeiUnixSeconds(dataDate, tradeTime, marketPhase);
+
+  return {
+    symbol: code,
+    name: msg?.n || '',
+    date: dataDate,
+    price: resolvedPrice,
+    prevClose,
+    openPrice,
+    highPrice,
+    lowPrice,
+    totalVolume: parseTwNumeric(totalVolumeRaw),
+    marketTime,
+    tradeTime,
+    marketPhase,
+    priceSource,
+    bidLevels,
+    askLevels,
+    source: 'twse-mis'
+  };
+}
+
+function getTwseMisCandidateScore(quote) {
+  if (!quote || quote.price == null) return -1;
+  const sourceRank = {
+    trial: 5,
+    trade: 4,
+    ask1: 3,
+    open: 2,
+    prev_close: 1,
+    unknown: 0
+  };
+  const phaseRank = {
+    regular: 3,
+    preopen: 2,
+    closed: 1
+  };
+  return (phaseRank[quote.marketPhase] || 0) * 10 + (sourceRank[quote.priceSource] || 0);
+}
+
+async function fetchTwseMisQuote(symbol) {
+  const base = String(symbol || '').trim().toUpperCase().replace(/\.(TW|TWO)$/, '');
+  const exCh = [`tse_${base}.tw`, `otc_${base}.tw`].join('|');
+  const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${encodeURIComponent(exCh)}&json=1&delay=0`;
+
+  const response = await axios.get(url, {
+    headers: {
+      'User-Agent': TWSE_UA,
+      'Accept': 'application/json',
+      'Referer': 'https://mis.twse.com.tw/stock/index.jsp'
+    },
+    timeout: 12000,
+    validateStatus: (status) => status >= 200 && status < 500
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`TWSE MIS HTTP ${response.status}`);
+  }
+
+  const msgArray = response.data?.msgArray;
+  if (!Array.isArray(msgArray) || msgArray.length === 0) {
+    return null;
+  }
+
+  const candidates = msgArray
+    .map((msg) => parseTwseMisMessage(msg, base))
+    .filter((quote) => quote && quote.symbol === base && quote.price != null);
+
+  if (!candidates.length) return null;
+
+  candidates.sort((a, b) => getTwseMisCandidateScore(b) - getTwseMisCandidateScore(a));
+  return candidates[0];
 }
 
 function extractYahooQuoteSnapshot(payload) {
@@ -621,6 +843,41 @@ function buildOfficialQuotePayload(symbol, officialQuote) {
   };
 }
 
+function buildTwseMisQuotePayload(symbol, twQuote) {
+  const marketState = twQuote.marketPhase === 'regular'
+    ? 'REGULAR'
+    : (twQuote.marketPhase === 'preopen' ? 'PREPRE' : 'CLOSED');
+  return {
+    quoteResponse: {
+      result: [{
+        symbol: twQuote.symbol || String(symbol || '').trim().toUpperCase(),
+        shortName: twQuote.name || undefined,
+        regularMarketPrice: twQuote.price,
+        regularMarketPreviousClose: twQuote.prevClose,
+        regularMarketChange: twQuote.price != null && twQuote.prevClose != null
+          ? Number((twQuote.price - twQuote.prevClose).toFixed(2))
+          : null,
+        regularMarketChangePercent: twQuote.price != null && twQuote.prevClose
+          ? Number((((twQuote.price - twQuote.prevClose) / twQuote.prevClose) * 100).toFixed(2))
+          : null,
+        regularMarketOpen: twQuote.openPrice,
+        regularMarketDayHigh: twQuote.highPrice,
+        regularMarketDayLow: twQuote.lowPrice,
+        regularMarketVolume: twQuote.totalVolume,
+        regularMarketTime: twQuote.marketTime,
+        marketState,
+        sourceInterval: twQuote.marketPhase === 'regular' ? '1m' : '1d',
+        _source: twQuote.source,
+        _tradeDate: twQuote.date,
+        _tradeTime: twQuote.tradeTime,
+        _marketPhase: twQuote.marketPhase,
+        _priceSource: twQuote.priceSource
+      }],
+      error: null
+    }
+  };
+}
+
 async function fetchYahooOnce(url) {
   return axios.get(url, {
     headers: {
@@ -663,48 +920,40 @@ async function tryYahoo(symbol) {
 async function resolveQuote(symbol) {
   const normalized = String(symbol || '').trim().toUpperCase();
   const isTaiwanSymbol = isTaiwanQuoteSymbol(normalized);
-  const officialPromise = isTaiwanSymbol ? fetchLatestOfficialClose(normalized) : Promise.resolve(null);
-  const yahooPromise = tryYahoo(normalized);
-
-  const [officialQuote, yahooResult] = await Promise.all([
-    officialPromise.catch((e) => {
-      logError('official-quote', `failed for ${normalized}`, e);
-      return null;
-    }),
-    yahooPromise.catch((e) => ({ ok: false, error: e }))
-  ]);
 
   if (!isTaiwanSymbol) {
-    return yahooResult;
+    return tryYahoo(normalized);
   }
 
-  const yahooSnapshot = yahooResult.ok ? extractYahooQuoteSnapshot(yahooResult.data) : null;
-  if (officialQuote && yahooSnapshot?.date) {
-    if (officialQuote.date >= yahooSnapshot.date) {
+  try {
+    const twQuote = await fetchTwseMisQuote(normalized);
+    if (twQuote && twQuote.price != null) {
       return {
         ok: true,
-        via: officialQuote.source,
-        symbol: officialQuote.symbol,
-        data: buildOfficialQuotePayload(normalized, officialQuote)
+        via: twQuote.source,
+        symbol: twQuote.symbol,
+        data: buildTwseMisQuotePayload(normalized, twQuote)
       };
     }
-    return yahooResult;
+  } catch (e) {
+    logError('twse-mis', `failed for ${normalized}`, e);
   }
 
-  if (officialQuote) {
+  const fallbackOfficial = await fetchLatestOfficialClose(normalized).catch((e) => {
+    logError('official-quote', `failed for ${normalized}`, e);
+    return null;
+  });
+
+  if (fallbackOfficial) {
     return {
       ok: true,
-      via: officialQuote.source,
-      symbol: officialQuote.symbol,
-      data: buildOfficialQuotePayload(normalized, officialQuote)
+      via: fallbackOfficial.source,
+      symbol: fallbackOfficial.symbol,
+      data: buildOfficialQuotePayload(normalized, fallbackOfficial)
     };
   }
 
-  if (yahooResult.ok) {
-    return yahooResult;
-  }
-
-  return yahooResult;
+  return { ok: false, error: new Error('No Taiwan quote source succeeded') };
 }
 
 // 股價查詢端點（整合候選符號與多端點備援）

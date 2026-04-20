@@ -1273,7 +1273,7 @@
                 <th class="num sortable" data-sort="unrealized">持有損益 / %</th>
                 <th class="num sortable" data-sort="dividends">實領股息</th>
                 <th class="num sortable" data-sort="totalPnl">含息損益 / %</th>
-                <th class="num sortable" data-sort="cycleMonthlyReturnPct" title="以本輪持倉起點換算的月化與週化報酬率。本輪起點為最近一次庫存歸零後重新建倉的第一筆買進。">持有效率</th>
+                <th class="num sortable" data-sort="cycleMonthlyReturnPct" title="以本輪持倉起點換算的月化報酬率。本輪起點為最近一次庫存歸零後重新建倉的第一筆買進。">持有效率</th>
                 <th class="sortable" data-sort="strategy">策略</th>
                 <th class="num sortable" data-sort="pct52w" title="現價在過去 52 週的位置百分位。<20% 接近年內低點為加碼訊號；>80% 接近年內高點為減碼訊號">52週位置</th>
                 <th class="num sortable" data-sort="ma200Bias" title="現價相對 200 日均線的乖離率。<-10% 明顯偏離長期均線常為好買點；>+15% 過熱">距MA200</th>
@@ -4156,7 +4156,6 @@ let allocationPlannerContext = null;
         <td class="num">
           <div class="cell-stack" style="align-items:flex-end">
             <span style="color:${cycleRateColor}" title="本輪持倉月化報酬率">月化 ${cycleMonthlyDisplay}</span>
-            <span class="mini" style="color:${cycleRateColor}" title="本輪持倉週化報酬率與持有天數">週化 ${cycleWeeklyDisplay} · ${cycleDaysDisplay}${row.cycleShortSample ? ' · 樣本短' : ''}</span>
           </div>
         </td>
         <td><span class="strategy-tag ${stratClass}">${stratText}</span></td>
@@ -9219,6 +9218,21 @@ function updateAllocationPlannerSummary(){
   }
   window.checkProxyStatus = checkProxyStatus;
 
+  async function autoRefreshMarketPricesOnLoad() {
+    try {
+      const running = await checkProxyStatus();
+      if (!running) {
+        showBackupStatus('開啟頁面時略過市場實價自動更新：代理伺服器未啟動', true);
+        return;
+      }
+      await handleRefreshAllClick(true);
+      showBackupStatus('已自動更新市場實價');
+    } catch (error) {
+      console.warn('[auto-refresh-on-load] failed:', error);
+      showBackupStatus('開啟頁面時自動更新市場實價失敗', true);
+    }
+  }
+
   // 綁定按鈕事件
   const btnStartProxy = $('#btn-start-proxy');
   if (btnStartProxy) btnStartProxy.addEventListener('click', startProxyServer);
@@ -10067,8 +10081,12 @@ function updateAllocationPlannerSummary(){
     fullRender();
     startAutoDailySnapshotWatcher();
     setTimeout(() => refreshIndicatorsForAll(), 2500);
-    // 自動更新股價（延遲 1.5 秒，讓代理伺服器有時間回應）
-    setTimeout(() => handleRefreshAllClick(true), 1500);
+    // 開頁後自動更新市場實價：先確認代理可用，再執行一次靜默刷新。
+    setTimeout(() => {
+      autoRefreshMarketPricesOnLoad().catch(err => {
+        console.warn('[auto-refresh-on-load] unexpected failure:', err);
+      });
+    }, 1200);
   }).catch(err => {
     console.error('[Init] DB 載入失敗，使用空資料渲染：', err);
     updateTargetLabels(getAllocationTarget(), getRegionTarget());
