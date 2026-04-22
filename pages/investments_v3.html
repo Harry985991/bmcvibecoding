@@ -737,6 +737,236 @@
     .return-contrib-fill.pos{background:#3182ce}
     .return-contrib-fill.neg{background:#fc8181}
     .return-contrib-pct{flex:0 0 72px; text-align:right; font-variant-numeric:tabular-nums; color:var(--sub); font-size:12px}
+    .text-start{text-align:left}
+    .period-board-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    .period-board-kicker{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      color:var(--sub);
+    }
+    .period-board-title{
+      margin:4px 0 0;
+      font-size:18px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .period-board-desc{
+      margin-top:6px;
+      font-size:12px;
+      line-height:1.55;
+      color:var(--sub);
+      max-width:760px;
+    }
+    .period-board-summary{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .period-summary-card{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#f8fafc;
+      border-radius:14px;
+      padding:14px 16px;
+      text-align:left;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .period-summary-card:hover{
+      transform:translateY(-1px);
+      box-shadow:var(--shadow);
+    }
+    .period-summary-card.active{
+      border-color:rgba(15,118,110,.35);
+      background:linear-gradient(180deg, #f0fdfa, #ffffff);
+      box-shadow:0 12px 28px rgba(15,118,110,.12);
+    }
+    .period-summary-label{
+      font-size:12px;
+      font-weight:700;
+      color:var(--sub);
+    }
+    .period-summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:800;
+      font-family:var(--font-num);
+      color:var(--ink);
+      font-variant-numeric:tabular-nums;
+    }
+    .period-summary-value.positive{color:var(--green)}
+    .period-summary-value.negative{color:var(--red)}
+    .period-summary-meta{
+      margin-top:8px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size:11px;
+      color:var(--sub);
+    }
+    .period-board-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .period-board-meta{
+      font-size:12px;
+      color:var(--sub);
+      line-height:1.5;
+    }
+    .period-board-status{
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#f8fafc;
+      color:var(--sub);
+      font-size:12px;
+    }
+    .period-board-status.error{
+      background:#fff7f7;
+      border-color:#fecaca;
+      color:#b91c1c;
+    }
+    .period-board-status.loading{
+      background:#eff6ff;
+      border-color:#bfdbfe;
+      color:#1d4ed8;
+    }
+    .period-board-start-note{
+      margin-bottom:12px;
+      font-size:12px;
+      color:var(--sub);
+      line-height:1.55;
+    }
+    .period-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:72px;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:700;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--sub);
+    }
+    .period-badge.positive{
+      color:#166534;
+      background:#dcfce7;
+      border-color:#bbf7d0;
+    }
+    .period-badge.negative{
+      color:#b91c1c;
+      background:#fee2e2;
+      border-color:#fecaca;
+    }
+    .period-badge.neutral{
+      color:#475569;
+      background:#f8fafc;
+      border-color:#e2e8f0;
+    }
+    .period-symbol-cell{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .period-symbol-main{
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      flex-wrap:wrap;
+      min-width:0;
+    }
+    .period-symbol-main strong{
+      font-size:14px;
+      color:var(--ink);
+    }
+    .period-symbol-name{
+      font-size:12px;
+      color:var(--sub);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .period-subline{
+      margin-top:3px;
+      font-size:11px;
+      color:var(--sub);
+      line-height:1.4;
+    }
+    .period-value-stack{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+      align-items:center;
+    }
+    .period-value-main{
+      font-family:var(--font-num);
+      font-variant-numeric:tabular-nums;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .period-value-main.positive{color:var(--green)}
+    .period-value-main.negative{color:var(--red)}
+    .period-detail-btn{min-width:72px}
+    .period-detail-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:12px;
+    }
+    .period-detail-card{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      background:#f8fafc;
+    }
+    .period-detail-label{
+      font-size:11px;
+      color:var(--sub);
+      margin-bottom:4px;
+    }
+    .period-detail-value{
+      font-size:18px;
+      font-weight:800;
+      color:var(--ink);
+      font-family:var(--font-num);
+      font-variant-numeric:tabular-nums;
+    }
+    .period-detail-value.positive{color:var(--green)}
+    .period-detail-value.negative{color:var(--red)}
+    .period-detail-note{
+      margin-top:12px;
+      font-size:12px;
+      color:var(--sub);
+      line-height:1.6;
+    }
+    .period-detail-list{
+      margin:10px 0 0;
+      padding-left:18px;
+      color:var(--sub);
+      font-size:12px;
+      line-height:1.7;
+    }
+    @media (max-width:900px){
+      .period-board-summary{grid-template-columns:1fr}
+      .period-detail-grid{grid-template-columns:1fr}
+    }
 
     /* 持有標的：分層 / 策略 / 篩選 */
     .holdings-tier-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -1211,6 +1441,7 @@
       <button class="tab" role="tab" aria-selected="false" data-target="#view-txns">異動紀錄</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-dividend">股息規劃</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-return">報酬檢視</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-period-return">週期報酬看板</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-watchlist">投資筆記</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-market-hub">看盤中心</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-settings">設定</button>
@@ -1561,6 +1792,53 @@
       </div>
     </section>
 
+    <section id="view-period-return" class="view" role="tabpanel">
+      <div class="card">
+        <div class="period-board-head">
+          <div>
+            <div class="period-board-kicker">Specific Period Board</div>
+            <h3 class="period-board-title">特定週期的報酬檢視看板</h3>
+            <div class="period-board-desc">
+              針對目前持有標的，集中檢視當日、近一週與近 30 天的價格變化與持有損益。
+              版本 A 先以既有資料流實作：當日採昨收到目前/收盤價，近一週與近 30 天採區間起點最近交易日收盤價到目前價。
+            </div>
+          </div>
+          <div class="stack" style="gap:8px">
+            <button type="button" class="btn" id="btn-period-return-refresh">重新抓資料</button>
+          </div>
+        </div>
+        <div id="period-return-summary" class="period-board-summary"></div>
+        <div class="period-board-toolbar">
+          <div class="chart-range-selector" role="group" aria-label="週期報酬區間">
+            <button class="range-btn active" type="button" data-period-range="day">當日</button>
+            <button class="range-btn" type="button" data-period-range="week">近一週</button>
+            <button class="range-btn" type="button" data-period-range="month">近30天</button>
+          </div>
+          <div id="period-return-meta" class="period-board-meta"></div>
+        </div>
+        <div id="period-return-status" class="period-board-status">尚未載入週期報酬資料</div>
+        <div id="period-return-start-note" class="period-board-start-note"></div>
+        <div class="table-wrap">
+          <table id="tbl-period-return">
+            <thead>
+              <tr>
+                <th class="text-start">代號 / 名稱</th>
+                <th class="num">持有股數</th>
+                <th class="num">週期起始價</th>
+                <th class="num">目前 / 期末價</th>
+                <th class="num">價格漲跌</th>
+                <th class="num">價格漲跌幅</th>
+                <th class="num">持有損益金額</th>
+                <th class="num">持有損益率</th>
+                <th class="num">詳細</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section id="view-watchlist" class="view" role="tabpanel">
       <div class="card">
         <div class="stack" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
@@ -1599,6 +1877,21 @@
         </div>
       </div>
     </section>
+
+    <dialog id="dlg-period-return-detail">
+      <form method="dialog">
+        <div class="dlg-head">
+          <div id="period-return-detail-title">週期報酬明細</div>
+          <button class="btn ghost" value="cancel">✕</button>
+        </div>
+        <div class="dlg-body">
+          <div id="period-return-detail-body"></div>
+        </div>
+        <div class="footer">
+          <button class="btn" value="cancel">關閉</button>
+        </div>
+      </form>
+    </dialog>
     
     <!-- 手動編輯股息資訊的對話框 -->
     <dialog id="dlg-dividend-edit">
@@ -8416,6 +8709,7 @@ function updateAllocationPlannerSummary(){
       if(tab.dataset.target==='#view-dividend'){ renderDividend(); }
       // 切到報酬檢視時，確保重算
       if(tab.dataset.target==='#view-return'){ renderReturnOverview(); }
+      if(tab.dataset.target==='#view-period-return'){ renderPeriodicReturnDashboard(); }
       if(tab.dataset.target==='#view-watchlist'){ renderWatchlist(); }
       if(tab.dataset.target==='#view-market-hub'){ renderMarketHub(); }
       if(tab.dataset.target==='#view-snapshots'){ renderOverview(); }
@@ -9820,6 +10114,25 @@ function updateAllocationPlannerSummary(){
   document.getElementById('btn-market-open-all')?.addEventListener('click', () => {
     openAllMarketLinks();
   });
+  document.getElementById('btn-period-return-refresh')?.addEventListener('click', () => {
+    renderPeriodicReturnDashboard(calculatePortfolioSummary(), { forceQuote: true, forceHistory: true });
+  });
+  document.getElementById('view-period-return')?.addEventListener('click', (event) => {
+    const rangeBtn = event.target.closest('[data-period-range]');
+    if(rangeBtn){
+      const nextRange = rangeBtn.dataset.periodRange || 'day';
+      if(!PERIOD_RETURN_RANGE_CONFIG[nextRange]) return;
+      if(periodReturnState.range !== nextRange){
+        periodReturnState.range = nextRange;
+        renderPeriodReturnDashboardView();
+      }
+      return;
+    }
+    const detailBtn = event.target.closest('button[data-action="period-return-detail"]');
+    if(detailBtn){
+      openPeriodReturnDetail(detailBtn.dataset.key || '');
+    }
+  });
   document.getElementById('view-market-hub')?.addEventListener('click', async (event) => {
     const btn = event.target.closest('button[data-action^="market-"]');
     if(!btn) return;
@@ -9858,6 +10171,9 @@ function updateAllocationPlannerSummary(){
     renderAllocation(summary);
     renderDividend(summary);
     renderReturnOverview(summary);
+    if($('#view-period-return')?.classList.contains('active')){
+      renderPeriodicReturnDashboard(summary);
+    }
     checkProxyStatus(); // 檢查代理伺服器狀態
     renderWatchlist();
     renderMarketHub();
@@ -10147,6 +10463,439 @@ function updateAllocationPlannerSummary(){
     console.log('[history] Cache cleared for', symbols.length, 'symbols. Refresh the page to refetch.');
   };
   console.log('[WEEK1] Run window.clearHistoryCache() in console to force refresh indicator data');
+
+  const PERIOD_RETURN_RANGE_CONFIG = Object.freeze({
+    day: {
+      label: '當日',
+      note: '當日維度以昨收到目前 / 收盤價為基準，明細會另外顯示今日開盤價。'
+    },
+    week: {
+      label: '近一週',
+      note: '近一週採往前 6 個自然日到今天的區間，起始價取該日前最近交易日收盤價。'
+    },
+    month: {
+      label: '近30天',
+      note: '近 30 天採往前回推 30 天到今天的區間，起始價取該日前最近交易日收盤價。'
+    }
+  });
+  const PERIOD_RETURN_QUOTE_TTL_MS = 5 * 60 * 1000;
+  const periodReturnState = {
+    range: 'day',
+    rows: [],
+    renderSeq: 0,
+    lastLoadedAt: '',
+    quoteCache: {}
+  };
+
+  function shiftLocalDays(date, days){
+    const d = getLocalDateOnly(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  function getFirstFinitePositive(...values){
+    for(const value of values){
+      const num = Number(value);
+      if(Number.isFinite(num) && num > 0){
+        return num;
+      }
+    }
+    return null;
+  }
+
+  function formatPeriodReturnPrice(value){
+    return Number.isFinite(value) && value > 0 ? fmt2.format(value) : '—';
+  }
+
+  function formatPeriodReturnSignedAmount(value){
+    if(!Number.isFinite(value)) return '—';
+    return `${value >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(value)))}`;
+  }
+
+  function formatPeriodReturnSignedPct(value){
+    if(!Number.isFinite(value)) return '—';
+    return `${value >= 0 ? '+' : '-'}${Math.abs(value).toFixed(2)}%`;
+  }
+
+  function getPeriodReturnToneClass(value){
+    if(!Number.isFinite(value)) return '';
+    if(value > 0) return 'positive';
+    if(value < 0) return 'negative';
+    return '';
+  }
+
+  function getPeriodReturnLatestHistoryPoint(history){
+    if(!Array.isArray(history)) return null;
+    for(let i = history.length - 1; i >= 0; i -= 1){
+      const point = history[i];
+      const close = Number(point?.close);
+      const date = String(point?.date || '').slice(0, 10);
+      if(date && Number.isFinite(close) && close > 0){
+        return { date, close };
+      }
+    }
+    return null;
+  }
+
+  function getPeriodReturnHistoryPointOnOrBefore(history, targetDateStr){
+    if(!Array.isArray(history) || !targetDateStr) return null;
+    const target = String(targetDateStr).slice(0, 10);
+    for(let i = history.length - 1; i >= 0; i -= 1){
+      const point = history[i];
+      const date = String(point?.date || '').slice(0, 10);
+      const close = Number(point?.close);
+      if(date && date <= target && Number.isFinite(close) && close > 0){
+        return { date, close };
+      }
+    }
+    return null;
+  }
+
+  async function fetchPeriodReturnQuote(symbol, force = false){
+    const sym = String(symbol || '').trim().toUpperCase();
+    if(!sym) return null;
+    const cached = periodReturnState.quoteCache[sym];
+    if(!force && cached && (Date.now() - cached.fetchedAt) < PERIOD_RETURN_QUOTE_TTL_MS){
+      return cached.data;
+    }
+    const result = await priceProvider.fetchQuote(sym);
+    const payload = (result && !result.error)
+      ? {
+          livePrice: Number.isFinite(result.livePrice) ? Number(result.livePrice) : null,
+          prevClose: Number.isFinite(result.prevClose) ? Number(result.prevClose) : null,
+          prevChangePct: Number.isFinite(result.prevChangePct) ? Number(result.prevChangePct) : null,
+          todayOpen: Number.isFinite(result.todayOpen) ? Number(result.todayOpen) : null,
+          symbol: result.symbol || sym,
+          updatedAt: new Date().toISOString()
+        }
+      : null;
+    periodReturnState.quoteCache[sym] = {
+      fetchedAt: Date.now(),
+      data: payload
+    };
+    return payload;
+  }
+
+  function buildPeriodReturnMetric(row, rangeKey, payload = {}){
+    const qty = parseN(row?.qty);
+    const startPrice = Number(payload.startPrice);
+    const endPrice = Number(payload.endPrice);
+    const base = {
+      rangeKey,
+      label: PERIOD_RETURN_RANGE_CONFIG[rangeKey]?.label || rangeKey,
+      available: false,
+      reason: payload.reason || '資料不足',
+      qty,
+      startPrice: Number.isFinite(startPrice) ? startPrice : null,
+      endPrice: Number.isFinite(endPrice) ? endPrice : null,
+      startDate: payload.startDate || '',
+      endDate: payload.endDate || '',
+      openPrice: Number.isFinite(payload.openPrice) ? Number(payload.openPrice) : null,
+      referenceLabel: payload.referenceLabel || '',
+      note: payload.note || '',
+      sourceHint: payload.sourceHint || '',
+      updatedAt: payload.updatedAt || ''
+    };
+    if(!(qty > 0) || !(startPrice > 0) || !(endPrice > 0)){
+      return base;
+    }
+    const priceDiff = endPrice - startPrice;
+    const priceDiffPct = startPrice !== 0 ? (priceDiff / startPrice) * 100 : null;
+    return {
+      ...base,
+      available: true,
+      priceDiff,
+      priceDiffPct,
+      pnlAmount: priceDiff * qty,
+      pnlPct: priceDiffPct
+    };
+  }
+
+  async function buildPeriodReturnRowData(row, options = {}){
+    const symbol = String(row?.stock?.symbol || '').trim().toUpperCase();
+    const qty = parseN(row?.qty);
+    const history = symbol ? await fetchPriceHistory(symbol, !!options.forceHistory) : null;
+    const quote = symbol ? await fetchPeriodReturnQuote(symbol, !!options.forceQuote) : null;
+    const today = localDateStr();
+    const latestHistory = getPeriodReturnLatestHistoryPoint(history);
+    const currentPrice = getFirstFinitePositive(quote?.livePrice, row?.currentPrice, row?.price, latestHistory?.close);
+    const currentDate = quote?.livePrice ? today : (latestHistory?.date || today);
+    const prevAnchor = localDateStr(shiftLocalDays(new Date(), -1));
+    const prevHistory = getPeriodReturnHistoryPointOnOrBefore(history, prevAnchor);
+    const prevClose = getFirstFinitePositive(quote?.prevClose, prevHistory?.close);
+
+    const dayMetric = buildPeriodReturnMetric(row, 'day', {
+      startPrice: prevClose,
+      endPrice: currentPrice,
+      startDate: prevHistory?.date || '前一交易日',
+      endDate: currentDate,
+      openPrice: quote?.todayOpen,
+      referenceLabel: '昨收到目前 / 收盤價',
+      note: PERIOD_RETURN_RANGE_CONFIG.day.note,
+      sourceHint: '昨收取自 quote，若缺漏則回退到歷史最近一個交易日收盤價。',
+      updatedAt: quote?.updatedAt || row?.quoteTime || ''
+    });
+
+    const weekAnchor = localDateStr(shiftLocalDays(new Date(), -6));
+    const weekStart = getPeriodReturnHistoryPointOnOrBefore(history, weekAnchor);
+    const weekMetric = buildPeriodReturnMetric(row, 'week', {
+      startPrice: weekStart?.close,
+      endPrice: currentPrice,
+      startDate: weekStart?.date || '',
+      endDate: currentDate,
+      referenceLabel: '起點收盤到目前價',
+      note: PERIOD_RETURN_RANGE_CONFIG.week.note,
+      sourceHint: '起始價採指定日期或之前最近交易日收盤價。',
+      updatedAt: quote?.updatedAt || row?.quoteTime || ''
+    });
+
+    const monthAnchor = localDateStr(shiftLocalDays(new Date(), -30));
+    const monthStart = getPeriodReturnHistoryPointOnOrBefore(history, monthAnchor);
+    const monthMetric = buildPeriodReturnMetric(row, 'month', {
+      startPrice: monthStart?.close,
+      endPrice: currentPrice,
+      startDate: monthStart?.date || '',
+      endDate: currentDate,
+      referenceLabel: '30 天前收盤到目前價',
+      note: PERIOD_RETURN_RANGE_CONFIG.month.note,
+      sourceHint: '起始價採指定日期或之前最近交易日收盤價。',
+      updatedAt: quote?.updatedAt || row?.quoteTime || ''
+    });
+
+    return {
+      key: row.instrumentKey || symbol || uid(),
+      symbol,
+      name: row?.stock?.name || '',
+      qty,
+      currentPrice,
+      currentDate,
+      updatedAt: quote?.updatedAt || row?.quoteTime || '',
+      periods: {
+        day: dayMetric,
+        week: weekMetric,
+        month: monthMetric
+      }
+    };
+  }
+
+  function computePeriodReturnCardStats(rows, rangeKey){
+    const metrics = rows
+      .map(item => item?.periods?.[rangeKey])
+      .filter(Boolean);
+    const available = metrics.filter(metric => metric.available);
+    const totalPnl = available.reduce((sum, metric) => sum + (Number.isFinite(metric.pnlAmount) ? metric.pnlAmount : 0), 0);
+    const positiveCount = available.filter(metric => metric.pnlAmount > 0).length;
+    return {
+      total: metrics.length,
+      available: available.length,
+      positiveCount,
+      totalPnl
+    };
+  }
+
+  function renderPeriodReturnDashboardView(){
+    const summaryEl = $('#period-return-summary');
+    const statusEl = $('#period-return-status');
+    const startNoteEl = $('#period-return-start-note');
+    const metaEl = $('#period-return-meta');
+    const tbody = $('#tbl-period-return tbody');
+    if(!summaryEl || !statusEl || !startNoteEl || !metaEl || !tbody) return;
+
+    const rangeKey = periodReturnState.range;
+    const rangeCfg = PERIOD_RETURN_RANGE_CONFIG[rangeKey] || PERIOD_RETURN_RANGE_CONFIG.day;
+    const rows = Array.isArray(periodReturnState.rows) ? periodReturnState.rows.slice() : [];
+
+    summaryEl.innerHTML = Object.entries(PERIOD_RETURN_RANGE_CONFIG).map(([key, cfg]) => {
+      const stats = computePeriodReturnCardStats(rows, key);
+      const totalClass = getPeriodReturnToneClass(stats.totalPnl);
+      return `
+        <button type="button" class="period-summary-card ${key === rangeKey ? 'active' : ''}" data-period-range="${key}">
+          <div class="period-summary-label">${cfg.label}</div>
+          <div class="period-summary-value ${totalClass}">${formatPeriodReturnSignedAmount(stats.totalPnl)}</div>
+          <div class="period-summary-meta">
+            <span>可計算 ${stats.available}/${stats.total} 檔</span>
+            <span>正報酬 ${stats.positiveCount} 檔</span>
+          </div>
+        </button>`;
+    }).join('');
+
+    $$('#view-period-return [data-period-range]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.periodRange === rangeKey);
+    });
+
+    startNoteEl.textContent = rangeCfg.note;
+
+    const loadedAt = periodReturnState.lastLoadedAt
+      ? new Date(periodReturnState.lastLoadedAt).toLocaleString('zh-TW', { hour12: false })
+      : '';
+    const selectedStats = computePeriodReturnCardStats(rows, rangeKey);
+    metaEl.textContent = rows.length
+      ? `目前檢視：${rangeCfg.label}，可計算 ${selectedStats.available}/${selectedStats.total} 檔${loadedAt ? `，本頁更新於 ${loadedAt}` : ''}`
+      : `目前檢視：${rangeCfg.label}`;
+
+    if(!rows.length){
+      statusEl.className = 'period-board-status';
+      statusEl.textContent = '尚無持有標的，無法建立週期報酬看板。';
+      tbody.innerHTML = '<tr><td colspan="9" class="empty">尚無持有標的</td></tr>';
+      return;
+    }
+
+    const unavailableCount = rows.filter(item => !item?.periods?.[rangeKey]?.available).length;
+    statusEl.className = unavailableCount ? 'period-board-status error' : 'period-board-status';
+    statusEl.textContent = unavailableCount
+      ? `${rangeCfg.label}資料已載入，但有 ${unavailableCount} 檔因歷史價格不足或代理未回應而無法完整計算。`
+      : `${rangeCfg.label}資料已載入，共 ${rows.length} 檔可檢視。`;
+
+    rows.sort((a, b) => {
+      const ma = a?.periods?.[rangeKey];
+      const mb = b?.periods?.[rangeKey];
+      if(!!ma?.available !== !!mb?.available) return ma?.available ? -1 : 1;
+      const aVal = Number.isFinite(ma?.pnlAmount) ? ma.pnlAmount : Number.NEGATIVE_INFINITY;
+      const bVal = Number.isFinite(mb?.pnlAmount) ? mb.pnlAmount : Number.NEGATIVE_INFINITY;
+      if(aVal !== bVal) return bVal - aVal;
+      return (a.symbol || '').localeCompare(b.symbol || '');
+    });
+
+    tbody.innerHTML = rows.map(item => {
+      const metric = item?.periods?.[rangeKey];
+      if(!metric?.available){
+        return `
+          <tr>
+            <td class="text-start">
+              <div class="period-symbol-cell">
+                <div class="period-symbol-main">
+                  <strong>${escapeHtml(item.symbol || '—')}</strong>
+                  <span class="period-symbol-name">${escapeHtml(item.name || '')}</span>
+                </div>
+                <div class="period-subline">目前缺少 ${escapeHtml(rangeCfg.label)} 所需歷史資料</div>
+              </div>
+            </td>
+            <td class="num">${formatHoldingQty(item.qty)}</td>
+            <td class="num" colspan="5"><span class="period-badge neutral">資料不足</span></td>
+            <td class="num">—</td>
+            <td class="num"><button type="button" class="btn ghost period-detail-btn" disabled>查看</button></td>
+          </tr>`;
+      }
+      const priceTone = getPeriodReturnToneClass(metric.priceDiff);
+      const pnlTone = getPeriodReturnToneClass(metric.pnlAmount);
+      return `
+        <tr>
+          <td class="text-start">
+            <div class="period-symbol-cell">
+              <div class="period-symbol-main">
+                <strong>${escapeHtml(item.symbol || '—')}</strong>
+                <span class="period-symbol-name">${escapeHtml(item.name || '')}</span>
+              </div>
+              <div class="period-subline">${escapeHtml(metric.startDate || '—')} → ${escapeHtml(metric.endDate || '—')}</div>
+            </div>
+          </td>
+          <td class="num">${formatHoldingQty(item.qty)}</td>
+          <td class="num">
+            <div class="period-value-stack">
+              <div class="period-value-main">${formatPeriodReturnPrice(metric.startPrice)}</div>
+              <div class="period-subline">${escapeHtml(metric.startDate || '—')}</div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="period-value-stack">
+              <div class="period-value-main">${formatPeriodReturnPrice(metric.endPrice)}</div>
+              <div class="period-subline">${escapeHtml(metric.endDate || '—')}</div>
+            </div>
+          </td>
+          <td class="num"><span class="period-value-main ${priceTone}">${formatPeriodReturnSignedAmount(metric.priceDiff)}</span></td>
+          <td class="num"><span class="period-badge ${priceTone || 'neutral'}">${formatPeriodReturnSignedPct(metric.priceDiffPct)}</span></td>
+          <td class="num"><span class="period-value-main ${pnlTone}">${formatPeriodReturnSignedAmount(metric.pnlAmount)}</span></td>
+          <td class="num"><span class="period-badge ${pnlTone || 'neutral'}">${formatPeriodReturnSignedPct(metric.pnlPct)}</span></td>
+          <td class="num"><button type="button" class="btn period-detail-btn" data-action="period-return-detail" data-key="${escapeAttr(item.key)}">查看</button></td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function renderPeriodicReturnDashboard(summary = calculatePortfolioSummary(), options = {}){
+    const statusEl = $('#period-return-status');
+    const tbody = $('#tbl-period-return tbody');
+    const summaryEl = $('#period-return-summary');
+    const metaEl = $('#period-return-meta');
+    if(!statusEl || !tbody || !summaryEl || !metaEl) return;
+
+    const rows = (summary?.heldRows || []).filter(row => parseN(row.qty) > 0 && String(row?.stock?.symbol || '').trim());
+    const seq = ++periodReturnState.renderSeq;
+
+    if(!rows.length){
+      periodReturnState.rows = [];
+      periodReturnState.lastLoadedAt = '';
+      renderPeriodReturnDashboardView();
+      return;
+    }
+
+    statusEl.className = 'period-board-status loading';
+    statusEl.textContent = `載入週期報酬資料中…（${rows.length} 檔）`;
+    if(!periodReturnState.rows.length){
+      tbody.innerHTML = '<tr><td colspan="9" class="empty">載入中…</td></tr>';
+      summaryEl.innerHTML = '';
+      metaEl.textContent = '';
+    }
+
+    const settled = await Promise.allSettled(rows.map(row => buildPeriodReturnRowData(row, options)));
+    if(seq !== periodReturnState.renderSeq) return;
+
+    periodReturnState.rows = settled
+      .filter(result => result.status === 'fulfilled' && result.value)
+      .map(result => result.value);
+    periodReturnState.lastLoadedAt = new Date().toISOString();
+    renderPeriodReturnDashboardView();
+  }
+
+  function buildPeriodReturnDetailCard(label, value, toneClass = ''){
+    return `
+      <div class="period-detail-card">
+        <div class="period-detail-label">${escapeHtml(label)}</div>
+        <div class="period-detail-value ${toneClass}">${value}</div>
+      </div>`;
+  }
+
+  function openPeriodReturnDetail(rowKey){
+    const dlg = $('#dlg-period-return-detail');
+    const titleEl = $('#period-return-detail-title');
+    const bodyEl = $('#period-return-detail-body');
+    if(!dlg || !titleEl || !bodyEl) return;
+
+    const row = periodReturnState.rows.find(item => item.key === rowKey);
+    const metric = row?.periods?.[periodReturnState.range];
+    if(!row || !metric || !metric.available) return;
+
+    const title = `${row.symbol || '—'} ${row.name || ''}`.trim();
+    titleEl.textContent = `${title}｜${metric.label}明細`;
+    const tonePrice = getPeriodReturnToneClass(metric.priceDiff);
+    const tonePnl = getPeriodReturnToneClass(metric.pnlAmount);
+    const cards = [
+      buildPeriodReturnDetailCard('持有股數', escapeHtml(formatHoldingQty(row.qty))),
+      buildPeriodReturnDetailCard('週期起始價', escapeHtml(formatPeriodReturnPrice(metric.startPrice))),
+      buildPeriodReturnDetailCard('目前 / 期末價', escapeHtml(formatPeriodReturnPrice(metric.endPrice))),
+      buildPeriodReturnDetailCard('價格漲跌', escapeHtml(formatPeriodReturnSignedAmount(metric.priceDiff)), tonePrice),
+      buildPeriodReturnDetailCard('價格漲跌幅', escapeHtml(formatPeriodReturnSignedPct(metric.priceDiffPct)), tonePrice),
+      buildPeriodReturnDetailCard('持有損益', escapeHtml(formatPeriodReturnSignedAmount(metric.pnlAmount)), tonePnl),
+      buildPeriodReturnDetailCard('持有損益率', escapeHtml(formatPeriodReturnSignedPct(metric.pnlPct)), tonePnl)
+    ];
+    if(Number.isFinite(metric.openPrice)){
+      cards.splice(3, 0, buildPeriodReturnDetailCard('今日開盤價', escapeHtml(formatPeriodReturnPrice(metric.openPrice))));
+    }
+
+    bodyEl.innerHTML = `
+      <div class="period-detail-grid">${cards.join('')}</div>
+      <div class="period-detail-note">
+        週期說明：${escapeHtml(metric.note || '')}<br>
+        參考區間：${escapeHtml(metric.startDate || '—')} → ${escapeHtml(metric.endDate || '—')}<br>
+        價格口徑：${escapeHtml(metric.referenceLabel || '—')}
+      </div>
+      <ul class="period-detail-list">
+        <li>價格變化：${escapeHtml(formatPeriodReturnSignedAmount(metric.priceDiff))}（${escapeHtml(formatPeriodReturnSignedPct(metric.priceDiffPct))}）</li>
+        <li>持有損益：以目前持有股數 ${escapeHtml(formatHoldingQty(row.qty))} 乘上區間價差估算。</li>
+        <li>${escapeHtml(metric.sourceHint || '資料來源為本機 proxy quote / history。')}</li>
+      </ul>`;
+    dlg.returnValue = '';
+    dlg.showModal();
+  }
 
   function week1IsTreemapSeriesAvailable(){
     if(typeof Highcharts === 'undefined') return false;
