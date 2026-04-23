@@ -1827,7 +1827,6 @@
                 <th class="num">週期起始價</th>
                 <th class="num">目前 / 期末價</th>
                 <th class="num">價格漲跌</th>
-                <th class="num">價格漲跌幅</th>
                 <th class="num">持有損益金額</th>
                 <th class="num">持有損益率</th>
                 <th class="num">詳細</th>
@@ -10518,6 +10517,11 @@ function updateAllocationPlannerSummary(){
     return `${value >= 0 ? '+' : '-'}${fmtInt.format(Math.abs(Math.round(value)))}`;
   }
 
+  function formatPeriodReturnSignedPrice(value){
+    if(!Number.isFinite(value)) return '—';
+    return `${value >= 0 ? '+' : '-'}${fmt2.format(Math.abs(value))}`;
+  }
+
   function formatPeriodReturnSignedPct(value){
     if(!Number.isFinite(value)) return '—';
     return `${value >= 0 ? '+' : '-'}${Math.abs(value).toFixed(2)}%`;
@@ -10834,8 +10838,7 @@ function updateAllocationPlannerSummary(){
               <div class="period-subline">${escapeHtml(metric.endDate || '—')}</div>
             </div>
           </td>
-          <td class="num"><span class="period-value-main ${priceTone}">${formatPeriodReturnSignedAmount(metric.priceDiff)}</span></td>
-          <td class="num"><span class="period-badge ${priceTone || 'neutral'}">${formatPeriodReturnSignedPct(metric.priceDiffPct)}</span></td>
+          <td class="num"><span class="period-value-main ${priceTone}">${formatPeriodReturnSignedPrice(metric.priceDiff)}</span></td>
           <td class="num"><span class="period-value-main ${pnlTone}">${formatPeriodReturnSignedAmount(metric.pnlAmount)}</span></td>
           <td class="num"><span class="period-badge ${pnlTone || 'neutral'}">${formatPeriodReturnSignedPct(metric.pnlPct)}</span></td>
           <td class="num"><button type="button" class="btn period-detail-btn" data-action="period-return-detail" data-key="${escapeAttr(item.key)}">查看</button></td>
@@ -10904,7 +10907,7 @@ function updateAllocationPlannerSummary(){
       buildPeriodReturnDetailCard('持有股數', escapeHtml(formatHoldingQty(row.qty))),
       buildPeriodReturnDetailCard('週期起始價', escapeHtml(formatPeriodReturnPrice(metric.startPrice))),
       buildPeriodReturnDetailCard('目前 / 期末價', escapeHtml(formatPeriodReturnPrice(metric.endPrice))),
-      buildPeriodReturnDetailCard('價格漲跌', escapeHtml(formatPeriodReturnSignedAmount(metric.priceDiff)), tonePrice),
+      buildPeriodReturnDetailCard('價格漲跌', escapeHtml(formatPeriodReturnSignedPrice(metric.priceDiff)), tonePrice),
       buildPeriodReturnDetailCard('價格漲跌幅', escapeHtml(formatPeriodReturnSignedPct(metric.priceDiffPct)), tonePrice),
       buildPeriodReturnDetailCard('持有損益', escapeHtml(formatPeriodReturnSignedAmount(metric.pnlAmount)), tonePnl),
       buildPeriodReturnDetailCard('持有損益率', escapeHtml(formatPeriodReturnSignedPct(metric.pnlPct)), tonePnl)
@@ -10921,7 +10924,7 @@ function updateAllocationPlannerSummary(){
         價格口徑：${escapeHtml(metric.referenceLabel || '—')}
       </div>
       <ul class="period-detail-list">
-        <li>價格變化：${escapeHtml(formatPeriodReturnSignedAmount(metric.priceDiff))}（${escapeHtml(formatPeriodReturnSignedPct(metric.priceDiffPct))}）</li>
+        <li>價格變化：${escapeHtml(formatPeriodReturnSignedPrice(metric.priceDiff))}（${escapeHtml(formatPeriodReturnSignedPct(metric.priceDiffPct))}）</li>
         <li>持有損益：以目前持有股數 ${escapeHtml(formatHoldingQty(row.qty))} 乘上區間價差估算。</li>
         <li>${escapeHtml(metric.sourceHint || '資料來源為本機 proxy quote / history。')}</li>
       </ul>`;
