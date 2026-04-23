@@ -1436,14 +1436,14 @@
       </div>
     </div>
     <div class="tabs" role="tablist" aria-label="主導覽">
-      <button class="tab" role="tab" aria-selected="true" data-target="#view-snapshots">總覽</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-holdings">持有標的</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-txns">異動紀錄</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-dividend">股息規劃</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-return">報酬檢視</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-period-return">週期報酬看板</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-watchlist">投資筆記</button>
-      <button class="tab" role="tab" aria-selected="false" data-target="#view-market-hub">看盤中心</button>
+      <button class="tab" role="tab" aria-selected="true" data-target="#view-snapshots">首頁</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-holdings">持股</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-txns">交易</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-dividend">股息</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-return">總報酬</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-period-return">週期報酬</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-watchlist">筆記</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="#view-market-hub">看盤</button>
       <button class="tab" role="tab" aria-selected="false" data-target="#view-settings">設定</button>
   </div>
 
@@ -1718,7 +1718,7 @@
     <!-- 股息規劃（月曆配息追蹤） -->
     <section id="view-dividend" class="view" role="tabpanel">
       <div class="card">
-        <h3 style="margin:0 0 14px;font-size:18px;font-weight:600">股息規劃</h3>
+        <h3 style="margin:0 0 14px;font-size:18px;font-weight:600">股息</h3>
         <div class="div-kpi-row" id="dividend-kpi-row">
           <div class="div-kpi-card">
             <div class="lbl">今年累計已領</div>
@@ -1797,7 +1797,7 @@
         <div class="period-board-head">
           <div>
             <div class="period-board-kicker">Specific Period Board</div>
-            <h3 class="period-board-title">特定週期的報酬檢視看板</h3>
+            <h3 class="period-board-title">週期報酬</h3>
             <div class="period-board-desc">
               針對目前持有標的，集中檢視當日、近一週與近 30 天的價格變化與持有損益。
               版本 A 先以既有資料流實作：當日採昨收到目前/收盤價，近一週與近 30 天採區間起點最近交易日收盤價到目前價。
@@ -1842,7 +1842,7 @@
     <section id="view-watchlist" class="view" role="tabpanel">
       <div class="card">
         <div class="stack" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-          <h3 style="margin:0;font-size:18px;font-weight:600">投資筆記</h3>
+          <h3 style="margin:0;font-size:18px;font-weight:600">筆記</h3>
           <div class="stack" style="gap:8px;flex-wrap:wrap;align-items:center">
             <select id="watchlist-filter" class="select">
               <option value="all">全部</option>
@@ -1863,7 +1863,7 @@
         <div class="market-hub-header">
           <div class="market-hub-header-main">
             <div class="market-hub-kicker">Market Hub</div>
-            <h3 style="margin:0;font-size:18px;font-weight:600">看盤中心</h3>
+            <h3 style="margin:0;font-size:18px;font-weight:600">看盤</h3>
             <div class="market-hub-desc">把每日常用的評分模型、五檔追蹤、投資心法與 AI 對話入口集中在同一頁，減少切換成本。</div>
           </div>
           <div class="market-hub-actions">
@@ -10503,6 +10503,12 @@ function updateAllocationPlannerSummary(){
     return null;
   }
 
+  function getPeriodReturnMinHoldingDays(rangeKey){
+    if(rangeKey === 'week') return 7;
+    if(rangeKey === 'month') return 30;
+    return 0;
+  }
+
   function formatPeriodReturnPrice(value){
     return Number.isFinite(value) && value > 0 ? fmt2.format(value) : '—';
   }
@@ -10580,12 +10586,18 @@ function updateAllocationPlannerSummary(){
     const qty = parseN(row?.qty);
     const startPrice = Number(payload.startPrice);
     const endPrice = Number(payload.endPrice);
+    const holdingDays = Number.isFinite(payload.holdingDays) ? Number(payload.holdingDays) : null;
+    const minHoldingDays = getPeriodReturnMinHoldingDays(rangeKey);
+    const hiddenByHoldingDays = Number.isFinite(holdingDays) && minHoldingDays > 0 && holdingDays < minHoldingDays;
     const base = {
       rangeKey,
       label: PERIOD_RETURN_RANGE_CONFIG[rangeKey]?.label || rangeKey,
       available: false,
-      reason: payload.reason || '資料不足',
+      reason: payload.reason || (hiddenByHoldingDays ? `持有未滿 ${minHoldingDays} 天` : '資料不足'),
       qty,
+      holdingDays,
+      minHoldingDays,
+      hiddenByHoldingDays,
       startPrice: Number.isFinite(startPrice) ? startPrice : null,
       endPrice: Number.isFinite(endPrice) ? endPrice : null,
       startDate: payload.startDate || '',
@@ -10596,6 +10608,9 @@ function updateAllocationPlannerSummary(){
       sourceHint: payload.sourceHint || '',
       updatedAt: payload.updatedAt || ''
     };
+    if(hiddenByHoldingDays){
+      return base;
+    }
     if(!(qty > 0) || !(startPrice > 0) || !(endPrice > 0)){
       return base;
     }
@@ -10614,6 +10629,7 @@ function updateAllocationPlannerSummary(){
   async function buildPeriodReturnRowData(row, options = {}){
     const symbol = String(row?.stock?.symbol || '').trim().toUpperCase();
     const qty = parseN(row?.qty);
+    const holdingDays = Number.isFinite(row?.cycleHoldingDays) ? Number(row.cycleHoldingDays) : null;
     const history = symbol ? await fetchPriceHistory(symbol, !!options.forceHistory) : null;
     const quote = symbol ? await fetchPeriodReturnQuote(symbol, !!options.forceQuote) : null;
     const today = localDateStr();
@@ -10625,6 +10641,7 @@ function updateAllocationPlannerSummary(){
     const prevClose = getFirstFinitePositive(quote?.prevClose, prevHistory?.close);
 
     const dayMetric = buildPeriodReturnMetric(row, 'day', {
+      holdingDays,
       startPrice: prevClose,
       endPrice: currentPrice,
       startDate: prevHistory?.date || '前一交易日',
@@ -10639,6 +10656,7 @@ function updateAllocationPlannerSummary(){
     const weekAnchor = localDateStr(shiftLocalDays(new Date(), -6));
     const weekStart = getPeriodReturnHistoryPointOnOrBefore(history, weekAnchor);
     const weekMetric = buildPeriodReturnMetric(row, 'week', {
+      holdingDays,
       startPrice: weekStart?.close,
       endPrice: currentPrice,
       startDate: weekStart?.date || '',
@@ -10652,6 +10670,7 @@ function updateAllocationPlannerSummary(){
     const monthAnchor = localDateStr(shiftLocalDays(new Date(), -30));
     const monthStart = getPeriodReturnHistoryPointOnOrBefore(history, monthAnchor);
     const monthMetric = buildPeriodReturnMetric(row, 'month', {
+      holdingDays,
       startPrice: monthStart?.close,
       endPrice: currentPrice,
       startDate: monthStart?.date || '',
@@ -10667,6 +10686,7 @@ function updateAllocationPlannerSummary(){
       symbol,
       name: row?.stock?.name || '',
       qty,
+      holdingDays,
       currentPrice,
       currentDate,
       updatedAt: quote?.updatedAt || row?.quoteTime || '',
@@ -10681,6 +10701,7 @@ function updateAllocationPlannerSummary(){
   function computePeriodReturnCardStats(rows, rangeKey){
     const metrics = rows
       .map(item => item?.periods?.[rangeKey])
+      .filter(metric => metric && !metric.hiddenByHoldingDays)
       .filter(Boolean);
     const available = metrics.filter(metric => metric.available);
     const totalPnl = available.reduce((sum, metric) => sum + (Number.isFinite(metric.pnlAmount) ? metric.pnlAmount : 0), 0);
@@ -10703,10 +10724,11 @@ function updateAllocationPlannerSummary(){
 
     const rangeKey = periodReturnState.range;
     const rangeCfg = PERIOD_RETURN_RANGE_CONFIG[rangeKey] || PERIOD_RETURN_RANGE_CONFIG.day;
-    const rows = Array.isArray(periodReturnState.rows) ? periodReturnState.rows.slice() : [];
+    const allRows = Array.isArray(periodReturnState.rows) ? periodReturnState.rows.slice() : [];
+    const rows = allRows.filter(item => !item?.periods?.[rangeKey]?.hiddenByHoldingDays);
 
     summaryEl.innerHTML = Object.entries(PERIOD_RETURN_RANGE_CONFIG).map(([key, cfg]) => {
-      const stats = computePeriodReturnCardStats(rows, key);
+      const stats = computePeriodReturnCardStats(allRows, key);
       const totalClass = getPeriodReturnToneClass(stats.totalPnl);
       return `
         <button type="button" class="period-summary-card ${key === rangeKey ? 'active' : ''}" data-period-range="${key}">
@@ -10728,15 +10750,25 @@ function updateAllocationPlannerSummary(){
     const loadedAt = periodReturnState.lastLoadedAt
       ? new Date(periodReturnState.lastLoadedAt).toLocaleString('zh-TW', { hour12: false })
       : '';
-    const selectedStats = computePeriodReturnCardStats(rows, rangeKey);
+    const selectedStats = computePeriodReturnCardStats(allRows, rangeKey);
     metaEl.textContent = rows.length
       ? `目前檢視：${rangeCfg.label}，可計算 ${selectedStats.available}/${selectedStats.total} 檔${loadedAt ? `，本頁更新於 ${loadedAt}` : ''}`
       : `目前檢視：${rangeCfg.label}`;
 
-    if(!rows.length){
+    if(!allRows.length){
       statusEl.className = 'period-board-status';
       statusEl.textContent = '尚無持有標的，無法建立週期報酬看板。';
       tbody.innerHTML = '<tr><td colspan="9" class="empty">尚無持有標的</td></tr>';
+      return;
+    }
+
+    if(!rows.length){
+      const minHoldingDays = getPeriodReturnMinHoldingDays(rangeKey);
+      statusEl.className = 'period-board-status';
+      statusEl.textContent = minHoldingDays > 0
+        ? `${rangeCfg.label}目前沒有持有滿 ${minHoldingDays} 天的標的。`
+        : `${rangeCfg.label}目前沒有可顯示資料。`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">${minHoldingDays > 0 ? `目前沒有持有滿 ${minHoldingDays} 天的標的` : '目前沒有可顯示資料'}</td></tr>`;
       return;
     }
 
