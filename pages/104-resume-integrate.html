@@ -533,7 +533,7 @@
                         <label for="newFileInput" class="btn btn-primary">
                             📄 匯入新履歷資料
                         </label>
-                        <input type="file" id="newFileInput" accept=".xlsx,.xls,.csv">
+                        <input type="file" id="newFileInput" accept=".xlsx,.xls,.csv" multiple>
                     </div>
                     <button id="exportBtn" class="btn btn-success" disabled>
                         💾 匯出 XLSX
@@ -779,7 +779,7 @@
                 /**
                  * 驗證檔案類型
                  */
-                validateFile(file, allowedExtensions = ['.xlsx', '.xls']) {
+                validateFile(file, allowedExtensions = ['.xlsx', '.xls'], maxSizeMB = 100) {
                     if (!file) {
                         return { valid: false, message: '請選擇檔案' };
                     }
@@ -794,12 +794,12 @@
                         };
                     }
                     
-                    // 檢查檔案大小（限制 10MB）
-                    const maxSize = 10 * 1024 * 1024;
+                    // 檢查檔案大小
+                    const maxSize = maxSizeMB * 1024 * 1024;
                     if (file.size > maxSize) {
                         return { 
                             valid: false, 
-                            message: '檔案大小超過限制（最大 10MB）' 
+                            message: `檔案大小超過限制（最大 ${maxSizeMB}MB）` 
                         };
                     }
                     
@@ -1085,7 +1085,7 @@
             if (!file) return;
             
             // 驗證檔案
-            const fileValidation = Utils.validateFile(file);
+            const fileValidation = Utils.validateFile(file, ['.xlsx', '.xls'], 100);
             if (!fileValidation.valid) {
                 alert(fileValidation.message);
                 e.target.value = ''; // 清空檔案選擇
@@ -1152,67 +1152,83 @@
         }
 
         // 匯入新履歷資料
-        function handleNewFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        async function handleNewFileUpload(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
             
-            // 驗證檔案
-            const fileValidation = Utils.validateFile(file);
-            if (!fileValidation.valid) {
-                alert(fileValidation.message);
-                e.target.value = ''; // 清空檔案選擇
-                return;
+            for (const file of files) {
+                const fileValidation = Utils.validateFile(file, ['.xlsx', '.xls', '.csv'], 100);
+                if (!fileValidation.valid) {
+                    alert(`${file.name}：${fileValidation.message}`);
+                    e.target.value = ''; // 清空檔案選擇
+                    return;
+                }
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = FileProcessor.readWorkbook(data);
+            try {
+                let totalResumeCount = 0;
+                
+                for (const file of files) {
+                    const workbook = await readWorkbookFromFile(file);
                     
                     // 驗證工作表是否存在
                     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-                        throw new Error('檔案中沒有找到任何工作表');
+                        throw new Error(`${file.name}：檔案中沒有找到任何工作表`);
                     }
                     
                     // 處理新檔案資料
-                    let processedData = processNewFileData(workbook);
+                    const processedData = processNewFileData(workbook);
                     
                     // 驗證處理後的資料
                     const dataValidation = Utils.validateWorksheetData(processedData);
                     if (!dataValidation.valid) {
-                        throw new Error(dataValidation.message);
+                        throw new Error(`${file.name}：${dataValidation.message}`);
                     }
                     
                     // 合併資料
                     mergeWithExistingData(processedData);
-                    
-                    // 正規化和去重
-                    const removedCount = normalizeAndDedupe();
-                    showDedupeInfo(removedCount, '新履歷資料');
-                    
-                    // 生成職缺分類並更新衍生欄位
-                    generateJobClassification(workbookData['#履歷匯出資料']);
-                    applyDerivedFieldUpdates();
-                    
-                    // 顯示資料
-                    displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
-                    
-                    // 更新介面狀態
-                    updateNewFileStatus(file.name, processedData.length - 1);
-                    
-                } catch (error) {
-                    ErrorHandler.handle('檔案上傳', error);
-                    e.target.value = ''; // 清空檔案選擇
+                    totalResumeCount += Math.max(processedData.length - 1, 0);
                 }
-            };
-            
-            reader.onerror = function() {
-                ErrorHandler.handle('檔案讀取', new Error('無法讀取檔案'));
-                e.target.value = '';
-            };
-            
-            reader.readAsArrayBuffer(file);
+                
+                // 正規化和去重
+                const removedCount = normalizeAndDedupe();
+                showDedupeInfo(removedCount, '新履歷資料');
+                
+                // 生成職缺分類並更新衍生欄位
+                generateJobClassification(workbookData['#履歷匯出資料']);
+                applyDerivedFieldUpdates();
+                
+                // 顯示資料
+                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                
+                // 更新介面狀態
+                updateNewFileStatus(files.length, totalResumeCount);
+                
+            } catch (error) {
+                ErrorHandler.handle('檔案上傳', error);
+                e.target.value = ''; // 清空檔案選擇
+            }
+        }
+        
+        function readWorkbookFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        resolve(FileProcessor.readWorkbook(data));
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error(`${file.name}：無法讀取檔案`));
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
         }
         
         /**
@@ -1272,9 +1288,9 @@
         /**
          * 更新新檔案狀態資訊
          */
-        function updateNewFileStatus(fileName, resumeCount) {
+        function updateNewFileStatus(fileCount, resumeCount) {
             const newFileInfo = document.getElementById('newFileInfo');
-            newFileInfo.textContent = `✅ 已載入新資料：${fileName} (${resumeCount} 筆履歷)`;
+            newFileInfo.textContent = `✅ 已載入新資料：${fileCount} 個檔案，共 ${resumeCount} 筆履歷`;
             newFileInfo.style.display = 'block';
             newFileInfo.className = 'status status-success';
             
@@ -3099,8 +3115,12 @@
         window.filterTable = filterTable;
         window.debouncedFilterTable = debouncedFilterTable;
         window.clearAllFilters = clearAllFilters;
-        window.hideLoading = hideLoading;
-        window.showLoading = showLoading;
+        if (typeof hideLoading === 'function') {
+            window.hideLoading = hideLoading;
+        }
+        if (typeof showLoading === 'function') {
+            window.showLoading = showLoading;
+        }
         window.showHelpModal = showHelpModal;
         window.closeHelpModal = closeHelpModal;
         
