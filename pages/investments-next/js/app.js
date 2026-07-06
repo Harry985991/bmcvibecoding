@@ -28,7 +28,12 @@
   // 子頁籤渲染分派
   function renderSubviewById(target){
     try{
-      if(target === '#view-return'){ renderReturnOverview(); }
+      if(target === '#view-return'){
+        renderReturnOverview();
+        // 部分重繪後，隱藏時跳過的回撤圖需在切入時補繪
+        if(typeof renderDrawdownChart === 'function'){ renderDrawdownChart(); }
+        if($('#tbl-snapshots')) renderSnapshots();
+      }
       if(target === '#view-period-return'){ renderPeriodicReturnDashboard(calculatePortfolioSummary(), { forceQuote: true }); }
       if(target === '#view-stock-return'){ renderReturnContribBars(); }
       if(target === '#view-return-table'){ renderReturnOverview(); }
@@ -117,6 +122,7 @@
       if(tab.dataset.target==='#view-snapshots'){
         const summary = calculatePortfolioSummary();
         renderOverview(summary);
+        try{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); }catch(err){ console.error('[tab:view-snapshots] renderActionPanel failed', err); }
         updateSearchDropdown();
         refreshKPI(summary);
         renderAllocation(summary);
@@ -327,15 +333,7 @@
           force: false
         });
         const summary = calculatePortfolioSummary();
-        refreshPortfolioViews({
-          holdings: true,
-          txns: true,
-	          dividend: true,
-	          snapshots: true,
-	          watchlist: true,
-	          shortDividend: true,
-	          summary
-	        });
+        refreshActiveViews(summary);
         if(changedCount > 0 && typeof captureLatestReturnDailyArchive === 'function'){
           try{ await captureLatestReturnDailyArchive('price-refresh-background'); }
           catch(archiveErr){ console.warn('[archive] background capture failed:', archiveErr); }
@@ -413,13 +411,7 @@
       if (changedCount > 0) {
         await saveDB();
         upsertAutoDailySnapshot(isAutoRefresh ? 'price-refresh-auto' : 'price-refresh-manual', true);
-        refreshPortfolioViews({
-          chrome: true,
-          overview: true,
-          returns: true,
-          snapshots: true,
-          shortDividend: true
-        });
+        refreshActiveViews();
         schedulePostPriceRefreshTasks({ heldSymbols, stockSymbols, changedCount, isAutoRefresh });
         backgroundScheduled = true;
       }
@@ -683,6 +675,7 @@
     }
     if(overview && summary){
       runRefreshStep('renderOverview', ()=>renderOverview(summary));
+      runRefreshStep('renderActionPanel', ()=>{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); });
       runRefreshStep('renderAllocation', ()=>renderAllocation(summary));
     }
     if(holdings && summary){
@@ -722,9 +715,53 @@
     return summary;
   }
 
+  // ── 部分重繪：只更新 header（chrome）與目前可見頁籤 ──
+  // 其他頁籤維持既有機制：切頁時由 tab click handler 重算該頁。
+  function refreshActiveViews(providedSummary = null){
+    const summary = providedSummary || calculatePortfolioSummary();
+    const step = (label, fn) => {
+      try{ fn(); }catch(err){ console.error(`[refreshActiveViews] ${label} failed`, err); }
+    };
+    step('renderDataHealthTrigger', ()=>renderDataHealthTrigger(summary));
+    step('renderDataHealth', ()=>renderDataHealth(summary));
+    step('updateSearchDropdown', ()=>updateSearchDropdown());
+    step('refreshKPI', ()=>refreshKPI(summary));
+
+    const activeView = document.querySelector('.view.active');
+    const target = activeView ? `#${activeView.id}` : null;
+    switch(target){
+      case '#view-snapshots':
+        step('renderOverview', ()=>renderOverview(summary));
+        step('renderActionPanel', ()=>{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); });
+        step('renderAllocation', ()=>renderAllocation(summary));
+        break;
+      case '#view-holdings':
+        step('renderHoldings', ()=>renderHoldings(summary));
+        break;
+      case '#view-txns':
+        step('renderTxns', ()=>renderTxns(summary));
+        break;
+      case '#view-dividend':
+        step('renderDividend', ()=>renderDividend(summary));
+        break;
+      case '#view-short-dividend':
+        step('renderShortDividend', ()=>{ if(typeof renderShortDividend === 'function') renderShortDividend(); });
+        break;
+      case '#view-returns-hub':
+      case '#view-tools': {
+        const activeSub = activeView.querySelector('.subview.active');
+        if(activeSub) step('renderSubview', ()=>renderSubviewById(`#${activeSub.id}`));
+        break;
+      }
+    }
+    return summary;
+  }
+
+  // refreshOptions 已停用（保留簽名相容既有呼叫端）：
+  // 存檔後一律走部分重繪（header + 目前頁籤），隱藏頁由切頁機制補算。
   async function persistAndRefresh(refreshOptions = {}, saveOptions = {}){
     await saveDB(saveOptions);
-    fullRender();
+    refreshActiveViews();
     return refreshOptions;
   }
 
@@ -733,6 +770,7 @@
     setInitDebugStatus('fullRender:start');
     const summary = calculatePortfolioSummary();
     renderOverview(summary);
+    try{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); }catch(err){ console.error('[fullRender] renderActionPanel failed', err); }
     updateSearchDropdown();
     refreshKPI(summary);
     renderHoldings(summary);

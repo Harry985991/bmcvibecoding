@@ -247,6 +247,7 @@
     if(_highchartsLoaderPromise) return _highchartsLoaderPromise.then(() => week1EnsureHighchartsTreemapModule());
     _highchartsLoaderPromise = new Promise((resolve, reject) => {
       const urls = [
+        'js/vendor/highcharts.js',
         'https://cdn.jsdelivr.net/npm/highcharts@11/highcharts.js',
         'https://unpkg.com/highcharts@11/highcharts.js',
         'https://code.highcharts.com/highcharts.js'

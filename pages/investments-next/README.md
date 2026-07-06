@@ -99,3 +99,24 @@ curl -X POST http://localhost:3000/api/trade-journals/import \
 - 決策資料包的 OHLCV 走 proxy `/quote`（TWSE MIS）：盤後查詢即為當日完整開高低收量；
   Yahoo fallback 路徑缺高低與量，該欄顯示「待補」
 - vnext 數字以原始 JSON 附入資料包（欄位名稱以 trading-dashboard 為準），抓不到時留手動模板
+
+## 第一期優化（2026-07-07，P0 四項）
+
+計畫文件：`plans/2026-07-07-investments-next-phase1-p0.md`（workspace root）
+
+- **Highcharts / 字體本地化**：Highcharts 鎖定 11.4.8 存於 `js/vendor/`（含 treemap module，index.html 靜態載入）；
+  Inter 改用本地可變字體 `fonts/inter/`（latin subset，wght 400–800）。CDN 僅留作動態載入器的備援候選。
+- **今日行動置頂**：首頁最上方新增 `#action-panel` 容器，`renderActionPanel`（原休眠）接入
+  fullRender / 首頁 tab click / refreshPortfolioViews(overview) / refreshActiveViews 四個渲染入口。
+- **資料層單一真相**：`loadDB` 改以伺服器（`/api/load-db` → `/data/db.json`）為權威，
+  移除舊的三源「擇優排序」啟發式；本機 IndexedDB / localStorage 降為快取，
+  只用 `mergePerformanceHistory` 補回 additive 的 snapshots / dailyArchive。
+  伺服器讀不到 → 離線模式常駐警示；`saveDB` 同步失敗 → 顯著警示（不再靜默）。
+- **分頁互鎖**：`navigator.locks`（fallback：localStorage heartbeat）確保同時只有一個分頁可寫，
+  後開分頁進唯讀模式（saveDB 早退 + 頂部紅色橫幅 + 資料健康面板列示）。
+  限制：不涵蓋舊版 `pages/investments/`（鐵律不動舊版），習慣上請只開一版。
+- **存檔後部分重繪**：`persistAndRefresh` 不再 `fullRender()` 全量重繪，
+  改走 `refreshActiveViews()`（header + 目前頁籤）；隱藏頁由既有的切頁重算機制補上；
+  報酬「總報酬」子頁切入時補繪回撤圖。
+
+改動前的 db.json 備份：`data/backups/db-pre-phase1-20260707.json`

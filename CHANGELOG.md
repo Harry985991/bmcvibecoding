@@ -4,6 +4,14 @@
 
 ## [未發布]
 
+### investments-next 第一期優化（2026-07-07）
+- Highcharts 本地化（js/vendor/，鎖 11.4.8，含 treemap）、Inter 字體本地化（fonts/inter/），斷網圖表不再全掛
+- 首頁新增「今日行動」置頂面板（喚醒原休眠的 renderActionPanel）
+- 資料層改伺服器單一真相（移除三源擇優合併），離線 / 同步失敗顯著警示
+- 新增分頁互鎖（navigator.locks），後開分頁唯讀，防止多分頁互相覆蓋
+- 存檔後改部分重繪（header + 目前頁籤），不再全量重繪 13 個頁面
+- 改動前備份：data/backups/db-pre-phase1-20260707.json
+
 ---
 
 ## [1.6.1] - 2025-12-20

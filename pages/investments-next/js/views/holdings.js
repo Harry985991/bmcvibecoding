@@ -1239,6 +1239,23 @@
         text: dataHealthState.storageMessage || '資料儲存失敗，重新整理後可能回到舊資料'
       });
     }
+    if(dataHealthState.readOnlyMode){
+      issues.push({
+        type: 'error',
+        text: '唯讀模式：另一個投資儀表板分頁使用中，本頁寫入已停用'
+      });
+    }
+    if(dataHealthState.offlineMode){
+      issues.push({
+        type: 'warn',
+        text: '離線模式：無法讀取伺服器資料，目前使用本機快取'
+      });
+    } else if(dataHealthState.serverSyncError){
+      issues.push({
+        type: 'error',
+        text: '伺服器同步失敗：最近一次儲存未寫入 db.json，請確認代理伺服器'
+      });
+    }
 
     const hasError = issues.some(x => x.type === 'error');
     const statusClass = hasError ? 'error' : (issues.length > 0 ? 'warn' : 'ok');
@@ -1303,6 +1320,9 @@
     if(dataHealthState.storageWriteError){
       lines.push(`儲存異常：${dataHealthState.storageMessage || 'IndexedDB 寫入失敗'}`);
     }
+    if(dataHealthState.readOnlyMode) lines.push('模式：唯讀（另一分頁持有寫入鎖）');
+    if(dataHealthState.offlineMode) lines.push('模式：離線（伺服器資料不可讀，使用本機快取）');
+    else if(dataHealthState.serverSyncError) lines.push('同步異常：最近一次儲存未寫入伺服器');
     lines.push('');
     if(!summary.anomalyRows.length){
       lines.push('目前沒有異常標的。');

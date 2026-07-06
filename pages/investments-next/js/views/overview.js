@@ -987,6 +987,7 @@
     window.__week1TreemapModulePromise = (async () => {
       const major = String((Highcharts && Highcharts.version) || '11').split('.')[0] || '11';
       const urls = [
+        'js/vendor/highcharts-treemap.js',
         `https://code.highcharts.com/${major}/modules/treemap.js`,
         `https://cdn.jsdelivr.net/npm/highcharts@${major}/modules/treemap.js`,
         `https://unpkg.com/highcharts@${major}/modules/treemap.js`,
@@ -1225,6 +1226,16 @@
             </div>`;
           }
         }
+      });
+      // 建圖當下容器寬度可能尚未穩定（會落在 Highcharts 預設 600px），下一個 frame 校正尺寸
+      window.requestAnimationFrame(() => {
+        try{
+          const ch = week1OverviewTreemapChart;
+          if(ch && renderSeq === week1TreemapRenderSeq){
+            const w = container.getBoundingClientRect().width;
+            if(w > 0 && Math.abs(ch.chartWidth - w) > 1) ch.reflow();
+          }
+        }catch(e){ /* ignore */ }
       });
     }).catch((err) => {
       if(renderSeq !== week1TreemapRenderSeq) return;

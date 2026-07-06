@@ -76,11 +76,82 @@
   const dataHealthState = {
     storageWriteError: false,
     storageMessage: '',
-    popoverOpen: false
+    popoverOpen: false,
+    offlineMode: false,      // 伺服器資料完全讀不到，使用本機快取
+    readOnlyMode: false,     // 另一分頁持有寫入鎖，本頁唯讀
+    serverSyncError: false   // 最近一次儲存未成功寫入伺服器
   };
   const holdingsValidationState = {
     popoverOpen: false
   };
+
+  // ── 分頁互鎖：同源只允許一個分頁寫入，後開者唯讀 ─────────
+  const TAB_LOCK_NAME = 'investments-next-db';
+  const TAB_LOCK_LS_KEY = 'next.tabLock';
+  const TAB_LOCK_ID = Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+  function initTabLockHeartbeat(){
+    let current = null;
+    try{ current = JSON.parse(localStorage.getItem(TAB_LOCK_LS_KEY) || 'null'); }catch(e){}
+    if(current && current.id !== TAB_LOCK_ID && (Date.now() - current.ts) < 15000){
+      dataHealthState.readOnlyMode = true;
+      return false;
+    }
+    const renew = () => {
+      try{ localStorage.setItem(TAB_LOCK_LS_KEY, JSON.stringify({ id: TAB_LOCK_ID, ts: Date.now() })); }catch(e){}
+    };
+    renew();
+    setInterval(renew, 5000);
+    window.addEventListener('pagehide', () => {
+      try{
+        const cur = JSON.parse(localStorage.getItem(TAB_LOCK_LS_KEY) || 'null');
+        if(cur && cur.id === TAB_LOCK_ID) localStorage.removeItem(TAB_LOCK_LS_KEY);
+      }catch(e){}
+    });
+    return true;
+  }
+
+  function initTabLock(){
+    return new Promise((resolve) => {
+      try{
+        if(navigator.locks && typeof navigator.locks.request === 'function'){
+          navigator.locks.request(TAB_LOCK_NAME, { ifAvailable: true }, (lock) => {
+            if(!lock){
+              dataHealthState.readOnlyMode = true;
+              resolve(false);
+              return null;
+            }
+            resolve(true);
+            return new Promise(() => {}); // 持有鎖直到分頁關閉
+          }).catch(err => {
+            console.warn('[tab-lock] navigator.locks 失敗，退回 heartbeat：', err);
+            resolve(initTabLockHeartbeat());
+          });
+          return;
+        }
+      }catch(e){
+        console.warn('[tab-lock] navigator.locks 不可用，退回 heartbeat：', e);
+      }
+      resolve(initTabLockHeartbeat());
+    });
+  }
+
+  // ── 資料模式橫幅（唯讀 / 離線 / 同步失敗）────────────────
+  function renderDbModeIndicator(){
+    let el = document.getElementById('db-mode-banner');
+    const msgs = [];
+    if(dataHealthState.readOnlyMode) msgs.push('唯讀模式：另一個投資儀表板分頁使用中，本頁寫入已停用');
+    if(dataHealthState.offlineMode) msgs.push('離線模式：無法讀取伺服器資料，目前使用本機快取，寫入不會同步伺服器');
+    else if(dataHealthState.serverSyncError) msgs.push('伺服器同步失敗：最近一次儲存未寫入 db.json，請確認代理伺服器已啟動');
+    if(!msgs.length){ if(el) el.remove(); return; }
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'db-mode-banner';
+      el.style.cssText = 'position:sticky;top:0;z-index:10000;background:#fef2f2;border-bottom:1px solid #dc2626;color:#991b1b;padding:6px 20px;font-size:12px;text-align:center;font-weight:600';
+      document.body.prepend(el);
+    }
+    el.textContent = msgs.join('｜');
+  }
 
   function showBackupStatus(msg, isError = false) {
     let el = document.getElementById('_backup-status');
@@ -248,11 +319,17 @@
     target.meta._updatedAt = new Date().toISOString();
     return target;
   }
+  // ── loadDB：伺服器（db.json）為單一真相；瀏覽器儲存降為快取 ─
+  // 規則：
+  //   1. server 有有用資料 → 一律以 server 為準，本機快取只補回 additive 的
+  //      snapshots / dailyArchive（mergePerformanceHistory），不做任何「擇優」。
+  //   2. server 有回應但資料為空、本機有資料 → 用較新的本機快取並警示，
+  //      下次儲存會整包回寫伺服器。
+  //   3. server 完全讀不到 → 離線模式：用較新的本機快取 + 常駐警示。
   async function loadDB() {
     const migrationData = await migrateFromLocalStorage();
     let idbData = null;
     let localData = null;
-    let serverData = null;
     try {
       idbData = sanitizeDBShape(await idbGet(IDB_KEY));
     } catch(e) {
@@ -263,23 +340,42 @@
     } catch(e) {
       localData = null;
     }
-    serverData = await loadServerDB();
+    const serverData = await loadServerDB();
 
-    const candidates = [idbData, localData, serverData].filter(Boolean);
-    if(candidates.length === 0) return fallbackDB();
+    const freshestLocal = () => {
+      if(idbData && localData){
+        return getDBUpdatedAt(idbData) >= getDBUpdatedAt(localData) ? idbData : localData;
+      }
+      return idbData || localData || null;
+    };
 
-    let db = candidates
-      .slice()
-      .sort((a, b) => {
-        const usefulDiff = Number(hasUsefulPortfolioData(b)) - Number(hasUsefulPortfolioData(a));
-        if(usefulDiff !== 0) return usefulDiff;
-        const journalDiff = getTradeJournalRowCount(b) - getTradeJournalRowCount(a);
-        if(journalDiff !== 0) return journalDiff;
-        return getDBUpdatedAt(b) - getDBUpdatedAt(a);
-      })[0];
+    let db = null;
+    if(serverData && hasUsefulPortfolioData(serverData)){
+      db = serverData;
+      const sourceLabel = _lastServerDBSource.includes('/data/db.json') ? '本機資料檔' : '伺服器';
+      showBackupStatus(`已從${sourceLabel}載入資料 ✓`);
+    } else if(serverData){
+      // server 可讀但為空：用本機快取（若有），儲存後會回寫伺服器
+      db = freshestLocal();
+      if(db && hasUsefulPortfolioData(db)){
+        showBackupStatus('伺服器資料為空，已使用本機快取；儲存後將回寫伺服器', true);
+      } else {
+        db = serverData;
+      }
+    } else {
+      // server 完全讀不到：離線模式
+      db = freshestLocal();
+      if(db){
+        dataHealthState.offlineMode = true;
+        console.warn('[loadDB] 伺服器資料讀取失敗，進入離線模式（本機快取）');
+      }
+    }
+    if(!db) return fallbackDB();
+
     db = sanitizeDBShape(db) || fallbackDB();
-    for(const candidate of candidates){
-      mergePerformanceHistory(db, candidate);
+    // 補回 additive 的績效歷史（snapshots / dailyArchive 只增不改）
+    for(const candidate of [idbData, localData, serverData]){
+      if(candidate && candidate !== db) mergePerformanceHistory(db, candidate);
     }
     removePremarketTodayPerformanceRecords(db);
 
@@ -288,22 +384,23 @@
       localStorage.setItem(storeKey, JSON.stringify(db));
       dataHealthState.storageWriteError = false;
       dataHealthState.storageMessage = '';
-      if(serverData && db === serverData && hasUsefulPortfolioData(serverData)) {
-        const sourceLabel = _lastServerDBSource.includes('/data/db.json') ? '本機資料檔' : 'Server 備份';
-        showBackupStatus(`已從${sourceLabel}載入資料 ✓`);
-      }
       if(migrationData) {
         localStorage.setItem('_idb_migrated', '1');
         showBackupStatus('資料已從 localStorage 遷移至 IndexedDB ✓');
       }
     } catch(e) {
-      console.warn('[loadDB] 無法回補較新的資料到雙儲存層：', e);
+      console.warn('[loadDB] 無法回補資料到本機快取層：', e);
     }
     return db;
   }
 
   // ── saveDB：同時寫 IndexedDB + localStorage + Server（三重保障）──
   async function saveDB(opts = {}) {
+    if(dataHealthState.readOnlyMode){
+      showBackupStatus('唯讀模式：另一個儀表板分頁使用中，本次變更未儲存', true);
+      console.warn('[saveDB] blocked write in read-only mode');
+      return;
+    }
     if(!opts.allowEmptySave && !hasUsefulPortfolioData(DB)){
       dataHealthState.storageWriteError = true;
       dataHealthState.storageMessage = '目前瀏覽器資料為空，已阻止覆蓋完整備份';
@@ -340,9 +437,20 @@
       });
       if (res.ok) {
         console.log('[saveDB] 資料已成功同步至伺服器');
+        dataHealthState.offlineMode = false;
+        dataHealthState.serverSyncError = false;
+        renderDbModeIndicator();
+      } else {
+        console.warn('[saveDB] 伺服器回應異常：', res.status);
+        dataHealthState.serverSyncError = true;
+        renderDbModeIndicator();
+        showBackupStatus(`伺服器同步失敗（HTTP ${res.status}）：本次變更僅存於瀏覽器快取`, true);
       }
     } catch (e) {
       console.warn('[saveDB] 無法同步至伺服器，可能代理未啟動');
+      dataHealthState.serverSyncError = true;
+      renderDbModeIndicator();
+      showBackupStatus('伺服器同步失敗：代理未啟動，本次變更僅存於瀏覽器快取', true);
     }
 
     // 每次有交易異動才觸發下載備份
@@ -384,7 +492,12 @@
 
   // ── 初始化 DB（async，等待後才 fullRender）───────────────
   let DB = fallbackDB();
-  const _dbReady = loadDB().then(data => { DB = data; });
+  const _dbReady = initTabLock()
+    .then(() => loadDB())
+    .then(data => {
+      DB = data;
+      renderDbModeIndicator();
+    });
   const ensureInitialCapitalEntry = () => {
     if(!DB.meta) DB.meta = {};
     if(!DB.meta.initialCapital){
