@@ -363,12 +363,10 @@
         db = serverData;
       }
     } else {
-      // server 完全讀不到：離線模式
+      // server 完全讀不到：離線模式（即使本機也沒快取，仍需亮警示）
+      dataHealthState.offlineMode = true;
       db = freshestLocal();
-      if(db){
-        dataHealthState.offlineMode = true;
-        console.warn('[loadDB] 伺服器資料讀取失敗，進入離線模式（本機快取）');
-      }
+      console.warn('[loadDB] 伺服器資料讀取失敗，進入離線模式（本機快取）');
     }
     if(!db) return fallbackDB();
 
