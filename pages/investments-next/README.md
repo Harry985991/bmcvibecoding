@@ -100,6 +100,48 @@ curl -X POST http://localhost:3000/api/trade-journals/import \
   Yahoo fallback 路徑缺高低與量，該欄顯示「待補」
 - vnext 數字以原始 JSON 附入資料包（欄位名稱以 trading-dashboard 為準），抓不到時留手動模板
 
+## 總報酬每日缺漏檢查
+
+固定檢查器：
+
+```bash
+cd tools/vibecoding
+npm run check:return-archive
+```
+
+輸出位置：
+
+```text
+data/output/investment-return-check/YYYY-MM-DD.md
+data/output/investment-return-check/YYYY-MM-DD.json
+data/output/investment-return-check/latest.md
+data/output/investment-return-check/latest.json
+```
+
+狀態定義：
+
+| 狀態 | 意義 | exit code |
+|---|---|---|
+| `OK` | 最新報價日已存在於 `snapshots` 與 `meta.dailyArchive` | 0 |
+| `WAIT` | 有最新報價，但未達 13:30 收盤門檻，不應補齊 | 0 |
+| `MISSING` | 已達 13:30，但缺少 snapshot 或 dailyArchive | 0 |
+| `BLOCKED` | `db.json` 無法解析、缺少報價時間或資料不足 | 2 |
+
+`MISSING` 是「資料缺漏」而不是「腳本失敗」，預設不讓 automation 中斷；若需要 CI / 手動嚴格模式，可改跑：
+
+```bash
+npm run check:return-archive:strict
+```
+
+若 automation 需要寫記憶，使用：
+
+```bash
+node scripts/check-investment-return-archive.js \
+  --memory /Users/harrychao/.codex/automations/automation-3/memory.md
+```
+
+記憶寫入失敗只會列為 warning，不會覆蓋檢查結果或讓每日檢查被擋下。
+
 ## 第一期優化（2026-07-07，P0 四項）
 
 計畫文件：`plans/2026-07-07-investments-next-phase1-p0.md`（workspace root）

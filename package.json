@@ -6,6 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node scripts/proxy-server.js",
     "dev": "node scripts/proxy-server.js",
+    "check:return-archive": "node scripts/check-investment-return-archive.js",
+    "check:return-archive:strict": "node scripts/check-investment-return-archive.js --strict",
     "electron": "electron .",
     "electron-dev": "electron . --dev"
   },
