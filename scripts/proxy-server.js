@@ -1269,6 +1269,25 @@ function detectTwMarketPhase(now, price, isPreopen) {
   return 'closed';
 }
 
+// 台股官方收盤定價（集合競價）約 14:00 完成、EOD 官方資料 14:30 後穩定。
+// 一旦進入盤後窗口，MIS 的 z 欄位仍是「盤中最後一筆成交價」，不是官方收盤價，
+// 因此盤後應改用官方 EOD 收盤價（fetchLatestOfficialClose），避免拿到盤中價。
+// 盤中（週間 09:00–14:30）仍用 MIS 即時價，維持即時看盤需求。
+const TW_OFFICIAL_CLOSE_READY_MINUTES = 14 * 60 + 30;
+
+const TW_MARKET_OPEN_MINUTES = 9 * 60;
+
+function isTwAfterOfficialClose(now = new Date()) {
+  const twNow = getTaipeiNow(now);
+  const day = twNow.getDay();
+  // 週末：官方 EOD 已是「最近交易日」收盤，直接用收盤價
+  if (day === 0 || day === 6) return true;
+  const mins = twNow.getHours() * 60 + twNow.getMinutes();
+  // 週間盤中（09:00–14:30）用 MIS 即時價；此區間以外（開盤前凌晨、14:30 後盤後）
+  // 皆用官方 EOD 收盤（最近交易日收盤價），避免拿到盤中最後成交價。
+  return mins < TW_MARKET_OPEN_MINUTES || mins >= TW_OFFICIAL_CLOSE_READY_MINUTES;
+}
+
 function splitOrderbookLevels(raw) {
   if (!raw || raw === '-') return [];
   return String(raw)
@@ -1710,6 +1729,25 @@ async function resolveQuote(symbol, options = {}) {
 
   if (!isTaiwanSymbol) {
     return tryYahoo(normalized, yahooOptions);
+  }
+
+  // 盤後（官方收盤定價完成後）優先用官方 EOD 收盤價，
+  // 避免拿到 MIS 盤中最後成交價（污染收盤快照、漲跌方向）。
+  // 抓不到收盤價才 fallback 回 MIS / Yahoo，確保報價不中斷。
+  if (options.preferOfficialClose !== false && isTwAfterOfficialClose()) {
+    try {
+      const officialQuote = await fetchLatestOfficialClose(normalized);
+      if (officialQuote && officialQuote.close != null) {
+        return {
+          ok: true,
+          via: officialQuote.source,
+          symbol: officialQuote.symbol,
+          data: buildOfficialQuotePayload(normalized, officialQuote)
+        };
+      }
+    } catch (e) {
+      logError('official-quote', `after-close preference failed for ${normalized}`, e);
+    }
   }
 
   try {
