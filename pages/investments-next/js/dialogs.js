@@ -82,8 +82,21 @@
     const wrapJ = $('#txn-journal-wrap');
     const type = $('#txn-type').value;
     const show = type === 'buy' || type === 'sell';
+    const isDividend = type === 'dividend';
     if(wrapS) wrapS.style.display = show ? '' : 'none';
     if(wrapJ) wrapJ.style.display = show ? '' : 'none';
+    $$('.txn-dividend-field').forEach(el => { el.style.display = isDividend ? '' : 'none'; });
+    const priceWrap = $('#txn-price-wrap');
+    const qtyWrap = $('#txn-qty-wrap');
+    if(priceWrap) priceWrap.style.display = isDividend ? 'none' : '';
+    if(qtyWrap) qtyWrap.style.display = isDividend ? 'none' : '';
+    const amount = $('#txn-amount');
+    if(amount){
+      amount.required = isDividend;
+      amount.min = isDividend ? '0.01' : '';
+    }
+    const amountLabel = $('#txn-amount-label');
+    if(amountLabel) amountLabel.textContent = isDividend ? '實際入帳金額（必填）' : '金額（自動＝價格 × 數量）';
   }
 
   function getTxnDialogStockSortTime(stockId){
@@ -149,6 +162,9 @@
     $('#txn-price').value = Number.isFinite(parseN(txn?.price))? parseN(txn?.price).toFixed(2): '';
     $('#txn-qty').value = Number.isFinite(parseN(txn?.qty))? parseN(txn?.qty).toFixed(2): '';
     $('#txn-amount').value = Number.isFinite(parseN(txn?.amount))? Math.round(parseN(txn?.amount)) : '';
+    $('#txn-dividend-ex-date').value = txn?.exDate || '';
+    $('#txn-dividend-per-share').value = parseN(txn?.perShare) > 0 ? String(parseN(txn.perShare)) : '';
+    $('#txn-dividend-eligible-qty').value = parseN(txn?.eligibleQty) > 0 ? String(parseN(txn.eligibleQty)) : '';
     $('#txn-time').value = txn? new Date(txn.time).toISOString().slice(0,16) : new Date().toISOString().slice(0,16);
     $('#txn-note').value = txn?.note ?? '';
 
@@ -186,6 +202,11 @@
       $('#txn-amount').value = Math.round(price*qty) || '';
     };
     const onTypeChange = ()=>{
+      if($('#txn-type').value === 'dividend'){
+        $('#txn-price').value = '';
+        $('#txn-qty').value = '';
+        $('#txn-amount').value = '';
+      }
       recalc();
       updateTxnDecisionFieldsVisibility();
     };
@@ -212,13 +233,20 @@
         stockId: $('#txn-stock').value,
         account: $('#txn-account').value,
         type: typ,
-        price: $('#txn-price').value? parseN($('#txn-price').value): undefined,
-        qty: $('#txn-qty').value? parseN($('#txn-qty').value): undefined,
+        price: typ === 'dividend' ? 0 : ($('#txn-price').value? parseN($('#txn-price').value): undefined),
+        qty: typ === 'dividend' ? 0 : ($('#txn-qty').value? parseN($('#txn-qty').value): undefined),
         amount: $('#txn-amount').value? parseN($('#txn-amount').value): undefined,
         time: new Date($('#txn-time').value).toISOString(),
         note: $('#txn-note').value.trim(),
         decisionScore: typ === 'buy' || typ === 'sell' ? decisionScore : null,
         journalNote: typ === 'buy' || typ === 'sell' ? journalNote : '',
+        exDate: typ === 'dividend' ? ($('#txn-dividend-ex-date').value || undefined) : undefined,
+        perShare: typ === 'dividend' && parseN($('#txn-dividend-per-share').value) > 0
+          ? parseN($('#txn-dividend-per-share').value)
+          : undefined,
+        eligibleQty: typ === 'dividend' && parseN($('#txn-dividend-eligible-qty').value) > 0
+          ? parseN($('#txn-dividend-eligible-qty').value)
+          : undefined,
       };
       if(txn){ Object.assign(txn, t); }
       else{ DB.txns.push(t); }

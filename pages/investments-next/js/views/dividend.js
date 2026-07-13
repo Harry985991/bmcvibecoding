@@ -19,6 +19,14 @@
     '00772B': 'monthly'
   };
 
+  const defaultDividendMonthsMap = {
+    '0050': [2, 8],
+    '00878': [3, 6, 9, 12],
+    '8215': [7],
+    '00687B': [1, 4, 7, 10],
+    '00772B': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  };
+
   function getDefaultDividendFrequency(symbol){
     return defaultDividendFrequencyMap[symbol] || 'none';
   }
@@ -54,6 +62,8 @@
     const info = getCurrentDividendInfo(symbol);
     const manual = normalizeDividendMonths(info.payoutMonths);
     if(manual.length > 0) return manual;
+    const symbolDefaults = normalizeDividendMonths(defaultDividendMonthsMap[symbol]);
+    if(symbolDefaults.length > 0) return symbolDefaults;
     const freq = normalizeFrequencyCode(info.frequency) || info.frequency || 'none';
     switch(freq){
       case 'monthly': return [1,2,3,4,5,6,7,8,9,10,11,12];
@@ -269,6 +279,7 @@
 
   function calcAnnualDividendStats(summary = calculatePortfolioSummary()){
     const year = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
     const received = DB.txns
       .filter(t => t.type === 'dividend')
       .filter(t => {
@@ -277,17 +288,31 @@
       })
       .reduce((s, t) => s + parseN(t.amount), 0);
 
-    let projected = 0;
-    for(const row of summary.heldRows){
-      const months = getPayoutMonthsForStock(row.stock.symbol);
-      const n = months.length;
-      if(n === 0) continue;
-      const { amount: onePay } = estimateProjectedDividendForHolding(row);
-      projected += onePay * n;
+    const actualKeys = new Set();
+    for(const t of DB.txns){
+      if(t.type !== 'dividend') continue;
+      const d = new Date(t.time);
+      if(Number.isNaN(d.getTime()) || d.getFullYear() !== year) continue;
+      const row = findSummaryRowByStockId(t.stockId, summary);
+      const symbol = row?.stock?.symbol;
+      if(symbol) actualKeys.add(`${symbol}|${d.getMonth() + 1}`);
     }
 
+    let remainingProjected = 0;
+    for(const row of summary.heldRows){
+      const months = getPayoutMonthsForStock(row.stock.symbol);
+      const { amount: onePay } = estimateProjectedDividendForHolding(row);
+      if(onePay <= 0) continue;
+      for(const month of months){
+        if(month < currentMonth) continue;
+        if(actualKeys.has(`${row.stock.symbol}|${month}`)) continue;
+        remainingProjected += onePay;
+      }
+    }
+
+    const projected = received + remainingProjected;
     const monthly = projected > 0 ? projected / 12 : null;
-    return { received, projected, monthly };
+    return { received, projected, monthly, remainingProjected };
   }
 
   function getHoldingQtyBeforeTxnForRow(row, targetTxn){
@@ -319,9 +344,12 @@
       const row = findSummaryRowByStockId(t.stockId, summary);
       const stock = row?.stock;
       const sym = stock?.symbol || '—';
-      const q = row ? getHoldingQtyBeforeTxnForRow(row, t) : 0;
       const amt = parseN(t.amount);
-      const perSh = q > 0 ? amt / q : null;
+      const eligibleQty = parseN(t.eligibleQty);
+      const explicitPerShare = parseN(t.perShare);
+      const hasEligibilityDetails = eligibleQty > 0 && explicitPerShare > 0;
+      const q = hasEligibilityDetails ? eligibleQty : 0;
+      const perSh = hasEligibilityDetails ? explicitPerShare : null;
       items.push({
         kind: 'actual',
         date: dt,
@@ -330,8 +358,10 @@
         qty: q,
         perShare: perSh,
         amount: amt,
-        exDate: '',
-        payDate: ''
+        exDate: t.exDate || '',
+        payDate: '',
+        grossAmount: hasEligibilityDetails ? explicitPerShare * eligibleQty : amt,
+        hasEligibilityDetails
       });
     }
     const actualMonthKeys = new Set(
@@ -569,7 +599,17 @@
             ? row.perShare.toFixed(3)
             : (row.kind === 'projected' && row.perShare === 0 ? '—' : (row.perShare != null ? String(row.perShare) : '—'));
           const amtPrefix = row.kind === 'projected' && row.amount > 0 ? '~' : '';
-          const amtLine = `${perDisp} × ${fmtInt.format(Math.round(row.qty || 0))} = ${amtPrefix}${fmtInt.format(Math.round(row.amount))}`;
+          let amtLine = `${perDisp} × ${fmtInt.format(Math.round(row.qty || 0))} = ${amtPrefix}${fmtInt.format(Math.round(row.amount))}`;
+          if(row.kind === 'actual'){
+            if(row.hasEligibilityDetails){
+              const gross = Math.round(parseN(row.grossAmount));
+              const actual = Math.round(parseN(row.amount));
+              amtLine = `${perDisp} × ${fmtInt.format(Math.round(row.qty))} = ${fmtInt.format(gross)}`;
+              if(gross !== actual) amtLine += `｜實領 ${fmtInt.format(actual)}`;
+            }else{
+              amtLine = `實領 ${fmtInt.format(Math.round(row.amount))}`;
+            }
+          }
           const divWgType = isEtfSymbol(row.symbol) ? 'etf' : String(row.symbol).endsWith('B') ? 'bond' : 'stock';
           const divWgUrl = `https://www.wantgoo.com/stock/${divWgType}/${row.symbol}/dividend-policy/ex-dividend`;
           main.innerHTML = `<div><a class="wl-stock-link" href="${divWgUrl}" target="_blank" rel="noopener"><span class="sym">${escapeAttr(row.symbol)}</span> ${escapeAttr(row.name || '')}</a></div><div class="mini muted">${escapeAttr(sub)}</div>`;
