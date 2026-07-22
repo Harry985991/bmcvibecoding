@@ -34,6 +34,8 @@
 
 - **首頁**：今日行動面板（停損停利/月線/配置偏差/現金安全線/預約單彙總，可點擊跳轉）、
   KPI 三組分群（資產/報酬/風險含最大回撤）、分層配置子彈圖（vs 目標 75/15/5/5 ±5%）、現金水位計（安全線 5%）
+- **重點看盤（2026-07-23）**：六個隔夜核心訊號、加權指數與全部實際持股、必要／輔助指標、六道風險閘門；
+  分頁停留期間每 10 秒更新，切離或瀏覽器進入背景即停止輪詢。行情由本機 proxy 的 `/api/market-monitor` 聚合，個別來源失敗時保留其他可用數據。
 - **持股**：雙視角切換（損益/策略/全部欄位）、近 5 日 sparkline、停損停利距離
 - **報酬**：總報酬＋週期報酬合併為子頁籤、新增資產回撤圖（啟用原 dormant 的 renderDrawdownChart）
 - **交易**：評分×報酬散點圖、評分區間勝率長條、紀律遵循率
@@ -53,6 +55,7 @@
 js/charts/sparkline.js / bullet.js / cash-gauge.js   — 原生 SVG/HTML 微圖表
 js/views/action-panel.js                              — 今日行動面板 + 分層目標 dialog
 js/views/decision-package.js                          — 決策資料包（產生/存檔/查詢）
+js/views/market-monitor.js                            — 重點看盤、10 秒輪詢、風險閘門
 js/views/trade-journal.js                             — 每日預約單、成交結果、JSON 匯入、成交轉交易
 js/views/analysis.js                                  — 歷史分析（比較/趨勢/匯出）
 js/archive.js                                         — 每日全頁封存引擎
@@ -96,6 +99,8 @@ curl -X POST http://localhost:3000/api/trade-journals/import \
 ## 已知限制
 
 - 純前端：當天沒開頁面就不會自動封存（瀏覽器關閉無法排程）
+- 重點看盤的「富台指」使用 Yahoo Finance 可取得的 SGX 延遲行情，頁面會直接標示行情時間與延遲分鐘；
+  不把延遲價偽裝成即時價。台指期與台積電期貨使用 Yahoo 台灣動態近月商品頁。
 - 決策資料包的 OHLCV 走 proxy `/quote`（TWSE MIS）：盤後查詢即為當日完整開高低收量；
   Yahoo fallback 路徑缺高低與量，該欄顯示「待補」
 - vnext 數字以原始 JSON 附入資料包（欄位名稱以 trading-dashboard 為準），抓不到時留手動模板

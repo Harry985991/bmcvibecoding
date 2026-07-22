@@ -20,6 +20,8 @@
   });
   const PERIOD_RETURN_QUOTE_TTL_MS = 60 * 1000;
   const PERIOD_RETURN_AUTO_REFRESH_MS = 60 * 1000;
+  const PERIOD_RETURN_RENDER_CACHE_KEY = 'next.periodReturn.renderCache.v1';
+  const PERIOD_RETURN_RENDER_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
   const periodReturnState = {
     range: 'day',
     rows: [],
@@ -28,6 +30,28 @@
     quoteCache: {},
     autoTimer: null
   };
+
+  function restorePeriodReturnRenderCache(){
+    try{
+      const cached = JSON.parse(localStorage.getItem(PERIOD_RETURN_RENDER_CACHE_KEY) || 'null');
+      const loadedAtMs = cached?.lastLoadedAt ? new Date(cached.lastLoadedAt).getTime() : NaN;
+      if(!Array.isArray(cached?.rows) || !cached.rows.length || !Number.isFinite(loadedAtMs)) return;
+      if((Date.now() - loadedAtMs) > PERIOD_RETURN_RENDER_CACHE_MAX_AGE_MS) return;
+      periodReturnState.rows = cached.rows;
+      periodReturnState.lastLoadedAt = cached.lastLoadedAt;
+    }catch(e){ /* ignore invalid or unavailable local cache */ }
+  }
+
+  function persistPeriodReturnRenderCache(){
+    try{
+      localStorage.setItem(PERIOD_RETURN_RENDER_CACHE_KEY, JSON.stringify({
+        rows: periodReturnState.rows,
+        lastLoadedAt: periodReturnState.lastLoadedAt
+      }));
+    }catch(e){ /* ignore storage quota or privacy mode failures */ }
+  }
+
+  restorePeriodReturnRenderCache();
 
   function shiftLocalDays(date, days){
     const d = getLocalDateOnly(date);
@@ -544,17 +568,22 @@
       return;
     }
 
-    statusEl.className = 'period-board-status loading';
-    statusEl.textContent = `載入週期報酬資料中…（${rows.length} 檔）`;
-    if(!periodReturnState.rows.length){
+    const allSymbols = rows
+      .map(row => String(row?.stock?.symbol || '').trim().toUpperCase())
+      .filter(Boolean);
+    const heldSymbols = new Set(allSymbols);
+    if(periodReturnState.rows.length){
+      periodReturnState.rows = periodReturnState.rows.filter(item => heldSymbols.has(String(item?.symbol || '').toUpperCase()));
+      renderPeriodReturnDashboardView();
+      statusEl.className = 'period-board-status loading';
+      statusEl.textContent = `已顯示上次有效數字，正在背景更新 ${rows.length} 檔報價…`;
+    }else{
+      statusEl.className = 'period-board-status loading';
+      statusEl.textContent = `首次載入週期報酬資料中…（${rows.length} 檔）`;
       tbody.innerHTML = '<tr><td colspan="9" class="empty">載入中…</td></tr>';
       summaryEl.innerHTML = '';
       metaEl.textContent = '';
     }
-
-    const allSymbols = rows
-      .map(row => String(row?.stock?.symbol || '').trim().toUpperCase())
-      .filter(Boolean);
 
     // 方案 2：並行預熱所有 history 快取，讓後續 buildPeriodReturnRowData 直接命中
     await Promise.allSettled(allSymbols.map(s => fetchPriceHistory(s, !!options.forceHistory)));
@@ -579,18 +608,18 @@
               fetchedAt: now,
               data: {
                 livePrice: q.price,
-                prevClose: null,
-                prevChangePct: null,
-                todayOpen: null,
+                prevClose: q.prevClose ?? null,
+                prevChangePct: q.prevChangePct ?? null,
+                todayOpen: q.todayOpen ?? null,
                 symbol: q.symbol || sym,
                 marketTime: q.marketTime ?? null,
-                marketState: '',
-                source: q.via || 'local-quotes',
+                marketState: q.marketState || '',
+                source: q.source || q.via || 'local-quotes',
                 via: q.via || 'local-quotes',
-                tradeDate: '',
-                tradeTime: '',
-                marketPhase: '',
-                priceSource: '',
+                tradeDate: q.tradeDate || '',
+                tradeTime: q.tradeTime || '',
+                marketPhase: q.marketPhase || '',
+                priceSource: q.priceSource || '',
                 updatedAt: new Date().toISOString()
               }
             };
@@ -602,13 +631,19 @@
     }
     if(seq !== periodReturnState.renderSeq) return;
 
-    const settled = await Promise.allSettled(rows.map(row => buildPeriodReturnRowData(row, options)));
+    // history 與 quote 已在上方完成單次預熱；逐檔計算只讀快取，避免再次強制抓取。
+    const settled = await Promise.allSettled(rows.map(row => buildPeriodReturnRowData(row, {
+      ...options,
+      forceQuote: false,
+      forceHistory: false
+    })));
     if(seq !== periodReturnState.renderSeq) return;
 
     periodReturnState.rows = settled
       .filter(result => result.status === 'fulfilled' && result.value)
       .map(result => result.value);
     periodReturnState.lastLoadedAt = new Date().toISOString();
+    persistPeriodReturnRenderCache();
     renderPeriodReturnDashboardView();
   }
 

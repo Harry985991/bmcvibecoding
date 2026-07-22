@@ -93,7 +93,16 @@
           if (!item?.ok || item.price == null || isNaN(Number(item.price))) continue;
           const quote = {
             price: Number(item.price),
+            prevClose: item.prevClose != null && Number.isFinite(Number(item.prevClose)) ? Number(item.prevClose) : null,
+            prevChangePct: item.prevChangePct != null && Number.isFinite(Number(item.prevChangePct)) ? Number(item.prevChangePct) : null,
+            todayOpen: item.todayOpen != null && Number.isFinite(Number(item.todayOpen)) ? Number(item.todayOpen) : null,
             marketTime: Number.isFinite(Number(item.marketTime)) ? Number(item.marketTime) : null,
+            marketState: item.marketState || '',
+            source: item.source || item.via || '',
+            tradeDate: item.tradeDate || '',
+            tradeTime: item.tradeTime || '',
+            marketPhase: item.marketPhase || '',
+            priceSource: item.priceSource || '',
             via: item.via || 'local-quotes',
             symbol: item.symbol || item.requestedSymbol,
           };

@@ -119,6 +119,9 @@
 	      // 報酬 / 工具：依記憶的子頁籤渲染
 	      if(tab.dataset.target==='#view-returns-hub'){ activateSavedSubtab('returns'); }
       if(tab.dataset.target==='#view-tools'){ activateSavedSubtab('tools'); }
+      if(typeof window.setMarketMonitorActive === 'function'){
+        window.setMarketMonitorActive(tab.dataset.target === '#view-market-monitor');
+      }
       if(tab.dataset.target==='#view-snapshots'){
         const summary = calculatePortfolioSummary();
         renderOverview(summary);

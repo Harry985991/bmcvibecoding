@@ -1798,6 +1798,9 @@ function summarizeQuotePayload(payload) {
   const node = r || m || {};
   return {
     price: snapshot?.price ?? null,
+    prevClose: r?.regularMarketPreviousClose ?? m?.chartPreviousClose ?? m?.previousClose ?? null,
+    prevChangePct: r?.regularMarketChangePercent ?? null,
+    todayOpen: r?.regularMarketOpen ?? m?.regularMarketOpen ?? null,
     marketTime: snapshot?.marketTime ?? null,
     marketState: node.marketState || '',
     source: node._source || '',
@@ -1864,6 +1867,232 @@ async function resolveQuoteCompact(symbol) {
     return { requestedSymbol: symbol, ok: false, message: e?.message || String(e) };
   }
 }
+
+// ── 重點看盤聚合行情 ──────────────────────────────────
+// 將跨市場行情集中在本機 proxy，前端只需呼叫一個端點；個別來源失敗時
+// 仍回傳其他成功項目，避免單一指標讓整個看盤頁中斷。
+const MARKET_MONITOR_TTL_MS = 8 * 1000;
+const MARKET_MONITOR_FTSE_SYMBOL_TTL_MS = 6 * 60 * 60 * 1000;
+let marketMonitorCache = { fetchedAt: 0, payload: null, inFlight: null };
+let ftseTaiwanSymbolCache = { fetchedAt: 0, symbol: '' };
+
+const MARKET_MONITOR_GLOBALS = [
+  { key: 'taiex', label: '加權指數', symbol: '^TWII', group: 'reference' },
+  { key: 'tsm_adr', label: '台積電 ADR', symbol: 'TSM', group: 'required' },
+  { key: 'sox', label: '費城半導體', symbol: '^SOX', group: 'required' },
+  { key: 'nq_future', label: 'EM-ND期', symbol: 'NQ=F', group: 'required' },
+  { key: 'es_future', label: 'EM-S&P期', symbol: 'ES=F', group: 'auxiliary' },
+  { key: 'sp500', label: 'S&P 500', symbol: '^GSPC', group: 'auxiliary' },
+  { key: 'nasdaq', label: 'NASDAQ', symbol: '^IXIC', group: 'auxiliary' },
+  { key: 'vix', label: 'S&P 500 VIX', symbol: '^VIX', group: 'required' },
+  { key: 'us10y', label: '美國公債 10 年期', symbol: '^TNX', group: 'required' },
+  { key: 'usdtwd', label: '美元兌台幣', symbol: 'TWD=X', group: 'required' },
+  { key: 'dxy', label: '美元指數', symbol: 'DX-Y.NYB', group: 'auxiliary' },
+  { key: 'brent', label: '布蘭特原油', symbol: 'BZ=F', group: 'auxiliary' }
+];
+
+function monitorNumber(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeMonitorQuote(definition, compact, overrides = {}) {
+  const price = monitorNumber(overrides.price ?? compact?.price);
+  const prevClose = monitorNumber(overrides.prevClose ?? compact?.prevClose);
+  const rawChange = monitorNumber(overrides.change);
+  const change = rawChange != null
+    ? rawChange
+    : (price != null && prevClose != null ? price - prevClose : null);
+  const rawChangePct = monitorNumber(overrides.changePct ?? compact?.prevChangePct);
+  const changePct = rawChangePct != null
+    ? rawChangePct
+    : (change != null && prevClose ? (change / prevClose) * 100 : null);
+  return {
+    key: definition.key,
+    label: definition.label,
+    symbol: overrides.symbol || compact?.symbol || definition.symbol || '',
+    group: definition.group || 'auxiliary',
+    price,
+    prevClose,
+    change,
+    changePct,
+    marketTime: monitorNumber(overrides.marketTime ?? compact?.marketTime),
+    marketState: overrides.marketState || compact?.marketState || '',
+    source: overrides.source || compact?.source || compact?.via || '',
+    delayMinutes: monitorNumber(overrides.delayMinutes),
+    fiveDayChange: monitorNumber(overrides.fiveDayChange),
+    fiveDayChangePct: monitorNumber(overrides.fiveDayChangePct),
+    series: Array.isArray(overrides.series) ? overrides.series : []
+  };
+}
+
+async function fetchYahooTwDynamicQuote(definition, yahooSymbol) {
+  const url = `https://tw.stock.yahoo.com/quote/${encodeURIComponent(yahooSymbol)}`;
+  const response = await axios.get(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8'
+    },
+    timeout: 9000
+  });
+  const html = String(response.data || '');
+  const start = html.indexOf('"QuoteFundamental"');
+  if (start < 0) throw new Error(`Yahoo 台灣頁面缺少 QuoteFundamental: ${yahooSymbol}`);
+  const quoteBlock = html.slice(start, start + 12000);
+  const raw = (pattern) => quoteBlock.match(pattern)?.[1] ?? null;
+  const price = monitorNumber(raw(/"price":\{"raw":"?([\d.-]+)/));
+  const prevClose = monitorNumber(raw(/"regularMarketPreviousClose":\{"raw":"?([\d.-]+)/));
+  const change = monitorNumber(raw(/"change":\{"raw":"?([\d.-]+)/));
+  const changePct = monitorNumber(String(raw(/"changePercent":"([\d.-]+)%"/) || '').replace('%', ''));
+  const marketTimeIso = raw(/"regularMarketTime":"([^"]+)"/);
+  const marketTimeMs = marketTimeIso ? Date.parse(marketTimeIso) : NaN;
+  if (price == null) throw new Error(`Yahoo 台灣頁面沒有可用價格: ${yahooSymbol}`);
+  return normalizeMonitorQuote(definition, null, {
+    symbol: yahooSymbol,
+    price,
+    prevClose,
+    change,
+    changePct,
+    marketTime: Number.isFinite(marketTimeMs) ? Math.floor(marketTimeMs / 1000) : null,
+    source: 'Yahoo 台灣'
+  });
+}
+
+async function discoverFtseTaiwanFutureSymbol() {
+  const now = Date.now();
+  if (ftseTaiwanSymbolCache.symbol && now - ftseTaiwanSymbolCache.fetchedAt < MARKET_MONITOR_FTSE_SYMBOL_TTL_MS) {
+    return ftseTaiwanSymbolCache.symbol;
+  }
+  const url = 'https://query1.finance.yahoo.com/v1/finance/search?q=FTSE%20Taiwan%20Index%20Futures&quotesCount=12&newsCount=0';
+  const response = await fetchYahooOnce(url, { timeoutMs: 8000 });
+  const candidates = (response.data?.quotes || [])
+    .filter((quote) => /^TWN-[FGHJKMNQUVXZ]\d{2}\.SI$/i.test(String(quote.symbol || '')))
+    .sort((a, b) => Number(b.regularMarketTime || 0) - Number(a.regularMarketTime || 0));
+  const symbol = candidates[0]?.symbol;
+  if (!symbol) throw new Error('找不到 SGX 富台指近月代號');
+  ftseTaiwanSymbolCache = { fetchedAt: now, symbol };
+  return symbol;
+}
+
+async function fetchFtseTaiwanFuture(definition) {
+  const symbol = await discoverFtseTaiwanFutureSymbol();
+  const compact = await resolveQuoteCompact(symbol);
+  if (!compact?.ok) throw new Error(compact?.message || '富台指報價失敗');
+  const quote = normalizeMonitorQuote(definition, compact, {
+    symbol,
+    source: 'Yahoo Finance / SGX 延遲行情'
+  });
+  if (quote.marketTime) {
+    quote.delayMinutes = Math.max(0, Math.round((Date.now() / 1000 - quote.marketTime) / 60));
+  }
+  return quote;
+}
+
+function extractChartSeries(payload) {
+  const result = payload?.chart?.result?.[0];
+  const timestamps = Array.isArray(result?.timestamp) ? result.timestamp : [];
+  const closes = result?.indicators?.quote?.[0]?.close || [];
+  return timestamps.map((time, index) => ({
+    time: monitorNumber(time),
+    value: monitorNumber(closes[index])
+  })).filter((point) => point.time != null && point.value != null).slice(-160);
+}
+
+async function fetchMonitorGlobal(definition) {
+  const compact = await resolveQuoteCompact(definition.symbol);
+  if (!compact?.ok) throw new Error(compact?.message || `${definition.label} 報價失敗`);
+  const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(definition.symbol)}?interval=5m&range=1d`;
+  let series = [];
+  try {
+    const response = await fetchYahooOnce(chartUrl, { timeoutMs: 6500 });
+    series = extractChartSeries(response.data);
+  } catch { /* 迷你走勢失敗不影響主報價 */ }
+  return normalizeMonitorQuote(definition, compact, { series });
+}
+
+async function fetchFiveDayMove(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=10d`;
+  const response = await fetchYahooOnce(url, { timeoutMs: 7000 });
+  const values = extractChartSeries(response.data).map((point) => point.value);
+  if (values.length < 2) return { fiveDayChange: null, fiveDayChangePct: null };
+  const current = values[values.length - 1];
+  const reference = values[Math.max(0, values.length - 6)];
+  return {
+    fiveDayChange: current - reference,
+    fiveDayChangePct: reference ? ((current - reference) / reference) * 100 : null
+  };
+}
+
+async function buildMarketMonitorPayload() {
+  const definitions = [
+    ...MARKET_MONITOR_GLOBALS,
+    { key: 'tw_night', label: '台指期盤後', symbol: 'WTX&', group: 'required' },
+    { key: 'tsm_future', label: '台積電期貨盤後', symbol: 'WCDF&', group: 'required' },
+    { key: 'ftse_taiwan', label: '富台指', symbol: '', group: 'required' }
+  ];
+  const jobs = [
+    ...MARKET_MONITOR_GLOBALS.map((definition) => fetchMonitorGlobal(definition)),
+    fetchYahooTwDynamicQuote(definitions.find((item) => item.key === 'tw_night'), 'WTX&'),
+    fetchYahooTwDynamicQuote(definitions.find((item) => item.key === 'tsm_future'), 'WCDF&'),
+    fetchFtseTaiwanFuture(definitions.find((item) => item.key === 'ftse_taiwan'))
+  ];
+  const settled = await Promise.allSettled(jobs);
+  const quotes = {};
+  const errors = [];
+  settled.forEach((result, index) => {
+    const definition = definitions[index];
+    if (result.status === 'fulfilled') {
+      quotes[result.value.key] = result.value;
+    } else {
+      errors.push({ key: definition.key, label: definition.label, message: result.reason?.message || String(result.reason) });
+    }
+  });
+
+  const riskMoves = await Promise.allSettled([
+    fetchFiveDayMove('^TNX'),
+    fetchFiveDayMove('TWD=X')
+  ]);
+  if (quotes.us10y && riskMoves[0].status === 'fulfilled') Object.assign(quotes.us10y, riskMoves[0].value);
+  if (quotes.usdtwd && riskMoves[1].status === 'fulfilled') Object.assign(quotes.usdtwd, riskMoves[1].value);
+
+  return {
+    ok: Object.keys(quotes).length > 0,
+    updatedAt: new Date().toISOString(),
+    refreshIntervalMs: 10000,
+    quotes,
+    errors
+  };
+}
+
+app.get('/api/market-monitor', async (req, res) => {
+  const now = Date.now();
+  if (marketMonitorCache.payload && now - marketMonitorCache.fetchedAt < MARKET_MONITOR_TTL_MS) {
+    return res.json({ ...marketMonitorCache.payload, cached: true });
+  }
+  if (!marketMonitorCache.inFlight) {
+    marketMonitorCache.inFlight = buildMarketMonitorPayload()
+      .then((payload) => {
+        marketMonitorCache = { fetchedAt: Date.now(), payload, inFlight: null };
+        return payload;
+      })
+      .catch((error) => {
+        marketMonitorCache.inFlight = null;
+        throw error;
+      });
+  }
+  try {
+    return res.json(await marketMonitorCache.inFlight);
+  } catch (error) {
+    if (marketMonitorCache.payload) {
+      return res.status(200).json({ ...marketMonitorCache.payload, cached: true, stale: true, errors: [
+        ...(marketMonitorCache.payload.errors || []),
+        { key: 'endpoint', label: '行情更新', message: error.message }
+      ] });
+    }
+    return res.status(502).json({ ok: false, error: '重點看盤行情暫時無法取得', message: error.message });
+  }
+});
 
 // 股價查詢端點（整合候選符號與多端點備援）
 app.get('/quote', async (req, res) => {
