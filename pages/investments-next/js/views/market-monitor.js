@@ -253,8 +253,7 @@
     container.innerHTML = gates.map((gate) => `<article class="market-monitor-risk-card ${gate.level}">
       <div class="market-monitor-risk-name">${escapeHtml(gate.name)}</div>
       <div class="market-monitor-risk-value">${escapeHtml(gate.value)}</div>
-      <div class="market-monitor-risk-rule">判斷：${escapeHtml(gate.rule)}</div>
-      <div class="market-monitor-risk-action">建議：${escapeHtml(gate.action)}</div>
+      <div class="market-monitor-risk-detail"><span>判斷：${escapeHtml(gate.rule)}</span><strong>建議：${escapeHtml(gate.action)}</strong></div>
     </article>`).join('');
     const summary = byId('market-monitor-risk-summary');
     if (!summary) return;
