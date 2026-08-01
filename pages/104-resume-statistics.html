@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>104應徵分析</title>
+  <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -417,6 +418,30 @@
     .overview-table td[style*="text-align: right"] {
       text-align: right !important;
     }
+
+    .talent-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .talent-filter-grid label { display:flex; flex-direction:column; gap:6px; }
+    .talent-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+    .talent-kpi { border:1px solid var(--card-border); border-radius:12px; padding:16px; background:#fff; min-height:112px; }
+    .talent-kpi .label { color:var(--muted); font-size:12px; font-weight:700; }
+    .talent-kpi .value { margin-top:8px; color:var(--primary); font-size:28px; font-weight:800; }
+    .talent-kpi .context { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.45; }
+    .talent-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .talent-card { border:1px solid var(--card-border); border-radius:12px; padding:16px; background:#fff; min-width:0; }
+    .talent-card h4 { margin:0 0 4px; color:var(--primary); }
+    .talent-card .chart-subtitle { margin-bottom:14px; color:var(--muted); font-size:12px; }
+    .talent-bar-row { display:grid; grid-template-columns:minmax(120px,1.4fr) minmax(140px,3fr) 72px; gap:10px; align-items:center; margin:9px 0; }
+    .talent-bar-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; }
+    .talent-bar-track { height:12px; background:#edf2f7; border-radius:999px; overflow:hidden; }
+    .talent-bar-fill { height:100%; min-width:0; background:#3b82f6; border:1px solid #2563eb; border-radius:999px; }
+    .talent-bar-value { text-align:right; font-size:12px; font-variant-numeric:tabular-nums; }
+    .talent-alert { border-left:4px solid #d97706; background:#fff7ed; padding:10px 12px; border-radius:6px; margin:8px 0; line-height:1.5; }
+    .talent-note { border-left:4px solid #64748b; background:#f8fafc; padding:10px 12px; border-radius:6px; line-height:1.5; color:#475569; }
+    .talent-table-wrap { overflow:auto; max-height:520px; }
+    @media (max-width: 900px) {
+      .talent-grid { grid-template-columns:1fr; }
+      .talent-bar-row { grid-template-columns:minmax(100px,1.2fr) minmax(100px,2fr) 60px; }
+    }
   </style>
 </head>
 <body>
@@ -436,6 +461,7 @@
     <div class="sidebar">
       <h3>統計分析</h3>
       <button class="nav-item active" id="tabOverview">整體分析</button>
+      <button class="nav-item" id="tabTalentTrack">人才賽道趨勢</button>
       <button class="nav-item" id="tabCompany">公司統計</button>
       <button class="nav-item" id="tabExperience">年資統計</button>
       <button class="nav-item" id="tabEducation">學歷分析</button>
@@ -528,6 +554,36 @@
       <!-- 整體分析內容 -->
       <div id="overviewStats" class="tab-content">
         <div id="overviewOutput"></div>
+      </div>
+
+      <div id="talentTrackStats" class="tab-content" style="display:none;">
+        <div class="panel" style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0 0 6px; color:var(--primary);">人才賽道趨勢</h3>
+              <div class="muted" style="font-size:13px; line-height:1.55;">僅分析 IDL 職缺；正式賽道數據以人工確認結果為準。104資料代表主動應徵池，不等同完整人才市場。</div>
+            </div>
+            <button id="talentResetFilters" class="filter-btn" type="button">重設賽道篩選</button>
+          </div>
+          <div class="talent-filter-grid" style="margin-top:16px;">
+            <label>招募賽道<select id="talentTrackFilter"></select></label>
+            <label>主要廠區<select id="talentSiteFilter"></select></label>
+            <label>地域分類<select id="talentRegionFilter"></select></label>
+            <label>年資區間<select id="talentExperienceFilter"></select></label>
+            <label>最近工作產業<select id="talentIndustryFilter"></select></label>
+            <label>分類狀態<select id="talentStatusFilter"></select></label>
+          </div>
+        </div>
+        <div id="talentTrackKpis" class="talent-kpis" style="margin-bottom:16px;"></div>
+        <div class="talent-grid" style="margin-bottom:16px;">
+          <section class="talent-card" style="grid-column:1/-1;"><h4>每月不重複人才</h4><div class="chart-subtitle">依104代碼去重；若資料少於8個月份，使用分組長條呈現。</div><div id="talentTrackTrend"></div></section>
+          <section class="talent-card"><h4>地域結構</h4><div class="chart-subtitle">依應徵廠區判斷核心、延伸與跨區。</div><div id="talentTrackRegion"></div></section>
+          <section class="talent-card"><h4>年資結構</h4><div class="chart-subtitle">年資僅描述人才池，不作單一錄用門檻。</div><div id="talentTrackExperience"></div></section>
+          <section class="talent-card" style="grid-column:1/-1;"><h4>最近工作產業</h4><div class="chart-subtitle">僅使用已人工確認的產業資料；待確認公司列於下方清單。</div><div id="talentTrackIndustry"></div></section>
+        </div>
+        <section class="talent-card" style="margin-bottom:16px;"><h4>趨勢提醒</h4><div class="chart-subtitle">最近3個月與前3個月比較；不足6個月份時不產生警示。</div><div id="talentTrackAlerts"></div></section>
+        <section class="talent-card" style="margin-bottom:16px;"><h4>待確認項目</h4><div class="chart-subtitle">尚未人工確認賽道，或最近工作產業尚未分類。</div><div id="talentTrackPending"></div></section>
+        <section class="talent-card"><h4>人才明細</h4><div class="chart-subtitle">不顯示完整地址、電話或 Email；最多顯示前200筆。</div><div id="talentTrackDetail" class="talent-table-wrap"></div></section>
       </div>
       
       <!-- 公司統計內容 -->
@@ -834,7 +890,7 @@
         
         // 檔案相關
         FILE: {
-          DEFAULT_PATH: 'data/input/104-resume/2025-104應徵統計.csv',
+          DEFAULT_PATH: '', // 預設由使用者選擇最新檔案，避免誤載舊年度資料
           MAX_SIZE: 20 * 1024 * 1024, // 20MB
           ALLOWED_EXTENSIONS: ['.csv', '.xlsx', '.xls'],
           TARGET_SHEET: '#履歷匯出資料'
@@ -857,7 +913,21 @@
           {key: 'junior', label: '2-5年', min: 2, max: 5},
           {key: 'mid', label: '5-10年', min: 5, max: 10},
           {key: 'senior', label: '10年以上', min: 10, max: Infinity}
-        ]
+        ],
+
+        TALENT_TRACKS: ['① 半導體經驗人才', '② 理工人才（製造／研發）', '③ 商管人才'],
+        EXPERIENCE_BANDS: ['無經驗', '2年以下', '2–5年', '5–8年', '8–11年', '11–14年', '14年以上', '未辨識', '未填寫'],
+        INDUSTRIES: [
+          '半導體製造／封測', '半導體設備／材料', '光電／面板', '電子零組件／電子製造',
+          '化工／材料', '生醫／醫材', '一般製造', '軟體／資訊', '消費品牌／零售',
+          '金融／服務', '教育／研究機構', '其他／待分類'
+        ],
+        TRACK_COLORS: {
+          '① 半導體經驗人才': '#2563eb',
+          '② 理工人才（製造／研發）': '#d97706',
+          '③ 商管人才': '#7c3aed',
+          '待確認': '#64748b'
+        }
       };
       
       // 向後兼容：將常數映射到原來的變數名
@@ -1182,6 +1252,7 @@
     let mode = MODE.TOTAL; // 固定為總合模式
     let isNewcomerFilterActive = false; // 新進人員篩選狀態
     let selectedJobTitle = ''; // 選中的職務名稱
+    const talentFilters = { track: '', site: '', region: '', experience: '', industry: '', status: '' };
 
     // Elements
     const $output = document.getElementById('output');
@@ -1205,6 +1276,7 @@
     
     // 分頁元素
     const $tabOverview = document.getElementById('tabOverview');
+    const $tabTalentTrack = document.getElementById('tabTalentTrack');
     const $tabCompany = document.getElementById('tabCompany');
     const $tabExperience = document.getElementById('tabExperience');
     const $tabEducation = document.getElementById('tabEducation');
@@ -1213,6 +1285,7 @@
     const $tabJobStats = document.getElementById('tabJobStats');
     const $tabApplicationDistribution = document.getElementById('tabApplicationDistribution');
     const $overviewStats = document.getElementById('overviewStats');
+    const $talentTrackStats = document.getElementById('talentTrackStats');
     const $companyStats = document.getElementById('companyStats');
     const $experienceStats = document.getElementById('experienceStats');
     const $educationStats = document.getElementById('educationStats');
@@ -1224,6 +1297,21 @@
     const $experienceOutput = document.getElementById('experienceOutput');
     const $educationOutput = document.getElementById('educationOutput');
     const $geographyOutput = document.getElementById('geographyOutput');
+    const $talentTrackKpis = document.getElementById('talentTrackKpis');
+    const $talentTrackTrend = document.getElementById('talentTrackTrend');
+    const $talentTrackRegion = document.getElementById('talentTrackRegion');
+    const $talentTrackExperience = document.getElementById('talentTrackExperience');
+    const $talentTrackIndustry = document.getElementById('talentTrackIndustry');
+    const $talentTrackAlerts = document.getElementById('talentTrackAlerts');
+    const $talentTrackPending = document.getElementById('talentTrackPending');
+    const $talentTrackDetail = document.getElementById('talentTrackDetail');
+    const $talentTrackFilter = document.getElementById('talentTrackFilter');
+    const $talentSiteFilter = document.getElementById('talentSiteFilter');
+    const $talentRegionFilter = document.getElementById('talentRegionFilter');
+    const $talentExperienceFilter = document.getElementById('talentExperienceFilter');
+    const $talentIndustryFilter = document.getElementById('talentIndustryFilter');
+    const $talentStatusFilter = document.getElementById('talentStatusFilter');
+    const $talentResetFilters = document.getElementById('talentResetFilters');
     const $filterNewcomers = document.getElementById('filterNewcomers');
     const $clearNewcomerFilter = document.getElementById('clearNewcomerFilter');
     
@@ -1272,15 +1360,77 @@
 
     function uniqueSortedMonths(arr){
       const u = Array.from(new Set(arr)).filter(Boolean);
-      return u.sort((a,b)=> MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+      return u.sort(comparePeriods);
     }
     function uniqueSorted(arr){ return Array.from(new Set(arr)).filter(Boolean).sort(); }
 
+    function comparePeriods(a, b){
+      const aText = (a || '').toString();
+      const bText = (b || '').toString();
+      const aYm = /^20\d{2}-\d{2}$/.test(aText);
+      const bYm = /^20\d{2}-\d{2}$/.test(bText);
+      if(aYm && bYm) return aText.localeCompare(bText);
+      if(aYm !== bYm) return aYm ? 1 : -1;
+      const ai = MONTH_ORDER.indexOf(aText);
+      const bi = MONTH_ORDER.indexOf(bText);
+      if(ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      return aText.localeCompare(bText, 'zh-Hant');
+    }
+
+    function deriveApplyYearMonth(value){
+      const text = (value || '').toString().trim();
+      const match = text.match(/(20\d{2})[-/](\d{1,2})/);
+      return match ? `${match[1]}-${String(parseInt(match[2], 10)).padStart(2, '0')}` : '';
+    }
+
+    function normalizeCounty(value){
+      return (value || '').toString().trim().replace(/^台北市/, '臺北市').replace(/^台南市/, '臺南市').replace(/^台中市/, '臺中市').replace(/^台東縣/, '臺東縣');
+    }
+
+    function deriveCounty(address){
+      const text = normalizeCounty(address);
+      const counties = ['臺北市','新北市','桃園市','臺中市','臺南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','臺東縣','澎湖縣','金門縣','連江縣'];
+      return counties.find(county => text.includes(county)) || '其他／未辨識';
+    }
+
+    function deriveExperienceBand(value){
+      const text = (value || '').toString().trim().replace(/\s+/g, '').replace(/[～−—]/g, '~');
+      if(!text) return '未填寫';
+      if(text === '無' || text.includes('無工作經驗') || text.includes('無經驗')) return '無經驗';
+      if(text.includes('一年以下') || text.includes('1年以下')) return '2年以下';
+      const range = text.match(/^(\d+)~(\d+)年/);
+      let years = range ? parseInt(range[2], 10) : null;
+      if(years === null){ const match = text.match(/^(\d+)年/); if(match) years = parseInt(match[1], 10); }
+      if(years === null){ const match = text.match(/^(\d+)$/); if(match) years = parseInt(match[1], 10); }
+      if(years === null) return '未辨識';
+      if(years <= 2) return '2年以下';
+      if(years <= 5) return '2–5年';
+      if(years <= 8) return '5–8年';
+      if(years <= 11) return '8–11年';
+      if(years <= 14) return '11–14年';
+      return '14年以上';
+    }
+
+    function deriveRegionGroup(site, county){
+      const normalizedCounty = normalizeCounty(county);
+      if(site === '桃園廠' || site === '龍科廠'){
+        if(normalizedCounty === '桃園市') return '核心生活圈';
+        if(['臺北市','新北市'].includes(normalizedCounty)) return '延伸通勤圈';
+        return '跨區';
+      }
+      if(site === '雲科廠'){
+        if(normalizedCounty === '雲林縣') return '核心生活圈';
+        if(['彰化縣','嘉義市','嘉義縣','南投縣','臺南市'].includes(normalizedCounty)) return '延伸通勤圈';
+        return '跨區';
+      }
+      return '未設定廠區';
+    }
+
     function initFilters(){
-      const months = uniqueSortedMonths(data.map(d=>d['月份']));
+      const months = uniqueSortedMonths(data.map(d=>d.__MONTH));
   const idls = uniqueSorted(data.map(d=>d.__IDL));
       const funcs = FUNC_LABELS.map(f=>f.label);
-      const locs = LOC_LABELS.map(l=>l.label);
+      const locs = uniqueSorted(data.map(d=>d.__SITE));
 
       selectedMonths = new Set(months);
       selectedIDL = new Set(idls);
@@ -1295,26 +1445,43 @@
 
       enableControls(true);
       initJobAnalysis();
+      initTalentTrackFilters();
       // 最後統一更新一次
       update();
     }
 
     function preprocess(rawRows){
-      return rawRows.map(r=>{
+      return rawRows.map((r, rowIndex)=>{
         const o = {...r};
         const title = getJobTitle(o);
         o.__JOBTITLE = title;
         o.__FUNC = guessFunction(title);
         o.__FUNC_LABEL = FUNC_LABELS.find(x=>x.key===o.__FUNC)?.label || '其他';
         o.__LOC = guessLocation(title);
-        o.__LOC_LABEL = LOC_LABELS.find(x=>x.key===o.__LOC)?.label || '總部';
+        o.__LOC_LABEL = o['主要廠區'] || LOC_LABELS.find(x=>x.key===o.__LOC)?.label || '桃園廠';
         o.__COMP = o['工作經驗一公司名稱'] || '未填寫';
         o.__IDL = (o['IDL']||'').toUpperCase();
-        o.__MONTH = o['月份'] || '';
         o.__APPLY = o['應徵日期'] || o['應徵職務一應徵日期'] || '';
+        o.__APPLY_YM = o['應徵年月'] || deriveApplyYearMonth(o.__APPLY);
+        o.__MONTH = o.__APPLY_YM || o['月份'] || '';
         o.__NAME = o['姓名'] || '';
+        o.__PERSON_KEY = (
+          o['104代碼'] ||
+          o['email'] ||
+          o['手機1'] ||
+          (o.__NAME ? `${o.__NAME}|${o['手機1'] || o['住家電話'] || ''}` : '') ||
+          `row-${rowIndex}`
+        ).toString().trim();
         // 年資欄位正規化：嘗試多種可能的欄位名稱
         o.__EXP = o['年資'] || o['工作年資'] || o['工作經驗'] || o['總工作年資'] || o['工作年資（年）'] || o['經歷年數'] || '';
+        o.__EXP_BAND = o['年資區間'] || deriveExperienceBand(o.__EXP);
+        o.__TRACK = o['招募賽道'] || (o.__IDL === 'IDL' ? '待確認' : '不適用');
+        o.__TRACK_STATUS = o['賽道確認狀態'] || (o.__IDL === 'IDL' ? '待確認' : '不適用');
+        o.__SITE = o['主要廠區'] || o.__LOC_LABEL || '其他／待確認';
+        o.__COUNTY = o['居住縣市'] || deriveCounty(o['通訊地址'] || '');
+        o.__REGION_GROUP = o['生活圈分類'] || deriveRegionGroup(o.__SITE, o.__COUNTY);
+        o.__INDUSTRY = o['最近工作產業'] || '其他／待分類';
+        o.__INDUSTRY_STATUS = o['產業確認狀態'] || '待確認';
         return o;
       });
     }
@@ -1323,7 +1490,7 @@
       const seen = new Set();
       const out = [];
       for(const r of rows){
-        const key = [r.__NAME, r.__JOBTITLE||'', r.__APPLY].join('||');
+        const key = [r.__PERSON_KEY || r.__NAME, r.__JOBTITLE||'', r.__APPLY].join('||');
         if(seen.has(key)) continue; seen.add(key); out.push(r);
       }
       return out;
@@ -1393,7 +1560,7 @@
       rows = rows.filter(r=> selectedMonths.has(r.__MONTH));
       rows = rows.filter(r=> selectedIDL.has(r.__IDL));
       rows = rows.filter(r=> selectedFuncs.has( FUNC_LABELS.find(x=>x.key===r.__FUNC)?.label || '其他' ));
-      rows = rows.filter(r=> selectedLocs.has( LOC_LABELS.find(x=>x.key===r.__LOC)?.label || '總部' ));
+      rows = rows.filter(r=> selectedLocs.has(r.__SITE || r.__LOC_LABEL || '其他／待確認'));
       if($toggleHideUnknown.checked){ rows = rows.filter(r=> !(r.__COMP==='' || r.__COMP==='未填寫' || r.__COMP==='求職者設定隱藏')); }
       const q = $companySearch.value.trim();
       if(q){ const qq = q.toLowerCase(); rows = rows.filter(r=> (r.__COMP||'').toLowerCase().includes(qq)); }
@@ -1514,7 +1681,7 @@
     function groupByMonth(rows){
       const map = new Map();
       for(const r of rows){ const m = r.__MONTH || 'NA'; if(!map.has(m)) map.set(m, []); map.get(m).push(r); }
-      const months = Array.from(map.keys()).sort((a,b)=> MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b));
+      const months = Array.from(map.keys()).sort(comparePeriods);
       return months.map(m=>({month:m, rows: map.get(m)}));
     }
 
@@ -2441,7 +2608,7 @@
       // 按廠區統計
       const locStats = {};
       rows.forEach(r => {
-        const loc = r.__LOC_LABEL || '未知';
+        const loc = r.__SITE || r.__LOC_LABEL || '未知';
         locStats[loc] = (locStats[loc] || 0) + 1;
       });
 
@@ -2585,7 +2752,7 @@
             <div class="month-histogram-container" style="margin-top: 16px;">
               <div class="month-histogram" style="display: flex; align-items: end; gap: 8px; height: 320px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
                 ${(() => {
-                  const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                  const monthOrder = Object.keys(monthStats).sort(comparePeriods);
                   const entries = monthOrder.map(m => [m, monthStats[m] || 0]);
                   const counts = entries.map(e => e[1]);
                   const maxCount = Math.max(...counts, 1);
@@ -2659,14 +2826,7 @@
       });
 
       const months = Array.from(monthMap.keys());
-      months.sort((a,b)=>{
-        const ia = MONTH_ORDER.indexOf(a);
-        const ib = MONTH_ORDER.indexOf(b);
-        if(ia === -1 && ib === -1) return a.localeCompare(b);
-        if(ia === -1) return 1;
-        if(ib === -1) return -1;
-        return ia - ib;
-      });
+      months.sort(comparePeriods);
 
       return months.map(month => {
         const entry = monthMap.get(month);
@@ -2770,6 +2930,218 @@
       });
     }
 
+    function fillTalentSelect(select, values, label = '全部'){
+      if(!select) return;
+      const current = select.value;
+      select.innerHTML = `<option value="">${escapeHtml(label)}</option>` + values.filter(Boolean).map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+      if(values.includes(current)) select.value = current;
+    }
+
+    function initTalentTrackFilters(){
+      const idlRows = data.filter(row => row.__IDL === 'IDL');
+      fillTalentSelect($talentTrackFilter, [...Constants.TALENT_TRACKS, '待確認']);
+      fillTalentSelect($talentSiteFilter, uniqueSorted(idlRows.map(row => row.__SITE)));
+      fillTalentSelect($talentRegionFilter, ['核心生活圈', '延伸通勤圈', '跨區', '未設定廠區']);
+      fillTalentSelect($talentExperienceFilter, Constants.EXPERIENCE_BANDS.filter(value => idlRows.some(row => row.__EXP_BAND === value)));
+      fillTalentSelect($talentIndustryFilter, Constants.INDUSTRIES.filter(value => idlRows.some(row => row.__INDUSTRY === value)));
+      fillTalentSelect($talentStatusFilter, ['賽道已確認', '賽道待確認', '產業已確認', '產業待確認']);
+    }
+
+    function applyTalentFilters(rows){
+      return rows.filter(row => {
+        if(row.__IDL !== 'IDL') return false;
+        if(talentFilters.track && row.__TRACK !== talentFilters.track) return false;
+        if(talentFilters.site && row.__SITE !== talentFilters.site) return false;
+        if(talentFilters.region && row.__REGION_GROUP !== talentFilters.region) return false;
+        if(talentFilters.experience && row.__EXP_BAND !== talentFilters.experience) return false;
+        if(talentFilters.industry && row.__INDUSTRY !== talentFilters.industry) return false;
+        if(talentFilters.status === '賽道已確認' && row.__TRACK_STATUS !== '已確認') return false;
+        if(talentFilters.status === '賽道待確認' && row.__TRACK_STATUS === '已確認') return false;
+        if(talentFilters.status === '產業已確認' && row.__INDUSTRY_STATUS !== '已確認') return false;
+        if(talentFilters.status === '產業待確認' && row.__INDUSTRY_STATUS === '已確認') return false;
+        return true;
+      });
+    }
+
+    function personKey(row){
+      return row.__PERSON_KEY || `${row.__NAME || '未識別'}||${row.__COMP || ''}`;
+    }
+
+    function uniquePersonMap(rows){
+      const map = new Map();
+      rows.forEach(row => {
+        const key = personKey(row);
+        if(!key) return;
+        const existing = map.get(key);
+        if(!existing || (row.__APPLY || '').localeCompare(existing.__APPLY || '') > 0) map.set(key, row);
+      });
+      return map;
+    }
+
+    function uniquePersonCount(rows){ return uniquePersonMap(rows).size; }
+
+    function renderTalentKpi(label, value, context){
+      return `<article class="talent-kpi"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="context">${escapeHtml(context)}</div></article>`;
+    }
+
+    function renderTalentBars(items, { color = '#3b82f6', empty = '目前篩選條件沒有資料。' } = {}){
+      if(!items || items.length === 0) return `<div class="talent-note">${escapeHtml(empty)}</div>`;
+      const max = Math.max(...items.map(item => item.value), 1);
+      const total = items.reduce((sum, item) => sum + item.value, 0);
+      return items.map(item => {
+        const width = item.value > 0 ? Math.max(2, (item.value / max) * 100) : 0;
+        const share = total > 0 ? (item.value / total * 100).toFixed(1) : '0.0';
+        return `<div class="talent-bar-row"><div class="talent-bar-label" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</div><div class="talent-bar-track"><div class="talent-bar-fill" style="width:${width}%; background:${item.color || color}; border-color:${item.color || color};"></div></div><div class="talent-bar-value">${item.value.toLocaleString()}・${share}%</div></div>`;
+      }).join('');
+    }
+
+    function distributionByUniquePeople(rows, field, preferredOrder = []){
+      const buckets = new Map();
+      uniquePersonMap(rows).forEach(row => {
+        const label = row[field] || '未填寫';
+        if(!buckets.has(label)) buckets.set(label, new Set());
+        buckets.get(label).add(personKey(row));
+      });
+      const orderIndex = new Map(preferredOrder.map((label, index) => [label, index]));
+      return Array.from(buckets, ([label, people]) => ({ label, value: people.size }))
+        .sort((a, b) => {
+          const ai = orderIndex.has(a.label) ? orderIndex.get(a.label) : 999;
+          const bi = orderIndex.has(b.label) ? orderIndex.get(b.label) : 999;
+          return ai !== bi ? ai - bi : b.value - a.value || a.label.localeCompare(b.label, 'zh-Hant');
+        });
+    }
+
+    function monthlyTrackCounts(rows){
+      const map = new Map();
+      rows.filter(row => row.__TRACK_STATUS === '已確認' && Constants.TALENT_TRACKS.includes(row.__TRACK)).forEach(row => {
+        const period = row.__MONTH || '未知';
+        if(!map.has(period)) map.set(period, new Map());
+        const trackMap = map.get(period);
+        if(!trackMap.has(row.__TRACK)) trackMap.set(row.__TRACK, new Set());
+        trackMap.get(row.__TRACK).add(personKey(row));
+      });
+      return Array.from(map.keys()).sort(comparePeriods).map(period => ({
+        period,
+        counts: Object.fromEntries(Constants.TALENT_TRACKS.map(track => [track, map.get(period).get(track)?.size || 0]))
+      }));
+    }
+
+    function renderMonthlyTrackChart(rows){
+      const series = monthlyTrackCounts(rows);
+      if(series.length === 0) return '<div class="talent-note">目前沒有已人工確認賽道的資料。</div>';
+      const max = Math.max(...series.flatMap(item => Object.values(item.counts)), 1);
+      const legend = `<div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px;">${Constants.TALENT_TRACKS.map(track => `<span style="display:inline-flex; align-items:center; gap:6px; font-size:12px;"><span style="width:10px; height:10px; border-radius:2px; background:${Constants.TRACK_COLORS[track]};"></span>${escapeHtml(track)}</span>`).join('')}</div>`;
+      const columns = series.map(item => {
+        const bars = Constants.TALENT_TRACKS.map(track => {
+          const value = item.counts[track];
+          const height = value ? Math.max(4, value / max * 150) : 0;
+          return `<div title="${escapeHtml(track)}：${value}人" style="width:18px; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;"><span style="font-size:10px; margin-bottom:3px;">${value || ''}</span><div style="height:${height}px; width:100%; background:${Constants.TRACK_COLORS[track]}; border:1px solid ${Constants.TRACK_COLORS[track]}; border-radius:3px 3px 0 0;"></div></div>`;
+        }).join('');
+        return `<div style="min-width:92px; display:flex; flex-direction:column; align-items:center;"><div style="height:174px; display:flex; gap:5px; align-items:flex-end;">${bars}</div><div style="font-size:11px; font-weight:700; margin-top:8px;">${escapeHtml(item.period)}</div></div>`;
+      }).join('');
+      return `${legend}<div style="overflow-x:auto;"><div style="display:flex; gap:14px; align-items:flex-end; min-width:max-content; padding:8px 4px 2px; border-bottom:1px solid #cbd5e1;">${columns}</div></div>`;
+    }
+
+    function calculatePeriodComparison(rows){
+      const periods = uniqueSortedMonths(rows.map(row => row.__MONTH));
+      if(periods.length < 6) return { ready:false, periods };
+      const currentPeriods = periods.slice(-3);
+      const previousPeriods = periods.slice(-6, -3);
+      const current = rows.filter(row => currentPeriods.includes(row.__MONTH));
+      const previous = rows.filter(row => previousPeriods.includes(row.__MONTH));
+      const metric = subset => {
+        const people = uniquePersonCount(subset);
+        const coreExtendedPeople = uniquePersonCount(subset.filter(row => ['核心生活圈','延伸通勤圈'].includes(row.__REGION_GROUP)));
+        const industryPeople = uniquePersonCount(subset.filter(row => row.__INDUSTRY_STATUS === '已確認'));
+        return {
+          people,
+          regionShare: people ? coreExtendedPeople / people : 0,
+          industryCoverage: people ? industryPeople / people : 0,
+          byTrack: Object.fromEntries(Constants.TALENT_TRACKS.map(track => [track, uniquePersonCount(subset.filter(row => row.__TRACK === track && row.__TRACK_STATUS === '已確認'))]))
+        };
+      };
+      return { ready:true, currentPeriods, previousPeriods, current:metric(current), previous:metric(previous) };
+    }
+
+    function renderTalentAlerts(rows){
+      const comparison = calculatePeriodComparison(rows);
+      if(!comparison.ready){
+        return `<div class="talent-note">目前已確認賽道資料涵蓋 ${comparison.periods.length} 個月份；需要至少6個月份，才能完整比較「最近3個月 vs 前3個月」。</div>`;
+      }
+      const alerts = [];
+      const currentLabel = comparison.currentPeriods.join('、');
+      const previousLabel = comparison.previousPeriods.join('、');
+      const peopleDelta = comparison.previous.people ? (comparison.current.people - comparison.previous.people) / comparison.previous.people : null;
+      if(peopleDelta !== null && Math.abs(peopleDelta) >= 0.1) alerts.push(`正式賽道人數較前期${peopleDelta > 0 ? '增加' : '減少'} ${Math.abs(peopleDelta * 100).toFixed(1)}%。`);
+      const regionDelta = (comparison.current.regionShare - comparison.previous.regionShare) * 100;
+      if(Math.abs(regionDelta) >= 5) alerts.push(`核心＋延伸生活圈占比較前期${regionDelta > 0 ? '上升' : '下降'} ${Math.abs(regionDelta).toFixed(1)} 個百分點。`);
+      const industryDelta = (comparison.current.industryCoverage - comparison.previous.industryCoverage) * 100;
+      if(Math.abs(industryDelta) >= 5) alerts.push(`產業分類覆蓋率較前期${industryDelta > 0 ? '上升' : '下降'} ${Math.abs(industryDelta).toFixed(1)} 個百分點。`);
+      Constants.TALENT_TRACKS.forEach(track => {
+        const before = comparison.previous.byTrack[track];
+        const after = comparison.current.byTrack[track];
+        if(before > 0){ const delta = (after - before) / before; if(Math.abs(delta) >= 0.2) alerts.push(`${track}人才較前期${delta > 0 ? '增加' : '減少'} ${Math.abs(delta * 100).toFixed(1)}%。`); }
+      });
+      const header = `<div class="talent-note">比較期間：${escapeHtml(currentLabel)} vs ${escapeHtml(previousLabel)}。提醒門檻：人數±10%、賽道人數±20%、占比±5個百分點。</div>`;
+      return header + (alerts.length ? alerts.map(text => `<div class="talent-alert">${escapeHtml(text)}</div>`).join('') : '<div class="talent-note" style="margin-top:8px;">目前沒有超過提醒門檻的變化。</div>');
+    }
+
+    function renderTalentPending(rows){
+      const jobMap = new Map();
+      const companyMap = new Map();
+      rows.forEach(row => {
+        if(row.__TRACK_STATUS !== '已確認'){
+          const job = row.__JOBTITLE || '未填寫';
+          if(!jobMap.has(job)) jobMap.set(job, new Set());
+          jobMap.get(job).add(personKey(row));
+        }
+        if(row.__INDUSTRY_STATUS !== '已確認'){
+          const company = row.__COMP || '未填寫';
+          if(!companyMap.has(company)) companyMap.set(company, new Set());
+          companyMap.get(company).add(personKey(row));
+        }
+      });
+      const toRows = map => Array.from(map, ([label, people]) => ({ label, count:people.size })).sort((a,b)=>b.count-a.count).slice(0,20);
+      const render = (title, items) => `<div><strong>${escapeHtml(title)}</strong>${items.length ? `<table><thead><tr><th>項目</th><th class="right">不重複人才</th></tr></thead><tbody>${items.map(item => `<tr><td>${escapeHtml(item.label)}</td><td class="right">${item.count.toLocaleString()}</td></tr>`).join('')}</tbody></table>` : '<div class="talent-note" style="margin-top:8px;">沒有待確認項目。</div>'}</div>`;
+      return `<div class="talent-grid">${render('待確認賽道職缺（前20）', toRows(jobMap))}${render('待分類最近公司（前20）', toRows(companyMap))}</div>`;
+    }
+
+    function renderTalentDetail(rows){
+      if(rows.length === 0) return '<div class="talent-note">目前篩選條件沒有資料。</div>';
+      const displayRows = rows.slice().sort((a,b)=>(b.__APPLY || '').localeCompare(a.__APPLY || '')).slice(0,200);
+      return `<table><thead><tr><th>年月</th><th>姓名</th><th>應徵職缺</th><th>賽道</th><th>廠區</th><th>居住縣市</th><th>地域</th><th>年資</th><th>最近公司</th><th>產業</th></tr></thead><tbody>${displayRows.map(row => `<tr><td>${escapeHtml(row.__MONTH || '')}</td><td>${escapeHtml(row.__NAME || '')}</td><td>${escapeHtml(row.__JOBTITLE || '')}</td><td>${escapeHtml(row.__TRACK || '')}</td><td>${escapeHtml(row.__SITE || '')}</td><td>${escapeHtml(row.__COUNTY || '')}</td><td>${escapeHtml(row.__REGION_GROUP || '')}</td><td>${escapeHtml(row.__EXP_BAND || '')}</td><td>${escapeHtml(row.__COMP || '')}</td><td>${escapeHtml(row.__INDUSTRY || '')}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function updateTalentTrackDashboard(globalRows){
+      if(!$talentTrackKpis) return;
+      const idlRows = (globalRows || []).filter(row => row.__IDL === 'IDL');
+      const rows = applyTalentFilters(idlRows);
+      const people = uniquePersonCount(rows);
+      const confirmedRows = rows.filter(row => row.__TRACK_STATUS === '已確認' && Constants.TALENT_TRACKS.includes(row.__TRACK));
+      const confirmedPeople = uniquePersonCount(confirmedRows);
+      const targetRegionPeople = uniquePersonCount(confirmedRows.filter(row => ['核心生活圈','延伸通勤圈'].includes(row.__REGION_GROUP)));
+      const industryConfirmedPeople = uniquePersonCount(rows.filter(row => row.__INDUSTRY_STATUS === '已確認'));
+      const applicationCountByPerson = new Map();
+      rows.forEach(row => applicationCountByPerson.set(personKey(row), (applicationCountByPerson.get(personKey(row)) || 0) + 1));
+      const repeatPeople = Array.from(applicationCountByPerson.values()).filter(count => count > 1).length;
+      const percent = (num, den) => den ? `${(num / den * 100).toFixed(1)}%` : '—';
+      $talentTrackKpis.innerHTML = [
+        renderTalentKpi('IDL投遞筆數', rows.length.toLocaleString(), '每一筆104應徵紀錄'),
+        renderTalentKpi('不重複人才', people.toLocaleString(), '優先以104代碼去重'),
+        renderTalentKpi('正式賽道人才', confirmedPeople.toLocaleString(), `賽道確認覆蓋率 ${percent(confirmedPeople, people)}`),
+        renderTalentKpi('核心＋延伸地域', percent(targetRegionPeople, confirmedPeople), `${targetRegionPeople.toLocaleString()} 位正式賽道人才`),
+        renderTalentKpi('產業分類覆蓋率', percent(industryConfirmedPeople, people), `${industryConfirmedPeople.toLocaleString()} 位人才已確認產業`),
+        renderTalentKpi('重複投遞人才率', percent(repeatPeople, people), `${repeatPeople.toLocaleString()} 位人才投遞超過1筆`)
+      ].join('');
+      $talentTrackTrend.innerHTML = renderMonthlyTrackChart(rows);
+      $talentTrackRegion.innerHTML = renderTalentBars(distributionByUniquePeople(confirmedRows, '__REGION_GROUP', ['核心生活圈','延伸通勤圈','跨區','未設定廠區']), { color:'#2563eb' });
+      $talentTrackExperience.innerHTML = renderTalentBars(distributionByUniquePeople(confirmedRows, '__EXP_BAND', Constants.EXPERIENCE_BANDS), { color:'#d97706' });
+      $talentTrackIndustry.innerHTML = renderTalentBars(distributionByUniquePeople(rows.filter(row => row.__INDUSTRY_STATUS === '已確認'), '__INDUSTRY', Constants.INDUSTRIES), { color:'#7c3aed' });
+      $talentTrackAlerts.innerHTML = renderTalentAlerts(confirmedRows);
+      $talentTrackPending.innerHTML = renderTalentPending(rows);
+      $talentTrackDetail.innerHTML = renderTalentDetail(rows);
+    }
+
     function update(){
       try {
         if(data.length===0){ 
@@ -2778,6 +3150,7 @@
           $overviewOutput.innerHTML='';
           $educationOutput.innerHTML='';
           $geographyOutput.innerHTML='';
+          updateTalentTrackDashboard([]);
           updateJobAnalysis();
           updateApplicationDistribution([]);
           return; 
@@ -2828,6 +3201,9 @@
         const geographyAgg = groupByGeography(rows);
         const geographyHtml = renderGeographyTable(geographyAgg, '目前篩選條件下的地理分析');
         $geographyOutput.innerHTML = geographyHtml;
+
+        // 更新人才賽道趨勢
+        updateTalentTrackDashboard(rows);
         
         // 更新職務分析
         updateJobFilterOptions();
@@ -3273,7 +3649,7 @@
         if (!selectedFuncs.has(funcLabel)) return false;
         
         // 檢查廠區篩選
-        const locLabel = LOC_LABELS.find(x => x.key === r.__LOC)?.label || '總部';
+        const locLabel = r.__SITE || LOC_LABELS.find(x => x.key === r.__LOC)?.label || '其他／待確認';
         if (!selectedLocs.has(locLabel)) return false;
         
         // 檢查公司名稱關鍵字篩選
@@ -3751,14 +4127,7 @@
       });
 
       // Convert to sorted array by MONTH_ORDER or by natural month ordering if present
-      const months = Array.from(byMonth.keys()).sort((a,b)=>{
-        const ia = MONTH_ORDER.indexOf(a);
-        const ib = MONTH_ORDER.indexOf(b);
-        if(ia>=0 && ib>=0) return ia-ib;
-        if(ia>=0) return -1;
-        if(ib>=0) return 1;
-        return a.localeCompare(b);
-      });
+      const months = Array.from(byMonth.keys()).sort(comparePeriods);
 
       const stats = [];
       let cumulativeJobsSet = new Set();
@@ -3982,14 +4351,7 @@
         }
       });
 
-      const months = Array.from(byMonth.keys()).sort((a,b)=>{
-        const ia = MONTH_ORDER.indexOf(a);
-        const ib = MONTH_ORDER.indexOf(b);
-        if(ia>=0 && ib>=0) return ia-ib;
-        if(ia>=0) return -1;
-        if(ib>=0) return 1;
-        return a.localeCompare(b);
-      });
+      const months = Array.from(byMonth.keys()).sort(comparePeriods);
 
       const stats = [];
       let cumulativeJobsSet = new Set();
@@ -4172,8 +4534,8 @@
     $toggleDedup.addEventListener('change', ()=> update());
     $toggleHideUnknown.addEventListener('change', ()=> update());
 
-    $monthSelectAll.addEventListener('click', ()=>{ selectedMonths = new Set(uniqueSortedMonths(data.map(d=>d['月份']))); buildChips($monthChips, Array.from(selectedMonths).sort((a,b)=> MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b)), selectedMonths, update); update(); });
-    $monthClear.addEventListener('click', ()=>{ selectedMonths = new Set(); buildChips($monthChips, uniqueSortedMonths(data.map(d=>d['月份'])), selectedMonths, update); update(); });
+    $monthSelectAll.addEventListener('click', ()=>{ selectedMonths = new Set(uniqueSortedMonths(data.map(d=>d.__MONTH))); buildChips($monthChips, Array.from(selectedMonths).sort(comparePeriods), selectedMonths, update); update(); });
+    $monthClear.addEventListener('click', ()=>{ selectedMonths = new Set(); buildChips($monthChips, uniqueSortedMonths(data.map(d=>d.__MONTH)), selectedMonths, update); update(); });
 
   $idlSelectAll.addEventListener('click', ()=>{ selectedIDL = new Set(uniqueSorted(data.map(d=>d.__IDL))); buildChips($idlChips, Array.from(selectedIDL).sort(), selectedIDL, update); update(); });
   $idlClear.addEventListener('click', ()=>{ selectedIDL = new Set(); buildChips($idlChips, uniqueSorted(data.map(d=>d.__IDL)), selectedIDL, update); update(); });
@@ -4181,8 +4543,45 @@
     $funcSelectAll.addEventListener('click', ()=>{ selectedFuncs = new Set(FUNC_LABELS.map(f=>f.label)); buildChips($funcChips, Array.from(selectedFuncs), selectedFuncs, update); update(); });
     $funcClear.addEventListener('click', ()=>{ selectedFuncs = new Set(); buildChips($funcChips, FUNC_LABELS.map(f=>f.label), selectedFuncs, update); update(); });
 
-    $locSelectAll.addEventListener('click', ()=>{ selectedLocs = new Set(LOC_LABELS.map(l=>l.label)); buildChips($locChips, Array.from(selectedLocs), selectedLocs, update); update(); });
-    $locClear.addEventListener('click', ()=>{ selectedLocs = new Set(); buildChips($locChips, LOC_LABELS.map(l=>l.label), selectedLocs, update); update(); });
+    $locSelectAll.addEventListener('click', ()=>{ selectedLocs = new Set(uniqueSorted(data.map(d=>d.__SITE))); buildChips($locChips, Array.from(selectedLocs), selectedLocs, update); update(); });
+    $locClear.addEventListener('click', ()=>{ selectedLocs = new Set(); buildChips($locChips, uniqueSorted(data.map(d=>d.__SITE)), selectedLocs, update); update(); });
+
+    [
+      [$talentTrackFilter, 'track'], [$talentSiteFilter, 'site'], [$talentRegionFilter, 'region'],
+      [$talentExperienceFilter, 'experience'], [$talentIndustryFilter, 'industry'], [$talentStatusFilter, 'status']
+    ].forEach(([element, key]) => {
+      if(!element) return;
+      element.addEventListener('change', () => {
+        talentFilters[key] = element.value;
+        updateTalentTrackDashboard(filteredRows());
+      });
+    });
+
+    if($talentResetFilters){
+      $talentResetFilters.addEventListener('click', () => {
+        Object.keys(talentFilters).forEach(key => { talentFilters[key] = ''; });
+        [$talentTrackFilter,$talentSiteFilter,$talentRegionFilter,$talentExperienceFilter,$talentIndustryFilter,$talentStatusFilter].forEach(select => { if(select) select.value = ''; });
+        updateTalentTrackDashboard(filteredRows());
+      });
+    }
+
+    document.querySelectorAll('.nav-item').forEach(button => {
+      if(button === $tabTalentTrack) return;
+      button.addEventListener('click', () => {
+        if($tabTalentTrack) $tabTalentTrack.className = 'nav-item';
+        if($talentTrackStats) $talentTrackStats.style.display = 'none';
+      });
+    });
+
+    if($tabTalentTrack){
+      $tabTalentTrack.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(button => { button.className = 'nav-item'; });
+        document.querySelectorAll('.tab-content').forEach(panel => { panel.style.display = 'none'; });
+        $tabTalentTrack.className = 'nav-item active';
+        $talentTrackStats.style.display = 'block';
+        updateTalentTrackDashboard(filteredRows());
+      });
+    }
 
     // 職務分析篩選器事件（使用防抖）
     $jobFilter.addEventListener('change', ()=>{
@@ -4354,9 +4753,11 @@
 
         // switch to overview
         if($tabOverview){ $tabOverview.className = 'nav-item active'; }
+        if($tabTalentTrack){ $tabTalentTrack.className = 'nav-item'; }
         if($companyStats) $companyStats.style.display = 'none';
         if($experienceStats) $experienceStats.style.display = 'none';
         if($overviewStats) $overviewStats.style.display = 'block';
+        if($talentTrackStats) $talentTrackStats.style.display = 'none';
 
         // store last filename (optional) and mark that we loaded
         if(filename) localStorage.setItem('lastImportName', filename);
@@ -4401,9 +4802,11 @@
       initFilters();
       $importReminderModal.style.display = 'none';
       $tabOverview.className = 'nav-item active';
+      if($tabTalentTrack) $tabTalentTrack.className = 'nav-item';
       $tabCompany.className = 'nav-item';
       $tabExperience.className = 'nav-item';
       $overviewStats.style.display = 'block';
+      if($talentTrackStats) $talentTrackStats.style.display = 'none';
       $companyStats.style.display = 'none';
       $experienceStats.style.display = 'none';
       if(filename) localStorage.setItem('lastImportName', filename);
@@ -4613,7 +5016,7 @@
           if(selectedMonths && selectedMonths.size>0){ const rowMonth = (r.__MONTH || r['月份'] || '').toString().trim(); if(!selectedMonths.has(rowMonth)) return false; }
           if(selectedIDL && selectedIDL.size>0){ const rowIDL = (r.__IDL || r['IDL'] || '').toString().toUpperCase().trim(); if(!selectedIDL.has(rowIDL)) return false; }
           if(selectedFuncs && selectedFuncs.size>0){ const rowFunc = (r.__FUNC_LABEL || r.__FUNC || '').toString().trim(); if(!selectedFuncs.has(rowFunc)) return false; }
-          if(selectedLocs && selectedLocs.size>0){ const rowLoc = (r.__LOC_LABEL || r.__LOC || '').toString().trim(); if(!selectedLocs.has(rowLoc)) return false; }
+          if(selectedLocs && selectedLocs.size>0){ const rowLoc = (r.__SITE || r.__LOC_LABEL || r.__LOC || '').toString().trim(); if(!selectedLocs.has(rowLoc)) return false; }
           return true;
         });
 
@@ -4643,7 +5046,7 @@
             if(!selectedFuncs.has(rowFunc)) return;
           }
           if(selectedLocs && selectedLocs.size>0){
-            const rowLoc = (r.__LOC_LABEL || r.__LOC || '').toString().trim();
+            const rowLoc = (r.__SITE || r.__LOC_LABEL || r.__LOC || '').toString().trim();
             if(!selectedLocs.has(rowLoc)) return;
           }
           if(!title) return;

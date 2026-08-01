@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>104匯出履歷整併工具</title>
-    <link rel="icon" href="data:,">
+    <title>104匯出履歷整併工具 V2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -493,7 +492,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 104匯出履歷整併工具</h1>
+            <h1>📊 104匯出履歷整併工具 V2</h1>
             <button class="help-btn" onclick="showHelpModal()">❓ 使用說明</button>
         </div>
 
@@ -516,8 +515,6 @@
                         <li><strong>學校NEW</strong>：從「學歷對照」比對填入</li>
                         <li><strong>目標學校</strong>：比對「#目標學校」清單</li>
                         <li><strong>新鮮人職缺</strong>：從「#職缺分類」比對填入</li>
-                        <li><strong>招募賽道</strong>：系統依 IDL 職缺名稱提出建議，人工確認後才納入正式分析</li>
-                        <li><strong>地域／年資／產業</strong>：依應徵日期、通訊縣市、年資及「#公司產業對照」產生分析欄位</li>
                     </ul>
                 </div>
             </div>
@@ -548,6 +545,7 @@
                 <div class="controls-status">
                     <div id="historyInfo" class="status status-info" style="display: none;"></div>
                     <div id="newFileInfo" class="status status-success" style="display: none;"></div>
+                    <div id="importAuditInfo" class="status status-info" style="display: none;"></div>
                     <div id="totalCountInfo" class="status status-info" style="display: none;"></div>
                     <div id="dedupeInfo" class="status status-info" style="display: none;"></div>
                 </div>
@@ -559,8 +557,6 @@
             <button class="tab" data-tab="tab2">#職缺分類</button>
             <button class="tab" data-tab="tab3">#目標學校</button>
             <button class="tab" data-tab="tab4">學歷對照</button>
-            <button class="tab" data-tab="tab5">#公司產業對照</button>
-            <button class="tab" data-tab="tab6">#地域對照</button>
         </div>
 
         <div id="tab1" class="tab-content active">
@@ -616,27 +612,6 @@
                 <p>此工作表預留給學歷對照資料</p>
             </div>
         </div>
-
-        <div id="tab5" class="tab-content">
-            <div class="info-box">
-                <strong>📌 說明：</strong>系統會整理最近一份工作的公司名稱。產業別需人工確認；未確認資料維持「其他／待分類」，不會強行猜測。
-                <div id="industryConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
-            </div>
-            <div id="industryTableContainer" class="empty-state data-container">
-                <h3>公司產業對照</h3>
-                <p>匯入履歷資料後，系統會自動整理最近任職公司清單</p>
-            </div>
-        </div>
-
-        <div id="tab6" class="tab-content">
-            <div class="info-box">
-                <strong>📌 說明：</strong>地域規則依 Harry 確認版本：桃園／龍科以桃園為核心、台北新北為延伸；雲科以雲林為核心、彰化嘉義南投台南為延伸，其餘為跨區。
-            </div>
-            <div id="regionTableContainer" class="empty-state data-container">
-                <h3>地域對照</h3>
-                <p>系統將載入預設地域生活圈規則</p>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -654,9 +629,7 @@
                     RESUME: '#履歷匯出資料',
                     JOB_CLASS: '#職缺分類',
                     TARGET_SCHOOL: '#目標學校',
-                    EDU_MAPPING: '學歷對照',
-                    INDUSTRY_MAPPING: '#公司產業對照',
-                    REGION_MAPPING: '#地域對照'
+                    EDU_MAPPING: '學歷對照'
                 },
                 
                 // 欄位名稱
@@ -672,16 +645,7 @@
                     TARGET_SCHOOL: '目標學校',
                     FRESH_JOB: '新鮮人職缺',
                     SCHOOL_NEW: '學校NEW',
-                    EDU_SCHOOL: '學歷學校名稱一',
-                    APPLY_YM: '應徵年月',
-                    TRACK: '招募賽道',
-                    TRACK_STATUS: '賽道確認狀態',
-                    SITE: '主要廠區',
-                    RESIDENCE_COUNTY: '居住縣市',
-                    REGION_GROUP: '生活圈分類',
-                    EXP_BAND: '年資區間',
-                    LATEST_INDUSTRY: '最近工作產業',
-                    INDUSTRY_STATUS: '產業確認狀態'
+                    EDU_SCHOOL: '學歷學校名稱一'
                 },
                 
                 // 驗證規則
@@ -710,16 +674,7 @@
                     '一年以下', '1年以下',
                     '無', '無經驗', '無工作經驗',
                     '0-1年', '0~1年', '0年'
-                ],
-
-                TRACKS: ['① 半導體經驗人才', '② 理工人才（製造／研發）', '③ 商管人才'],
-                INDUSTRIES: [
-                    '半導體製造／封測', '半導體設備／材料', '光電／面板',
-                    '電子零組件／電子製造', '化工／材料', '生醫／醫材',
-                    '一般製造', '軟體／資訊', '消費品牌／零售',
-                    '金融／服務', '教育／研究機構', '其他／待分類'
-                ],
-                SITES: ['桃園廠', '龍科廠', '雲科廠', '其他／待確認']
+                ]
             };
             
             // ========== 應用程式狀態 ==========
@@ -728,9 +683,7 @@
                     '#履歷匯出資料': [],
                     '#職缺分類': [],
                     '#目標學校': [],
-                    '學歷對照': [],
-                    '#公司產業對照': [],
-                    '#地域對照': []
+                    '學歷對照': []
                 },
                 existingJobs: new Set(),
                 existingJobSettings: new Map(),
@@ -742,7 +695,6 @@
             let existingJobs = AppState.existingJobs;
             let existingJobSettings = AppState.existingJobSettings;
             let historyLoaded = AppState.historyLoaded;
-            const industryViewState = { query: '', page: 1, pageSize: 100 };
 
             // ========== 錯誤處理 ==========
             const ErrorHandler = {
@@ -767,6 +719,10 @@
                  * 獲取用戶友好的錯誤訊息
                  */
                 getUserMessage(operation, error) {
+                    if (operation === '檔案上傳' && error && error.message) {
+                        return `檔案上傳失敗：${error.message}`;
+                    }
+
                     const errorMessages = {
                         '檔案上傳': '檔案上傳失敗，請確認檔案格式是否正確（需為 .xlsx 檔案）',
                         '資料處理': '資料處理失敗，請檢查檔案內容是否符合要求',
@@ -1075,24 +1031,18 @@
             loadJobSettings() {
                 if (workbookData['#職缺分類'].length <= 1) return 0;
                 
-                const classifyData = ensureJobClassificationColumns(workbookData['#職缺分類']);
-                workbookData['#職缺分類'] = classifyData;
+                const classifyData = workbookData['#職缺分類'];
                 const headers = classifyData[0];
                 const rows = classifyData.slice(1);
-                const index = Object.fromEntries(headers.map((header, idx) => [header, idx]));
                 
                 rows.forEach(row => {
-                    const jobName = row[index['職務名稱']];
+                    const jobName = row[0];
                     if (jobName) {
                         existingJobs.add(jobName);
                         existingJobSettings.set(jobName, {
-                            category: row[index['職系']] || 'IDL',
-                            openToFreshGrad: row[index['開放新鮮人']] || '',
-                            month: row[index['月份']] || '',
-                            suggestedTrack: row[index['招募賽道建議']] || '',
-                            confirmedTrack: row[index['人工確認賽道']] || '',
-                            trackStatus: row[index['確認狀態']] || '待確認',
-                            site: row[index['主要廠區']] || '其他／待確認'
+                            category: row[1] || 'IDL',
+                            openToFreshGrad: row[2] || '',
+                            month: row[3] || ''
                         });
                     }
                 });
@@ -1118,14 +1068,6 @@
                 
                 if (workbookData['學歷對照'].length > 0) {
                     displayEduMappingTable(workbookData['學歷對照']);
-                }
-
-                if (workbookData['#公司產業對照'].length > 0) {
-                    displayIndustryMappingTable(workbookData['#公司產業對照']);
-                }
-
-                if (workbookData['#地域對照'].length > 0) {
-                    displayRegionMappingTable(workbookData['#地域對照']);
                 }
             },
             
@@ -1229,7 +1171,13 @@
             }
 
             try {
-                let totalResumeCount = 0;
+                const existingCountBeforeImport = Math.max(
+                    workbookData['#履歷匯出資料'].length - 1,
+                    0
+                );
+                let sourceCandidateCount = 0;
+                let expandedApplicationCount = 0;
+                let batchData = null;
                 
                 for (const file of files) {
                     const workbook = await readWorkbookFromFile(file);
@@ -1240,18 +1188,40 @@
                     }
                     
                     // 處理新檔案資料
-                    const processedData = processNewFileData(workbook);
+                    const processedResult = processNewFileData(workbook);
+                    const processedData = processedResult.data;
                     
                     // 驗證處理後的資料
-                    const dataValidation = Utils.validateWorksheetData(processedData);
+                    const dataValidation = Utils.validateWorksheetData(processedData, [
+                        '104代碼',
+                        '應徵職務名稱',
+                        '應徵日期'
+                    ]);
                     if (!dataValidation.valid) {
                         throw new Error(`${file.name}：${dataValidation.message}`);
                     }
                     
-                    // 合併資料
-                    mergeWithExistingData(processedData);
-                    totalResumeCount += Math.max(processedData.length - 1, 0);
+                    // 先在記憶體中組成完整批次，全部通過後才寫入主資料。
+                    if (batchData === null) {
+                        batchData = processedData.map(row => [...row]);
+                    } else {
+                        batchData = appendRowsWithMatchingHeaders(
+                            batchData,
+                            processedData,
+                            file.name
+                        );
+                    }
+
+                    sourceCandidateCount += processedResult.sourceCandidateCount;
+                    expandedApplicationCount += processedResult.expandedApplicationCount;
                 }
+
+                if (!batchData || batchData.length <= 1) {
+                    throw new Error('本次匯入沒有可處理的應徵資料');
+                }
+
+                // 所有檔案都已通過驗證，再一次合併到歷史資料。
+                mergeWithExistingData(batchData, '本次匯入批次');
                 
                 // 正規化和去重
                 const removedCount = normalizeAndDedupe();
@@ -1265,7 +1235,15 @@
                 displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
                 
                 // 更新介面狀態
-                updateNewFileStatus(files.length, totalResumeCount);
+                const finalCount = Math.max(workbookData['#履歷匯出資料'].length - 1, 0);
+                updateNewFileStatus({
+                    fileCount: files.length,
+                    sourceCandidateCount,
+                    expandedApplicationCount,
+                    removedCount,
+                    netAddedCount: Math.max(finalCount - existingCountBeforeImport, 0),
+                    finalCount
+                });
                 
             } catch (error) {
                 ErrorHandler.handle('檔案上傳', error);
@@ -1305,34 +1283,71 @@
             // 清理和正規化資料
             jsonData = cleanData(jsonData);
             jsonData = normalizeHeaderRow(jsonData);
+            const sourceCandidateCount = Math.max(jsonData.length - 1, 0);
             jsonData = expandMultiApplyRecords(jsonData);
+            const expandedApplicationCount = Math.max(jsonData.length - 1, 0);
             
-            return processData(jsonData);
+            return {
+                data: processData(jsonData),
+                sourceCandidateCount,
+                expandedApplicationCount
+            };
         }
         
         /**
-         * 合併新資料與現有資料
+         * 依欄位名稱對齊資料；欄位集合不同時停止匯入，絕不覆蓋舊資料。
          */
-        function mergeWithExistingData(processedData) {
-            if (historyLoaded && workbookData['#履歷匯出資料'].length > 0) {
-                const existingHeaders = workbookData['#履歷匯出資料'][0];
-                const newHeaders = processedData[0];
-                
-                // 檢查標題是否一致
-                const headersMatch = JSON.stringify(existingHeaders) === JSON.stringify(newHeaders);
-                
-                if (headersMatch) {
-                    // 合併資料（跳過新資料的標題行）
-                    const newRows = processedData.slice(1);
-                    workbookData['#履歷匯出資料'].push(...newRows);
-                } else {
-                    // 標題不一致，覆蓋（使用新格式）
-                    workbookData['#履歷匯出資料'] = processedData;
-                }
-            } else {
-                // 沒有歷史資料，直接使用
-                workbookData['#履歷匯出資料'] = processedData;
+        function appendRowsWithMatchingHeaders(targetData, incomingData, sourceLabel) {
+            if (!targetData || targetData.length === 0) {
+                return incomingData.map(row => [...row]);
             }
+            if (!incomingData || incomingData.length === 0) {
+                return targetData;
+            }
+
+            const targetHeaders = targetData[0].map(header => String(header || '').trim());
+            const incomingHeaders = incomingData[0].map(header => String(header || '').trim());
+            const targetHeaderSet = new Set(targetHeaders);
+            const incomingHeaderSet = new Set(incomingHeaders);
+
+            if (targetHeaderSet.size !== targetHeaders.length ||
+                incomingHeaderSet.size !== incomingHeaders.length) {
+                throw new Error(`${sourceLabel}：發現重複欄位名稱，為避免資料錯位，本次未匯入`);
+            }
+
+            const missingHeaders = targetHeaders.filter(header => !incomingHeaderSet.has(header));
+            const extraHeaders = incomingHeaders.filter(header => !targetHeaderSet.has(header));
+            if (missingHeaders.length > 0 || extraHeaders.length > 0) {
+                const details = [];
+                if (missingHeaders.length > 0) {
+                    details.push(`缺少欄位：${missingHeaders.join('、')}`);
+                }
+                if (extraHeaders.length > 0) {
+                    details.push(`新增欄位：${extraHeaders.join('、')}`);
+                }
+                throw new Error(
+                    `${sourceLabel}：欄位結構不一致（${details.join('；')}）。` +
+                    '為避免覆蓋或錯位，本次匯入已停止'
+                );
+            }
+
+            const incomingIndex = new Map(
+                incomingHeaders.map((header, index) => [header, index])
+            );
+            const alignedRows = incomingData.slice(1).map(row =>
+                targetHeaders.map(header => row[incomingIndex.get(header)] ?? '')
+            );
+
+            return [targetData[0], ...targetData.slice(1), ...alignedRows];
+        }
+
+        /**
+         * 合併新資料與現有資料。
+         */
+        function mergeWithExistingData(processedData, sourceLabel = '新履歷資料') {
+            const currentData = workbookData['#履歷匯出資料'];
+            workbookData['#履歷匯出資料'] =
+                appendRowsWithMatchingHeaders(currentData, processedData, sourceLabel);
         }
         
         /**
@@ -1351,11 +1366,21 @@
         /**
          * 更新新檔案狀態資訊
          */
-        function updateNewFileStatus(fileCount, resumeCount) {
+        function updateNewFileStatus(audit) {
             const newFileInfo = document.getElementById('newFileInfo');
-            newFileInfo.textContent = `✅ 已載入新資料：${fileCount} 個檔案，共 ${resumeCount} 筆履歷`;
+            newFileInfo.textContent = `✅ 已成功處理 ${audit.fileCount} 個檔案`;
             newFileInfo.style.display = 'block';
             newFileInfo.className = 'status status-success';
+
+            const auditInfo = document.getElementById('importAuditInfo');
+            auditInfo.textContent =
+                `📋 匯入對帳：原始求職者 ${audit.sourceCandidateCount} 列` +
+                ` → 展開 ${audit.expandedApplicationCount} 筆應徵紀錄` +
+                ` → 去除重複 ${audit.removedCount} 筆` +
+                ` → 本次淨新增 ${audit.netAddedCount} 筆` +
+                `；匯入後總計 ${audit.finalCount} 筆應徵紀錄`;
+            auditInfo.style.display = 'block';
+            auditInfo.className = 'status status-info';
             
             document.getElementById('exportBtn').disabled = false;
         }
@@ -1519,9 +1544,7 @@
                 '履歷匯出資料': '#履歷匯出資料',
                 '職缺分類': '#職缺分類',
                 '目標學校': '#目標學校',
-                '學歷對照': '學歷對照',
-                '公司產業對照': '#公司產業對照',
-                '地域對照': '#地域對照'
+                '學歷對照': '學歷對照'
             };
             return mapping[normalized] || null;
         }
@@ -1553,15 +1576,11 @@
             return data;
         }
         
-        // 確保分析欄位存在
+        // 確保四個分析欄位存在
         function ensureAnalysisColumns(data) {
             if (!data || data.length === 0) return data;
             const headers = data[0];
-            const required = [
-                'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW',
-                '應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類',
-                '年資區間', '最近工作產業', '產業確認狀態'
-            ];
+            const required = ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW'];
             const existing = new Set(headers.map(h => h ? h.toString() : ''));
             
             let insertIndex = headers.findIndex(h => h && h.toString().includes('應徵日期'));
@@ -1584,10 +1603,8 @@
         
         // 依規則更新四個欄位
         function applyDerivedFieldUpdates() {
-            ensureTalentMappingSheets();
             updateResumeDataWithJobInfo();
             updateResumeDataWithSchoolInfo();
-            updateResumeDataWithTalentAnalytics();
             
             const freshGradResult = updateFreshGraduateStatus();
             if (!freshGradResult.success) {
@@ -1653,12 +1670,7 @@
             const monthOffset = 1; // 前面加了「月份」
             const idOffset = insertedIdColumn && (idColumnIndex <= (dateColumnIndex + monthOffset)) ? 1 : 0; // 104代碼若在日期前，需位移
             const insertIndex = dateColumnIndex + monthOffset + idOffset + 1; // 在日期之後插入
-            const analysisColumns = [
-                'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW',
-                '應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類',
-                '年資區間', '最近工作產業', '產業確認狀態'
-            ];
-            newHeaders.splice(insertIndex, 0, ...analysisColumns);
+            newHeaders.splice(insertIndex, 0, 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW');
             
             // 處理每一行資料
             const newRows = rows.map(row => {
@@ -1675,7 +1687,7 @@
                 }
                 
                 // 在應徵日期後插入空白欄位
-                newRow.splice(insertIndex, 0, ...analysisColumns.map(() => ''));
+                newRow.splice(insertIndex, 0, '', '', '', '', '');
                 
                 return newRow;
             });
@@ -1786,68 +1798,13 @@
         function determineJobCategory(jobName) {
             return Utils.isDLJob(jobName) ? 'DL' : 'IDL';
         }
-
-        function suggestRecruitmentTrack(jobName, category) {
-            if (category !== 'IDL') return '';
-            const title = (jobName || '').toString();
-            const semiconductorKeywords = ['半導體', '封裝材料', '封裝測試', '晶圓', 'IC載板', '先進封裝', 'OSAT'];
-            const engineeringKeywords = ['研發', '製程', '設備', '工程', '材料', '配方', '品保', '品質', '生產', '製造', '技術', '光學', '生醫', '法規', '臨床'];
-            const businessKeywords = ['業務', '行銷', '產品經理', 'PM', '採購', '供應鏈', '人資', '財務', '會計', '法務', '行政', '管理師', '企劃', '客服'];
-            if (semiconductorKeywords.some(keyword => title.includes(keyword))) return '① 半導體經驗人才';
-            if (engineeringKeywords.some(keyword => title.includes(keyword))) return '② 理工人才（製造／研發）';
-            if (businessKeywords.some(keyword => title.includes(keyword))) return '③ 商管人才';
-            return '待確認';
-        }
-
-        function suggestSite(jobName) {
-            const title = (jobName || '').toString();
-            if (/雲科|雲林|斗六/.test(title)) return '雲科廠';
-            if (/龍科|龍潭/.test(title)) return '龍科廠';
-            if (/桃園|建東|龜山/.test(title)) return '桃園廠';
-            return '桃園廠';
-        }
-
-        function ensureJobClassificationColumns(data) {
-            if (!data || data.length === 0) {
-                return [['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區']];
-            }
-            const required = ['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區'];
-            const oldHeaders = data[0].map(header => header ? header.toString().trim() : '');
-            const oldIndex = Object.fromEntries(oldHeaders.map((header, idx) => [header, idx]));
-            const markerIndex = oldHeaders.length;
-            const rows = data.slice(1).map(row => {
-                const jobName = row[oldIndex['職務名稱'] ?? 0] || '';
-                const category = row[oldIndex['職系'] ?? 1] || determineJobCategory(jobName);
-                const confirmedTrack = oldIndex['人工確認賽道'] !== undefined ? (row[oldIndex['人工確認賽道']] || '') : '';
-                const values = {
-                    '職務名稱': jobName,
-                    '職系': category,
-                    '開放新鮮人': row[oldIndex['開放新鮮人'] ?? 2] || '',
-                    '月份': row[oldIndex['月份'] ?? 3] || '',
-                    '招募賽道建議': oldIndex['招募賽道建議'] !== undefined ? (row[oldIndex['招募賽道建議']] || suggestRecruitmentTrack(jobName, category)) : suggestRecruitmentTrack(jobName, category),
-                    '人工確認賽道': confirmedTrack,
-                    '確認狀態': oldIndex['確認狀態'] !== undefined ? (row[oldIndex['確認狀態']] || (confirmedTrack ? '已確認' : '待確認')) : (confirmedTrack ? '已確認' : '待確認'),
-                    '主要廠區': oldIndex['主要廠區'] !== undefined ? (row[oldIndex['主要廠區']] || suggestSite(jobName)) : suggestSite(jobName)
-                };
-                const oldMarker = row[markerIndex] === 'NEW' || row[oldHeaders.length - 1] === 'NEW' ? 'NEW' : '';
-                return [...required.map(header => values[header]), oldMarker];
-            });
-            return [required, ...rows];
-        }
-
-        function getJobMarkerIndex(data = workbookData['#職缺分類']) {
-            return data && data[0] ? data[0].length : 8;
-        }
         
         function getJobConfirmStatus(row) {
             const category = row[1] ? row[1].toString().trim() : '';
             const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
-            const confirmedTrack = row[5] ? row[5].toString().trim() : '';
-            const trackStatus = row[6] ? row[6].toString().trim() : '待確認';
-            const isNew = row[getJobMarkerIndex()] === 'NEW';
+            const isNew = row[4] === 'NEW';
             const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
-            const needsTrack = category === 'IDL' && (!confirmedTrack || trackStatus !== '已確認');
-            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsTrack: needsTrack, needsConfirm: isNew || needsFreshGrad || needsTrack };
+            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsConfirm: isNew || needsFreshGrad };
         }
         
         function sortJobClassificationData(data) {
@@ -1918,36 +1875,24 @@
                         const isNew = !existingJobs.has(jobKey);
                         
                         // 如果有歷史設定，使用歷史設定；否則自動判斷
-                        let category, openToFreshGrad, jobMonth, suggestedTrack, confirmedTrack, trackStatus, site;
+                        let category, openToFreshGrad, jobMonth;
                         
                         if (existingJobSettings.has(jobKey)) {
                             const settings = existingJobSettings.get(jobKey);
                             category = settings.category;
                             openToFreshGrad = settings.openToFreshGrad;
                             jobMonth = settings.month;
-                            suggestedTrack = settings.suggestedTrack || suggestRecruitmentTrack(jobKey, category);
-                            confirmedTrack = settings.confirmedTrack || '';
-                            trackStatus = settings.trackStatus || (confirmedTrack ? '已確認' : '待確認');
-                            site = settings.site || suggestSite(jobKey);
                         } else {
                             category = determineJobCategory(jobKey);
                             openToFreshGrad = '';
                             jobMonth = month || '';
-                            suggestedTrack = suggestRecruitmentTrack(jobKey, category);
-                            confirmedTrack = '';
-                            trackStatus = category === 'IDL' ? '待確認' : '不適用';
-                            site = suggestSite(jobKey);
                         }
                         
                         jobMap.set(jobKey, {
                             month: jobMonth,
                             isNew: isNew,
                             category: category,
-                            openToFreshGrad: openToFreshGrad,
-                            suggestedTrack: suggestedTrack,
-                            confirmedTrack: confirmedTrack,
-                            trackStatus: trackStatus,
-                            site: site
+                            openToFreshGrad: openToFreshGrad
                         });
                         
                         // 將此職務加入已存在集合
@@ -1956,11 +1901,7 @@
                             existingJobSettings.set(jobKey, {
                                 category: category,
                                 openToFreshGrad: openToFreshGrad,
-                                month: jobMonth,
-                                suggestedTrack: suggestedTrack,
-                                confirmedTrack: confirmedTrack,
-                                trackStatus: trackStatus,
-                                site: site
+                                month: jobMonth
                             });
                         }
                     }
@@ -1969,7 +1910,7 @@
             
             // 建立職缺分類工作表資料
             const classifyData = [
-                ['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區']
+                ['職務名稱', '職系', '開放新鮮人', '月份']
             ];
             
             // 按照職務名稱排序
@@ -1983,10 +1924,6 @@
                     info.category,
                     info.openToFreshGrad,
                     info.month,
-                    info.suggestedTrack,
-                    info.confirmedTrack,
-                    info.trackStatus,
-                    info.site,
                     info.isNew ? 'NEW' : '' // 標記是否為新增（用於標示顏色）
                 ]);
             });
@@ -2032,12 +1969,11 @@
             
             // 添加資料行
             rows.forEach((row, rowIndex) => {
-                const isNew = row[getJobMarkerIndex(sortedData)] === 'NEW'; // 檢查是否為新增
+                const isNew = row[4] === 'NEW'; // 檢查是否為新增
                 const rowClass = isNew ? 'new-job-row' : '';
                 const category = row[1] ? row[1].toString().trim() : '';
                 const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
                 const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
-                const needsTrack = category === 'IDL' && (!row[5] || row[6] !== '已確認');
                 
                 html += `<tr class="${rowClass}">`;
                 
@@ -2066,36 +2002,14 @@
                 html += `<td class="editable-cell" data-row="${rowIndex}" data-col="3" data-type="input">`;
                 html += `<input type="text" value="${row[3] || ''}" onchange="updateJobClassificationCell(${rowIndex}, 3, this.value)" placeholder="Jan/Feb/Mar..." style="width: 80px;">`;
                 html += `</td>`;
-
-                // E欄：系統建議賽道（唯讀）
-                html += `<td>${escapeHtml(row[4] || (category === 'IDL' ? '待確認' : '不適用'))}</td>`;
-
-                // F欄：人工確認賽道
-                html += `<td class="editable-cell${needsTrack ? ' missing-fresh-cell' : ''}">`;
-                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 5, this.value)">`;
-                html += `<option value="" ${!row[5] ? 'selected' : ''}>請選擇</option>`;
-                Constants.TRACKS.forEach(track => {
-                    html += `<option value="${track}" ${row[5] === track ? 'selected' : ''}>${track}</option>`;
-                });
-                html += `</select></td>`;
-
-                // G欄：確認狀態（依人工確認自動更新）
-                html += `<td>${category === 'IDL' ? escapeHtml(row[6] || '待確認') : '不適用'}</td>`;
-
-                // H欄：主要廠區
-                html += `<td class="editable-cell"><select onchange="updateJobClassificationCell(${rowIndex}, 7, this.value)">`;
-                Constants.SITES.forEach(site => {
-                    html += `<option value="${site}" ${row[7] === site ? 'selected' : ''}>${site}</option>`;
-                });
-                html += `</select></td>`;
                 
                 html += '</tr>';
             });
             
             html += '</tbody></table></div>';
             
-            if (rows.some(row => row[getJobMarkerIndex(sortedData)] === 'NEW')) {
-                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增；IDL 職缺請人工確認招募賽道與主要廠區。</div>' + html;
+            if (rows.some(row => row[4] === 'NEW')) {
+                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增，請確認並填寫「職系」、「開放新鮮人」等資訊。</div>' + html;
             }
             
             container.innerHTML = html;
@@ -2133,51 +2047,15 @@
                             return;
                         }
                     }
-                } else if (colIndex === 5) { // 人工確認賽道
-                    if (trimmedValue && !Constants.TRACKS.includes(trimmedValue)) {
-                        alert('請從既有三條招募賽道中選擇');
-                        displayJobClassificationTable(workbookData['#職缺分類']);
-                        return;
-                    }
-                } else if (colIndex === 7) { // 主要廠區
-                    if (!Constants.SITES.includes(trimmedValue)) {
-                        alert('請選擇有效的主要廠區');
-                        displayJobClassificationTable(workbookData['#職缺分類']);
-                        return;
-                    }
                 }
                 
                 const data = workbookData['#職缺分類'];
                 if (data && data[rowIndex + 1]) {
-                    const row = data[rowIndex + 1];
-                    row[colIndex] = trimmedValue;
-
-                    if (colIndex === 1) {
-                        row[4] = suggestRecruitmentTrack(row[0], trimmedValue);
-                        if (trimmedValue === 'DL') {
-                            row[5] = '';
-                            row[6] = '不適用';
-                        } else if (!row[5]) {
-                            row[6] = '待確認';
-                        }
-                    } else if (colIndex === 5) {
-                        row[6] = trimmedValue ? '已確認' : '待確認';
-                    }
-
-                    existingJobSettings.set(row[0], {
-                        category: row[1] || 'IDL',
-                        openToFreshGrad: row[2] || '',
-                        month: row[3] || '',
-                        suggestedTrack: row[4] || '',
-                        confirmedTrack: row[5] || '',
-                        trackStatus: row[6] || '待確認',
-                        site: row[7] || '其他／待確認'
-                    });
+                    data[rowIndex + 1][colIndex] = trimmedValue;
                     
-                    // 職系、開放新鮮人、賽道或廠區更新後，同步更新履歷資料
-                    if ([1, 2, 5, 7].includes(colIndex)) {
+                    // 如果更新的是職系（B欄）或開放新鮮人（C欄），同步更新履歷資料
+                    if (colIndex === 1 || colIndex === 2) {
                         updateResumeDataWithJobInfo();
-                        updateResumeDataWithTalentAnalytics();
                         
                         // 重新顯示履歷資料（如果當前在該標籤）
                         if (workbookData['#履歷匯出資料'].length > 0) {
@@ -2262,175 +2140,6 @@
                         row[freshGradJobIndex] = jobInfo.openToFreshGrad;
                     }
                 }
-            });
-        }
-
-        function normalizeCountyName(value) {
-            return (value || '').toString().trim().replace(/^台北市/, '臺北市').replace(/^台南市/, '臺南市').replace(/^台中市/, '臺中市').replace(/^台東縣/, '臺東縣');
-        }
-
-        function extractResidenceCounty(address) {
-            const normalized = normalizeCountyName(address);
-            const counties = ['臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市', '基隆市', '新竹市', '嘉義市', '新竹縣', '苗栗縣', '彰化縣', '南投縣', '雲林縣', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣', '臺東縣', '澎湖縣', '金門縣', '連江縣'];
-            return counties.find(county => normalized.includes(county)) || '其他／未辨識';
-        }
-
-        function extractApplyYearMonth(value) {
-            if (value === null || value === undefined || value === '') return '';
-            const text = value.toString().trim();
-            const match = text.match(/(20\d{2})[-/](\d{1,2})/);
-            if (match) return `${match[1]}-${String(parseInt(match[2], 10)).padStart(2, '0')}`;
-            if (Utils.isExcelDate(value)) {
-                const parsed = XLSX.SSF.parse_date_code(value);
-                if (parsed && parsed.y && parsed.m) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}`;
-            }
-            return '';
-        }
-
-        function experienceBand(value) {
-            const text = (value || '').toString().trim().replace(/\s+/g, '').replace(/[～−—]/g, '~');
-            if (!text) return '未填寫';
-            if (text === '無' || text.includes('無工作經驗') || text.includes('無經驗')) return '無經驗';
-            if (text.includes('一年以下') || text.includes('1年以下')) return '2年以下';
-            const range = text.match(/^(\d+)~(\d+)年/);
-            let years = null;
-            if (range) years = parseInt(range[2], 10);
-            if (years === null) {
-                const number = text.match(/^(\d+)年/);
-                if (number) years = parseInt(number[1], 10);
-            }
-            if (years === null) {
-                const numberOnly = text.match(/^(\d+)$/);
-                if (numberOnly) years = parseInt(numberOnly[1], 10);
-            }
-            if (years === null) return '未辨識';
-            if (years <= 2) return '2年以下';
-            if (years <= 5) return '2–5年';
-            if (years <= 8) return '5–8年';
-            if (years <= 11) return '8–11年';
-            if (years <= 14) return '11–14年';
-            return '14年以上';
-        }
-
-        function regionGroupForSite(site, county) {
-            const normalizedCounty = normalizeCountyName(county);
-            if (site === '桃園廠' || site === '龍科廠') {
-                if (normalizedCounty === '桃園市') return '核心生活圈';
-                if (['臺北市', '新北市'].includes(normalizedCounty)) return '延伸通勤圈';
-                return '跨區';
-            }
-            if (site === '雲科廠') {
-                if (normalizedCounty === '雲林縣') return '核心生活圈';
-                if (['彰化縣', '嘉義市', '嘉義縣', '南投縣', '臺南市'].includes(normalizedCounty)) return '延伸通勤圈';
-                return '跨區';
-            }
-            return '未設定廠區';
-        }
-
-        function ensureTalentMappingSheets() {
-            if (!workbookData['#公司產業對照'] || workbookData['#公司產業對照'].length === 0) {
-                workbookData['#公司產業對照'] = [['公司原始名稱', '公司標準名稱', '產業大類', '產業子類', '賽道關聯', '確認狀態']];
-            }
-            if (!workbookData['#地域對照'] || workbookData['#地域對照'].length === 0) {
-                workbookData['#地域對照'] = [
-                    ['主要廠區', '縣市', '地域分類'],
-                    ['桃園廠／龍科廠', '桃園市', '核心生活圈'],
-                    ['桃園廠／龍科廠', '臺北市', '延伸通勤圈'],
-                    ['桃園廠／龍科廠', '新北市', '延伸通勤圈'],
-                    ['雲科廠', '雲林縣', '核心生活圈'],
-                    ['雲科廠', '彰化縣', '延伸通勤圈'],
-                    ['雲科廠', '嘉義市', '延伸通勤圈'],
-                    ['雲科廠', '嘉義縣', '延伸通勤圈'],
-                    ['雲科廠', '南投縣', '延伸通勤圈'],
-                    ['雲科廠', '臺南市', '延伸通勤圈']
-                ];
-            }
-            syncIndustryMappingFromResume();
-        }
-
-        function suggestIndustryFromCompany(companyName) {
-            const name = (companyName || '').toString();
-            if (/半導體.*材料|半導體.*設備/.test(name)) return '半導體設備／材料';
-            if (/半導體|晶圓|封測|積體電路/.test(name)) return '半導體製造／封測';
-            if (/光電|面板/.test(name)) return '光電／面板';
-            if (/電子|電機|電腦|科技製造/.test(name)) return '電子零組件／電子製造';
-            if (/化工|化學|材料/.test(name)) return '化工／材料';
-            if (/生技|醫材|醫療|醫院|製藥/.test(name)) return '生醫／醫材';
-            if (/軟體|資訊服務|數位科技/.test(name)) return '軟體／資訊';
-            if (/銀行|保險|證券|金融/.test(name)) return '金融／服務';
-            if (/大學|學院|研究院|研究所|學校/.test(name)) return '教育／研究機構';
-            return '其他／待分類';
-        }
-
-        function syncIndustryMappingFromResume() {
-            const resumeData = workbookData['#履歷匯出資料'];
-            const mappingData = workbookData['#公司產業對照'];
-            if (!resumeData || resumeData.length <= 1 || !mappingData || mappingData.length === 0) return;
-            const headers = resumeData[0];
-            const companyIndex = headers.findIndex(header => header === '工作經驗一公司名稱');
-            if (companyIndex === -1) return;
-            const existing = new Set(mappingData.slice(1).map(row => (row[0] || '').toString().trim()).filter(Boolean));
-            const companies = new Set();
-            resumeData.slice(1).forEach(row => {
-                const company = row[companyIndex] ? row[companyIndex].toString().trim() : '';
-                if (company && company !== '求職者設定隱藏' && company !== '未填寫') companies.add(company);
-            });
-            Array.from(companies).sort((a, b) => a.localeCompare(b, 'zh-TW')).forEach(company => {
-                if (!existing.has(company)) {
-                    mappingData.push([company, company, suggestIndustryFromCompany(company), '', '', '待確認']);
-                    existing.add(company);
-                }
-            });
-        }
-
-        function updateResumeDataWithTalentAnalytics() {
-            const resumeData = workbookData['#履歷匯出資料'];
-            if (!resumeData || resumeData.length <= 1) return;
-            ensureTalentMappingSheets();
-            const headers = resumeData[0];
-            const index = Object.fromEntries(headers.map((header, idx) => [header, idx]));
-            const required = ['應徵職務名稱', '應徵日期', '工作經驗', '通訊地址', '工作經驗一公司名稱'];
-            if (required.some(header => index[header] === undefined)) {
-                console.warn('人才賽道分析缺少必要欄位', required.filter(header => index[header] === undefined));
-                return;
-            }
-
-            const jobData = ensureJobClassificationColumns(workbookData['#職缺分類']);
-            workbookData['#職缺分類'] = jobData;
-            const jobHeaders = jobData[0];
-            const jobIndex = Object.fromEntries(jobHeaders.map((header, idx) => [header, idx]));
-            const jobLookup = new Map(jobData.slice(1).map(row => [
-                (row[jobIndex['職務名稱']] || '').toString().trim(),
-                {
-                    category: row[jobIndex['職系']] || '',
-                    track: row[jobIndex['人工確認賽道']] || '',
-                    status: row[jobIndex['確認狀態']] || '待確認',
-                    site: row[jobIndex['主要廠區']] || '其他／待確認'
-                }
-            ]));
-
-            const industryData = workbookData['#公司產業對照'];
-            const industryLookup = new Map(industryData.slice(1).map(row => [
-                (row[0] || '').toString().trim(),
-                { industry: row[2] || '其他／待分類', status: row[5] || '待確認' }
-            ]));
-
-            resumeData.slice(1).forEach(row => {
-                const jobName = (row[index['應徵職務名稱']] || '').toString().trim();
-                const job = jobLookup.get(jobName) || {};
-                const company = (row[index['工作經驗一公司名稱']] || '').toString().trim();
-                const industry = industryLookup.get(company) || { industry: '其他／待分類', status: '待確認' };
-                const county = extractResidenceCounty(row[index['通訊地址']]);
-                const isIdl = (job.category || row[index['IDL']] || '') === 'IDL';
-                row[index['應徵年月']] = extractApplyYearMonth(row[index['應徵日期']]);
-                row[index['招募賽道']] = isIdl && job.status === '已確認' && job.track ? job.track : (isIdl ? '待確認' : '不適用');
-                row[index['賽道確認狀態']] = isIdl ? (job.status || '待確認') : '不適用';
-                row[index['主要廠區']] = job.site || '其他／待確認';
-                row[index['居住縣市']] = county;
-                row[index['生活圈分類']] = regionGroupForSite(job.site, county);
-                row[index['年資區間']] = experienceBand(row[index['工作經驗']]);
-                row[index['最近工作產業']] = industry.industry;
-                row[index['產業確認狀態']] = industry.status;
             });
         }
 
@@ -2679,7 +2388,7 @@
             }
             
             // 定義使用下拉式選單的欄位
-            const selectFilterFields = ['月份', '應徵年月', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'];
+            const selectFilterFields = ['月份', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺'];
             
             // 定義使用關鍵字的欄位
             const textFilterFields = ['姓名', '學校NEW'];
@@ -2691,8 +2400,7 @@
             headers.forEach((header, index) => {
                 const isNewColumn = index === 0 || // 月份欄位
                                    (header === 'IDL' || header === '新鮮人（2y內）' || 
-                                    header === '目標學校' || header === '新鮮人職缺' || header === '學校NEW' ||
-                                    ['應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'].includes(header));
+                                    header === '目標學校' || header === '新鮮人職缺' || header === '學校NEW');
                 const className = isNewColumn ? 'new-column' : '';
                 
                 // 設定欄位寬度
@@ -2756,7 +2464,7 @@
                     const isNewColumn = index === 0 || 
                                        (headers[index] === 'IDL' || headers[index] === '新鮮人（2y內）' || 
                                         headers[index] === '目標學校' || headers[index] === '新鮮人職缺' || 
-                                        headers[index] === '學校NEW' || ['應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'].includes(headers[index]));
+                                        headers[index] === '學校NEW');
                     const className = isNewColumn ? 'new-column' : '';
                     
                     // 設定欄位寬度（與標題一致）
@@ -2838,8 +2546,7 @@
                     
                     // 特殊處理職缺分類：移除最後的 NEW 標記欄
                     if (sheetName === '#職缺分類' && data.length > 0) {
-                        const visibleColumnCount = data[0].length;
-                        data = data.map(row => row.slice(0, visibleColumnCount));
+                        data = data.map(row => row.slice(0, 4)); // 只保留前4欄
                     }
                     
                     // 如果是空的工作表，至少添加一個空陣列
@@ -2884,9 +2591,6 @@
             
             // 初始化學歷對照列表
             initEducationMapping();
-
-            // 初始化人才分析設定表
-            ensureTalentMappingSheets();
             
             // 顯示學校列表
             if (workbookData['#目標學校'].length > 0) {
@@ -2897,100 +2601,6 @@
             if (workbookData['學歷對照'].length > 0) {
                 displayEduMappingTable(workbookData['學歷對照']);
             }
-
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            displayRegionMappingTable(workbookData['#地域對照']);
-        }
-
-        function displayIndustryMappingTable(data) {
-            const container = document.getElementById('industryTableContainer');
-            if (!container) return;
-            const rows = (data || []).slice(1);
-            const pendingCount = rows.filter(row => (row[5] || '待確認') !== '已確認').length;
-            const info = document.getElementById('industryConfirmInfo');
-            if (info) info.textContent = `待確認公司：${pendingCount}／${rows.length}`;
-            if (!data || data.length === 0) {
-                container.classList.add('empty-state');
-                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
-                return;
-            }
-            container.classList.remove('empty-state');
-            const query = industryViewState.query.toLowerCase();
-            const filteredRows = rows
-                .map((row, originalIndex) => ({ row, originalIndex }))
-                .filter(item => !query || `${item.row[0] || ''} ${item.row[1] || ''}`.toLowerCase().includes(query));
-            const pageCount = Math.max(1, Math.ceil(filteredRows.length / industryViewState.pageSize));
-            industryViewState.page = Math.min(industryViewState.page, pageCount);
-            const start = (industryViewState.page - 1) * industryViewState.pageSize;
-            const pageRows = filteredRows.slice(start, start + industryViewState.pageSize);
-            let html = '<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">';
-            html += `<input id="industrySearch" type="search" value="${escapeHtml(industryViewState.query)}" placeholder="搜尋公司" oninput="filterIndustryMapping(this.value)" style="width:min(360px,100%); padding:9px 12px; border:1px solid #dee2e6; border-radius:6px;">`;
-            html += `<span style="color:#6c757d;">顯示 ${filteredRows.length ? start + 1 : 0}–${Math.min(start + industryViewState.pageSize, filteredRows.length)}／${filteredRows.length}</span>`;
-            html += `<button type="button" onclick="changeIndustryPage(-1)" ${industryViewState.page <= 1 ? 'disabled' : ''}>上一頁</button>`;
-            html += `<span>第 ${industryViewState.page}／${pageCount} 頁</span>`;
-            html += `<button type="button" onclick="changeIndustryPage(1)" ${industryViewState.page >= pageCount ? 'disabled' : ''}>下一頁</button></div>`;
-            html += '<div class="table-wrapper"><table id="industryMappingTable"><thead><tr>';
-            ['公司原始名稱', '公司標準名稱', '產業大類', '產業子類', '賽道關聯', '確認狀態'].forEach(header => { html += `<th>${header}</th>`; });
-            html += '</tr></thead><tbody>';
-            pageRows.forEach(({ row, originalIndex: rowIndex }) => {
-                html += `<tr data-search="${escapeHtml(`${row[0] || ''} ${row[1] || ''}`.toLowerCase())}">`;
-                html += `<td>${escapeHtml(row[0] || '')}</td>`;
-                html += `<td class="editable-cell"><input type="text" value="${escapeHtml(row[1] || '')}" onchange="updateIndustryMappingCell(${rowIndex},1,this.value)" style="min-width:180px;"></td>`;
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',2,this.value)">';
-                Constants.INDUSTRIES.forEach(industry => { html += `<option value="${industry}" ${row[2] === industry ? 'selected' : ''}>${industry}</option>`; });
-                html += '</select></td>';
-                html += `<td class="editable-cell"><input type="text" value="${escapeHtml(row[3] || '')}" onchange="updateIndustryMappingCell(${rowIndex},3,this.value)" placeholder="選填"></td>`;
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',4,this.value)">';
-                ['', ...Constants.TRACKS, '跨賽道'].forEach(track => { html += `<option value="${track}" ${row[4] === track ? 'selected' : ''}>${track || '請選擇'}</option>`; });
-                html += '</select></td>';
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',5,this.value)">';
-                ['待確認', '已確認'].forEach(status => { html += `<option value="${status}" ${row[5] === status ? 'selected' : ''}>${status}</option>`; });
-                html += '</select></td></tr>';
-            });
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        }
-
-        function updateIndustryMappingCell(rowIndex, colIndex, value) {
-            const row = workbookData['#公司產業對照'][rowIndex + 1];
-            if (!row) return;
-            const sanitized = Utils.sanitizeInput(value);
-            if (colIndex === 2 && !Constants.INDUSTRIES.includes(sanitized)) return;
-            row[colIndex] = sanitized;
-            if (colIndex === 2) row[5] = sanitized === '其他／待分類' ? '待確認' : '已確認';
-            updateResumeDataWithTalentAnalytics();
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            if (workbookData['#履歷匯出資料'].length > 0) displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
-            enableExport();
-        }
-
-        function filterIndustryMapping(value) {
-            industryViewState.query = (value || '').toString().trim();
-            industryViewState.page = 1;
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            const search = document.getElementById('industrySearch');
-            if (search) {
-                search.focus();
-                search.setSelectionRange(search.value.length, search.value.length);
-            }
-        }
-
-        function changeIndustryPage(delta) {
-            industryViewState.page = Math.max(1, industryViewState.page + delta);
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-        }
-
-        function displayRegionMappingTable(data) {
-            const container = document.getElementById('regionTableContainer');
-            if (!container) return;
-            const rows = (data || []).slice(1);
-            container.classList.remove('empty-state');
-            let html = '<div class="table-wrapper"><table><thead><tr><th>主要廠區</th><th>縣市</th><th>地域分類</th></tr></thead><tbody>';
-            rows.forEach(row => {
-                html += `<tr><td>${escapeHtml(row[0] || '')}</td><td>${escapeHtml(row[1] || '')}</td><td>${escapeHtml(row[2] || '')}</td></tr>`;
-            });
-            html += '<tr><td>全部廠區</td><td>上述以外</td><td>跨區</td></tr></tbody></table></div>';
-            container.innerHTML = html;
         }
 
         // 顯示學校列表
@@ -3039,7 +2649,6 @@
          */
         function refreshResumeDisplay() {
             updateResumeDataWithSchoolInfo();
-            updateResumeDataWithTalentAnalytics();
             
             if (workbookData['#履歷匯出資料'].length > 0) {
                 displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
@@ -3591,9 +3200,6 @@
         window.exportToExcel = exportToXLSX;
         window.exportToXLSX = exportToXLSX;
         window.updateJobClassificationCell = updateJobClassificationCell;
-        window.updateIndustryMappingCell = updateIndustryMappingCell;
-        window.filterIndustryMapping = filterIndustryMapping;
-        window.changeIndustryPage = changeIndustryPage;
         window.filterTable = filterTable;
         window.debouncedFilterTable = debouncedFilterTable;
         window.clearAllFilters = clearAllFilters;

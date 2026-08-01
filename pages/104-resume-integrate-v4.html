@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>104匯出履歷整併工具</title>
-    <link rel="icon" href="data:,">
+    <title>104匯出履歷整併工具 V4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -493,7 +492,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 104匯出履歷整併工具</h1>
+            <h1>📊 104匯出履歷整併工具 V4</h1>
             <button class="help-btn" onclick="showHelpModal()">❓ 使用說明</button>
         </div>
 
@@ -505,8 +504,8 @@
                     <button class="close-btn" onclick="closeHelpModal()">&times;</button>
                 </div>
                 <div class="help-modal-body">
-                    <p><strong>📌 說明：</strong>此工作表會自動在「姓名」左側新增「月份」欄位，並在「應徵日期」右側新增多個分析欄位。</p>
-                    <p><strong>💡 提示：</strong>先匯入歷史資料（選填），再匯入新履歷資料，系統會自動合併並保留所有設定。</p>
+                    <p><strong>📌 雙層資料：</strong>「#人才主檔」每個 104 代碼只保留一人；「#應徵紀錄」每個人才 × 職缺 × 應徵日期保留一筆。</p>
+                    <p><strong>💡 提示：</strong>地域、年資、學歷與最近產業請看人才主檔；職缺與應徵趨勢請看應徵紀錄。</p>
                     <hr style="margin: 20px 0; border: none; border-top: 1px solid #e9ecef;">
                     <p><strong>📋 自動填充欄位說明：</strong></p>
                     <ul style="margin-left: 20px;">
@@ -516,8 +515,7 @@
                         <li><strong>學校NEW</strong>：從「學歷對照」比對填入</li>
                         <li><strong>目標學校</strong>：比對「#目標學校」清單</li>
                         <li><strong>新鮮人職缺</strong>：從「#職缺分類」比對填入</li>
-                        <li><strong>招募賽道</strong>：系統依 IDL 職缺名稱提出建議，人工確認後才納入正式分析</li>
-                        <li><strong>地域／年資／產業</strong>：依應徵日期、通訊縣市、年資及「#公司產業對照」產生分析欄位</li>
+                        <li><strong>最近工作產業別</strong>：依「#產業對照」先比公司、再比職務；未命中則標示待分類</li>
                     </ul>
                 </div>
             </div>
@@ -548,6 +546,7 @@
                 <div class="controls-status">
                     <div id="historyInfo" class="status status-info" style="display: none;"></div>
                     <div id="newFileInfo" class="status status-success" style="display: none;"></div>
+                    <div id="importAuditInfo" class="status status-info" style="display: none;"></div>
                     <div id="totalCountInfo" class="status status-info" style="display: none;"></div>
                     <div id="dedupeInfo" class="status status-info" style="display: none;"></div>
                 </div>
@@ -555,15 +554,28 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="tab1">#履歷匯出資料</button>
-            <button class="tab" data-tab="tab2">#職缺分類</button>
-            <button class="tab" data-tab="tab3">#目標學校</button>
-            <button class="tab" data-tab="tab4">學歷對照</button>
-            <button class="tab" data-tab="tab5">#公司產業對照</button>
-            <button class="tab" data-tab="tab6">#地域對照</button>
+            <button class="tab active" data-tab="tab1">#人才主檔</button>
+            <button class="tab" data-tab="tab2">#應徵紀錄</button>
+            <button class="tab" data-tab="tab3">#職缺分類</button>
+            <button class="tab" data-tab="tab4">#目標學校</button>
+            <button class="tab" data-tab="tab5">學歷對照</button>
+            <button class="tab" data-tab="tab6">#產業對照</button>
         </div>
 
         <div id="tab1" class="tab-content active">
+            <div class="info-box">
+                <strong>👤 人才口徑：</strong>每個 104 代碼一列，保留最近一次應徵時的個人資料，並彙整應徵次數、首次與最近應徵日期。
+            </div>
+            <div id="candidateTableContainer" class="empty-state data-container">
+                <h3>尚未匯入資料</h3>
+                <p>匯入後會自動建立不重複的人才主檔</p>
+            </div>
+        </div>
+
+        <div id="tab2" class="tab-content">
+            <div class="info-box">
+                <strong>📨 應徵口徑：</strong>同一人應徵不同職缺或不同日期會各算一筆，適合分析職缺與應徵趨勢。
+            </div>
             <div id="mainTableContainer" class="empty-state data-container">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -573,7 +585,7 @@
             </div>
         </div>
 
-        <div id="tab2" class="tab-content">
+        <div id="tab3" class="tab-content">
             <div class="info-box">
                 <strong>📌 說明：</strong>職缺分類工作表 - 自動提取職務名稱並設定屬性。<strong style="color: #dc3545;">紅色標示</strong>為新增職務，請確認並填寫資料。<strong>除A欄外，其他欄位皆可點選編輯。</strong>
                 <div id="jobConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
@@ -584,7 +596,7 @@
             </div>
         </div>
 
-        <div id="tab3" class="tab-content">
+        <div id="tab4" class="tab-content">
             <div class="info-box">
                 <strong>📌 說明：</strong>目標學校工作表 - 用於管理目標學校列表。可以新增、編輯或刪除學校。
             </div>
@@ -599,7 +611,7 @@
             </div>
         </div>
 
-        <div id="tab4" class="tab-content">
+        <div id="tab5" class="tab-content">
             <div class="info-box">
                 <strong>📌 說明：</strong>學歷對照工作表 - 用於學歷資料的對照與轉換。可以新增、編輯或刪除學校對照。
             </div>
@@ -617,24 +629,25 @@
             </div>
         </div>
 
-        <div id="tab5" class="tab-content">
-            <div class="info-box">
-                <strong>📌 說明：</strong>系統會整理最近一份工作的公司名稱。產業別需人工確認；未確認資料維持「其他／待分類」，不會強行猜測。
-                <div id="industryConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
-            </div>
-            <div id="industryTableContainer" class="empty-state data-container">
-                <h3>公司產業對照</h3>
-                <p>匯入履歷資料後，系統會自動整理最近任職公司清單</p>
-            </div>
-        </div>
-
         <div id="tab6" class="tab-content">
             <div class="info-box">
-                <strong>📌 說明：</strong>地域規則依 Harry 確認版本：桃園／龍科以桃園為核心、台北新北為延伸；雲科以雲林為核心、彰化嘉義南投台南為延伸，其餘為跨區。
+                <strong>🏭 判定順序：</strong>公司完全符合 → 公司包含 → 職務完全符合 → 職務包含。公司規則優先，職務規則只作低信心補充；未命中保留為「待分類」。
+                <div id="industryCoverageInfo" style="margin-top: 8px; font-weight: 600;"></div>
             </div>
-            <div id="regionTableContainer" class="empty-state data-container">
-                <h3>地域對照</h3>
-                <p>系統將載入預設地域生活圈規則</p>
+            <div style="margin-bottom: 15px;">
+                <button id="addIndustryRuleBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    ➕ 新增產業規則
+                </button>
+            </div>
+            <div id="industryTableContainer" class="empty-state data-container">
+                <h3>產業對照</h3>
+                <p>可依公司名稱或職務名稱建立產業分類規則</p>
+            </div>
+            <div class="info-box" style="margin-top: 20px;">
+                <strong>📝 待分類清單：</strong>只列公司、職務與人數，不顯示候選人姓名。建議先處理人數較多的公司。
+            </div>
+            <div id="unmatchedIndustryContainer" class="empty-state data-container">
+                <h3>尚未載入人才資料</h3>
             </div>
         </div>
     </div>
@@ -651,12 +664,12 @@
                 
                 // 工作表名稱
                 SHEET_NAMES: {
-                    RESUME: '#履歷匯出資料',
+                    CANDIDATE: '#人才主檔',
+                    RESUME: '#應徵紀錄',
                     JOB_CLASS: '#職缺分類',
                     TARGET_SCHOOL: '#目標學校',
                     EDU_MAPPING: '學歷對照',
-                    INDUSTRY_MAPPING: '#公司產業對照',
-                    REGION_MAPPING: '#地域對照'
+                    INDUSTRY_MAPPING: '#產業對照'
                 },
                 
                 // 欄位名稱
@@ -672,16 +685,7 @@
                     TARGET_SCHOOL: '目標學校',
                     FRESH_JOB: '新鮮人職缺',
                     SCHOOL_NEW: '學校NEW',
-                    EDU_SCHOOL: '學歷學校名稱一',
-                    APPLY_YM: '應徵年月',
-                    TRACK: '招募賽道',
-                    TRACK_STATUS: '賽道確認狀態',
-                    SITE: '主要廠區',
-                    RESIDENCE_COUNTY: '居住縣市',
-                    REGION_GROUP: '生活圈分類',
-                    EXP_BAND: '年資區間',
-                    LATEST_INDUSTRY: '最近工作產業',
-                    INDUSTRY_STATUS: '產業確認狀態'
+                    EDU_SCHOOL: '學歷學校名稱一'
                 },
                 
                 // 驗證規則
@@ -712,25 +716,96 @@
                     '0-1年', '0~1年', '0年'
                 ],
 
-                TRACKS: ['① 半導體經驗人才', '② 理工人才（製造／研發）', '③ 商管人才'],
-                INDUSTRIES: [
-                    '半導體製造／封測', '半導體設備／材料', '光電／面板',
-                    '電子零組件／電子製造', '化工／材料', '生醫／醫材',
-                    '一般製造', '軟體／資訊', '消費品牌／零售',
-                    '金融／服務', '教育／研究機構', '其他／待分類'
+                INDUSTRY_RULE_HEADERS: ['比對欄位', '比對方式', '關鍵字', '產業別', '優先序', '啟用'],
+                INDUSTRY_CATEGORIES: [
+                    '半導體', '電子/光電', '化工/材料', '醫療/生技', '資訊/軟體',
+                    '製造/工業', '金融/保險', '物流/運輸', '零售/電商', '餐飲/旅宿',
+                    '教育/研究', '政府/非營利', '人力資源/顧問', '營建/工程', '媒體/行銷',
+                    '其他', '待分類'
                 ],
-                SITES: ['桃園廠', '龍科廠', '雲科廠', '其他／待確認']
+                DEFAULT_INDUSTRY_RULES: [
+                    ['公司', '完全符合', '台灣積體電路製造股份有限公司', '半導體', 100, 'Y'],
+                    ['公司', '包含', '台積電', '半導體', 90, 'Y'],
+                    ['公司', '完全符合', '聯華電子股份有限公司', '半導體', 100, 'Y'],
+                    ['公司', '包含', '聯電', '半導體', 90, 'Y'],
+                    ['公司', '包含', '日月光', '半導體', 90, 'Y'],
+                    ['公司', '包含', '矽品', '半導體', 90, 'Y'],
+                    ['公司', '包含', '華泰電子', '半導體', 90, 'Y'],
+                    ['公司', '包含', '久元電子', '半導體', 90, 'Y'],
+                    ['公司', '包含', '南亞科技', '半導體', 90, 'Y'],
+                    ['公司', '包含', '力積電', '半導體', 90, 'Y'],
+                    ['公司', '包含', '旺宏', '半導體', 90, 'Y'],
+                    ['公司', '包含', '華邦電子', '半導體', 90, 'Y'],
+                    ['公司', '包含', '半導體', '半導體', 70, 'Y'],
+                    ['公司', '包含', '欣興電子', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '健鼎科技', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '臻鼎', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '廣達電腦', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '研華', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '神達', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '神準', '電子/光電', 90, 'Y'],
+                    ['公司', '包含', '光電', '電子/光電', 60, 'Y'],
+                    ['公司', '包含', '材料', '化工/材料', 50, 'Y'],
+                    ['公司', '包含', '化學', '化工/材料', 50, 'Y'],
+                    ['公司', '包含', '化工', '化工/材料', 50, 'Y'],
+                    ['公司', '包含', '生技', '醫療/生技', 60, 'Y'],
+                    ['公司', '包含', '生醫', '醫療/生技', 60, 'Y'],
+                    ['公司', '包含', '醫療器材', '醫療/生技', 60, 'Y'],
+                    ['公司', '包含', '隱形眼鏡', '醫療/生技', 60, 'Y'],
+                    ['公司', '包含', '軟體', '資訊/軟體', 50, 'Y'],
+                    ['公司', '包含', '資訊', '資訊/軟體', 40, 'Y'],
+                    ['公司', '包含', '銀行', '金融/保險', 60, 'Y'],
+                    ['公司', '包含', '人壽', '金融/保險', 60, 'Y'],
+                    ['公司', '包含', '保險', '金融/保險', 60, 'Y'],
+                    ['公司', '包含', '物流', '物流/運輸', 60, 'Y'],
+                    ['公司', '包含', '倉儲', '物流/運輸', 50, 'Y'],
+                    ['公司', '包含', '航運', '物流/運輸', 60, 'Y'],
+                    ['公司', '包含', '百貨', '零售/電商', 50, 'Y'],
+                    ['公司', '包含', '超商', '零售/電商', 50, 'Y'],
+                    ['公司', '包含', '電商', '零售/電商', 50, 'Y'],
+                    ['公司', '包含', '飯店', '餐飲/旅宿', 50, 'Y'],
+                    ['公司', '包含', '旅館', '餐飲/旅宿', 50, 'Y'],
+                    ['公司', '包含', '餐飲', '餐飲/旅宿', 50, 'Y'],
+                    ['公司', '包含', '大學', '教育/研究', 60, 'Y'],
+                    ['公司', '包含', '學院', '教育/研究', 50, 'Y'],
+                    ['公司', '包含', '學校', '教育/研究', 50, 'Y'],
+                    ['公司', '包含', '政府', '政府/非營利', 60, 'Y'],
+                    ['公司', '包含', '公所', '政府/非營利', 60, 'Y'],
+                    ['公司', '包含', '人事顧問', '人力資源/顧問', 60, 'Y'],
+                    ['公司', '包含', '人力資源', '人力資源/顧問', 60, 'Y'],
+                    ['公司', '包含', '營造', '營建/工程', 60, 'Y'],
+                    ['公司', '包含', '工程顧問', '營建/工程', 60, 'Y'],
+                    ['公司', '包含', '媒體', '媒體/行銷', 50, 'Y'],
+                    ['公司', '包含', '廣告', '媒體/行銷', 50, 'Y'],
+                    ['職務', '包含', '半導體', '半導體', 40, 'Y'],
+                    ['職務', '包含', '晶圓', '半導體', 40, 'Y'],
+                    ['職務', '包含', '封裝', '半導體', 40, 'Y'],
+                    ['職務', '包含', '隱形眼鏡', '醫療/生技', 40, 'Y'],
+                    ['職務', '包含', '視光', '醫療/生技', 40, 'Y'],
+                    ['職務', '包含', '生醫', '醫療/生技', 40, 'Y'],
+                    ['職務', '包含', '醫材', '醫療/生技', 40, 'Y'],
+                    ['職務', '包含', '軟體工程師', '資訊/軟體', 40, 'Y'],
+                    ['職務', '包含', '資料工程師', '資訊/軟體', 40, 'Y'],
+                    ['職務', '包含', '網路工程師', '資訊/軟體', 40, 'Y'],
+                    ['職務', '包含', '金融', '金融/保險', 40, 'Y'],
+                    ['職務', '包含', '保險', '金融/保險', 40, 'Y'],
+                    ['職務', '包含', '物流', '物流/運輸', 40, 'Y'],
+                    ['職務', '包含', '教師', '教育/研究', 40, 'Y'],
+                    ['職務', '包含', '助教', '教育/研究', 40, 'Y'],
+                    ['職務', '包含', '餐飲', '餐飲/旅宿', 40, 'Y'],
+                    ['職務', '包含', '飯店', '餐飲/旅宿', 40, 'Y']
+                ]
             };
             
             // ========== 應用程式狀態 ==========
             const AppState = {
                 workbookData: {
-                    '#履歷匯出資料': [],
+                    '#人才主檔': [],
+                    '#應徵紀錄': [],
                     '#職缺分類': [],
                     '#目標學校': [],
                     '學歷對照': [],
-                    '#公司產業對照': [],
-                    '#地域對照': []
+                    '#產業對照': []
                 },
                 existingJobs: new Set(),
                 existingJobSettings: new Map(),
@@ -742,7 +817,8 @@
             let existingJobs = AppState.existingJobs;
             let existingJobSettings = AppState.existingJobSettings;
             let historyLoaded = AppState.historyLoaded;
-            const industryViewState = { query: '', page: 1, pageSize: 100 };
+            let candidateTableDirty = false;
+            let applicationTableDirty = true;
 
             // ========== 錯誤處理 ==========
             const ErrorHandler = {
@@ -767,6 +843,10 @@
                  * 獲取用戶友好的錯誤訊息
                  */
                 getUserMessage(operation, error) {
+                    if (operation === '檔案上傳' && error && error.message) {
+                        return `檔案上傳失敗：${error.message}`;
+                    }
+
                     const errorMessages = {
                         '檔案上傳': '檔案上傳失敗，請確認檔案格式是否正確（需為 .xlsx 檔案）',
                         '資料處理': '資料處理失敗，請檢查檔案內容是否符合要求',
@@ -1002,6 +1082,15 @@
             // 僅在需要時初始化標題行
         }
 
+        // 初始化可編輯的產業規則；舊版歷史檔沒有此工作表時沿用預設值。
+        function initIndustryMapping() {
+            if (workbookData['#產業對照'].length > 0) return;
+            workbookData['#產業對照'] = [
+                [...Constants.INDUSTRY_RULE_HEADERS],
+                ...Constants.DEFAULT_INDUSTRY_RULES.map(row => [...row])
+            ];
+        }
+
         // Tab 切換功能
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -1013,6 +1102,16 @@
                 tab.classList.add('active');
                 const tabId = tab.getAttribute('data-tab');
                 document.getElementById(tabId).classList.add('active');
+
+                // 應徵紀錄可能很多，只有使用者打開頁籤時才建立表格。
+                if (tabId === 'tab2' && applicationTableDirty) {
+                    displayTable(workbookData['#應徵紀錄'], 'mainTableContainer');
+                    applicationTableDirty = false;
+                }
+                if (tabId === 'tab1' && candidateTableDirty) {
+                    displayTable(workbookData['#人才主檔'], 'candidateTableContainer');
+                    candidateTableDirty = false;
+                }
             });
         });
 
@@ -1028,6 +1127,9 @@
         
         // 複製比對指令
         document.getElementById('copyEduCompareBtn').addEventListener('click', copyEduComparePrompt);
+
+        // 新增產業對照規則
+        document.getElementById('addIndustryRuleBtn').addEventListener('click', addNewIndustryRule);
 
         // ========== 檔案處理模組 ==========
         const FileProcessor = {
@@ -1056,15 +1158,15 @@
              * 處理履歷資料
              */
             processResumeData() {
-                if (workbookData['#履歷匯出資料'].length === 0) return 0;
+                if (workbookData['#應徵紀錄'].length === 0) return 0;
                 
                 // 正規化欄位名稱
-                workbookData['#履歷匯出資料'] = normalizeResumeHeaders(workbookData['#履歷匯出資料']);
-                workbookData['#履歷匯出資料'] = ensureAnalysisColumns(workbookData['#履歷匯出資料']);
+                workbookData['#應徵紀錄'] = normalizeResumeHeaders(workbookData['#應徵紀錄']);
+                workbookData['#應徵紀錄'] = ensureAnalysisColumns(workbookData['#應徵紀錄']);
                 
                 // 去重
-                const dedupeResult = dedupeBy104Key(workbookData['#履歷匯出資料']);
-                workbookData['#履歷匯出資料'] = dedupeResult.data;
+                const dedupeResult = dedupeBy104Key(workbookData['#應徵紀錄']);
+                workbookData['#應徵紀錄'] = dedupeResult.data;
                 
                 return dedupeResult.removedCount;
             },
@@ -1075,24 +1177,18 @@
             loadJobSettings() {
                 if (workbookData['#職缺分類'].length <= 1) return 0;
                 
-                const classifyData = ensureJobClassificationColumns(workbookData['#職缺分類']);
-                workbookData['#職缺分類'] = classifyData;
+                const classifyData = workbookData['#職缺分類'];
                 const headers = classifyData[0];
                 const rows = classifyData.slice(1);
-                const index = Object.fromEntries(headers.map((header, idx) => [header, idx]));
                 
                 rows.forEach(row => {
-                    const jobName = row[index['職務名稱']];
+                    const jobName = row[0];
                     if (jobName) {
                         existingJobs.add(jobName);
                         existingJobSettings.set(jobName, {
-                            category: row[index['職系']] || 'IDL',
-                            openToFreshGrad: row[index['開放新鮮人']] || '',
-                            month: row[index['月份']] || '',
-                            suggestedTrack: row[index['招募賽道建議']] || '',
-                            confirmedTrack: row[index['人工確認賽道']] || '',
-                            trackStatus: row[index['確認狀態']] || '待確認',
-                            site: row[index['主要廠區']] || '其他／待確認'
+                            category: row[1] || 'IDL',
+                            openToFreshGrad: row[2] || '',
+                            month: row[3] || ''
                         });
                     }
                 });
@@ -1104,8 +1200,14 @@
              * 顯示所有資料表
              */
             displayAllTables() {
-                if (workbookData['#履歷匯出資料'].length > 0) {
-                    displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                rebuildCandidateMaster();
+
+                if (workbookData['#人才主檔'].length > 0) {
+                    displayTable(workbookData['#人才主檔'], 'candidateTableContainer');
+                }
+
+                if (workbookData['#應徵紀錄'].length > 0) {
+                    markApplicationTableForLazyRender();
                 }
                 
                 if (workbookData['#職缺分類'].length > 0) {
@@ -1120,21 +1222,19 @@
                     displayEduMappingTable(workbookData['學歷對照']);
                 }
 
-                if (workbookData['#公司產業對照'].length > 0) {
-                    displayIndustryMappingTable(workbookData['#公司產業對照']);
-                }
-
-                if (workbookData['#地域對照'].length > 0) {
-                    displayRegionMappingTable(workbookData['#地域對照']);
+                if (workbookData['#產業對照'].length > 0) {
+                    displayIndustryMappingTable(workbookData['#產業對照']);
                 }
             },
             
             /**
              * 更新狀態資訊
              */
-            updateStatusInfo(jobCount, resumeCount) {
+            updateStatusInfo(jobCount, candidateCount, applicationCount) {
                 const historyInfo = document.getElementById('historyInfo');
-                historyInfo.textContent = `📂 已載入歷史資料：${jobCount} 個職務，${resumeCount} 筆履歷`;
+                historyInfo.textContent =
+                    `📂 已載入歷史資料：${candidateCount} 位人才、` +
+                    `${applicationCount} 筆應徵紀錄、${jobCount} 個職務`;
                 historyInfo.style.display = 'block';
                 historyInfo.className = 'status status-info';
                 
@@ -1170,9 +1270,9 @@
                     FileProcessor.importAllSheets(workbook);
                     
                     // 驗證履歷資料
-                    if (workbookData['#履歷匯出資料'].length > 0) {
+                    if (workbookData['#應徵紀錄'].length > 0) {
                         const dataValidation = Utils.validateWorksheetData(
-                            workbookData['#履歷匯出資料']
+                            workbookData['#應徵紀錄']
                         );
                         if (!dataValidation.valid) {
                             console.warn('履歷資料驗證警告：', dataValidation.message);
@@ -1190,6 +1290,7 @@
                     
                     // 依規則更新四個欄位
                     applyDerivedFieldUpdates();
+                    rebuildCandidateMaster();
                     
                     // 顯示所有資料表
                     FileProcessor.displayAllTables();
@@ -1197,8 +1298,9 @@
                     historyLoaded = true;
                     
                     // 更新狀態資訊
-                    const resumeCount = workbookData['#履歷匯出資料'].length - 1;
-                    FileProcessor.updateStatusInfo(jobCount, resumeCount);
+                    const candidateCount = Math.max(workbookData['#人才主檔'].length - 1, 0);
+                    const applicationCount = Math.max(workbookData['#應徵紀錄'].length - 1, 0);
+                    FileProcessor.updateStatusInfo(jobCount, candidateCount, applicationCount);
                     
                 } catch (error) {
                     ErrorHandler.handle('檔案上傳', error);
@@ -1229,7 +1331,20 @@
             }
 
             try {
-                let totalResumeCount = 0;
+                rebuildCandidateMaster();
+                const existingApplicationCountBeforeImport = Math.max(
+                    workbookData['#應徵紀錄'].length - 1,
+                    0
+                );
+                const existingCandidateCountBeforeImport = Math.max(
+                    workbookData['#人才主檔'].length - 1,
+                    0
+                );
+                let sourceCandidateCount = 0;
+                let missing104IdCount = 0;
+                let expandedApplicationCount = 0;
+                const sourceUnique104Ids = new Set();
+                let batchData = null;
                 
                 for (const file of files) {
                     const workbook = await readWorkbookFromFile(file);
@@ -1240,32 +1355,77 @@
                     }
                     
                     // 處理新檔案資料
-                    const processedData = processNewFileData(workbook);
+                    const processedResult = processNewFileData(workbook);
+                    const processedData = processedResult.data;
                     
                     // 驗證處理後的資料
-                    const dataValidation = Utils.validateWorksheetData(processedData);
+                    const dataValidation = Utils.validateWorksheetData(processedData, [
+                        '104代碼',
+                        '應徵職務名稱',
+                        '應徵日期'
+                    ]);
                     if (!dataValidation.valid) {
                         throw new Error(`${file.name}：${dataValidation.message}`);
                     }
                     
-                    // 合併資料
-                    mergeWithExistingData(processedData);
-                    totalResumeCount += Math.max(processedData.length - 1, 0);
+                    // 先在記憶體中組成完整批次，全部通過後才寫入主資料。
+                    if (batchData === null) {
+                        batchData = processedData.map(row => [...row]);
+                    } else {
+                        batchData = appendRowsWithMatchingHeaders(
+                            batchData,
+                            processedData,
+                            file.name
+                        );
+                    }
+
+                    sourceCandidateCount += processedResult.sourceCandidateCount;
+                    missing104IdCount += processedResult.missing104IdCount;
+                    expandedApplicationCount += processedResult.expandedApplicationCount;
+                    processedResult.source104Ids.forEach(id => sourceUnique104Ids.add(id));
                 }
+
+                if (!batchData || batchData.length <= 1) {
+                    throw new Error('本次匯入沒有可處理的應徵資料');
+                }
+
+                // 所有檔案都已通過驗證，再一次合併到歷史資料。
+                mergeWithExistingData(batchData, '本次匯入批次');
                 
                 // 正規化和去重
                 const removedCount = normalizeAndDedupe();
                 showDedupeInfo(removedCount, '新履歷資料');
                 
                 // 生成職缺分類並更新衍生欄位
-                generateJobClassification(workbookData['#履歷匯出資料']);
+                generateJobClassification(workbookData['#應徵紀錄']);
                 applyDerivedFieldUpdates();
+                rebuildCandidateMaster();
                 
-                // 顯示資料
-                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                // 顯示人才主檔；應徵紀錄延後到使用者開啟頁籤時再建立。
+                displayTable(workbookData['#人才主檔'], 'candidateTableContainer');
+                markApplicationTableForLazyRender();
                 
                 // 更新介面狀態
-                updateNewFileStatus(files.length, totalResumeCount);
+                const finalApplicationCount = Math.max(workbookData['#應徵紀錄'].length - 1, 0);
+                const finalCandidateCount = Math.max(workbookData['#人才主檔'].length - 1, 0);
+                updateNewFileStatus({
+                    fileCount: files.length,
+                    sourceCandidateCount,
+                    sourceUniqueCandidateCount: sourceUnique104Ids.size,
+                    missing104IdCount,
+                    expandedApplicationCount,
+                    removedCount,
+                    netAddedApplicationCount: Math.max(
+                        finalApplicationCount - existingApplicationCountBeforeImport,
+                        0
+                    ),
+                    netAddedCandidateCount: Math.max(
+                        finalCandidateCount - existingCandidateCountBeforeImport,
+                        0
+                    ),
+                    finalApplicationCount,
+                    finalCandidateCount
+                });
                 
             } catch (error) {
                 ErrorHandler.handle('檔案上傳', error);
@@ -1305,57 +1465,405 @@
             // 清理和正規化資料
             jsonData = cleanData(jsonData);
             jsonData = normalizeHeaderRow(jsonData);
+            const rawHeaders = (jsonData[0] || []).map(header => String(header || '').trim());
+            if (!rawHeaders.includes('104代碼')) {
+                throw new Error('來源資料缺少必要欄位：104代碼');
+            }
+            const sourceCandidateCount = Math.max(jsonData.length - 1, 0);
+            const source104Ids = collectUnique104Ids(jsonData);
+            const idIndex = rawHeaders.indexOf('104代碼');
+            const missing104IdCount = jsonData.slice(1).filter(row =>
+                !String(row[idIndex] || '').trim()
+            ).length;
             jsonData = expandMultiApplyRecords(jsonData);
+            const expandedApplicationCount = Math.max(jsonData.length - 1, 0);
             
-            return processData(jsonData);
+            return {
+                data: processData(jsonData),
+                sourceCandidateCount,
+                source104Ids,
+                missing104IdCount,
+                expandedApplicationCount
+            };
         }
         
         /**
-         * 合併新資料與現有資料
+         * 依欄位名稱對齊資料；欄位集合不同時停止匯入，絕不覆蓋舊資料。
          */
-        function mergeWithExistingData(processedData) {
-            if (historyLoaded && workbookData['#履歷匯出資料'].length > 0) {
-                const existingHeaders = workbookData['#履歷匯出資料'][0];
-                const newHeaders = processedData[0];
-                
-                // 檢查標題是否一致
-                const headersMatch = JSON.stringify(existingHeaders) === JSON.stringify(newHeaders);
-                
-                if (headersMatch) {
-                    // 合併資料（跳過新資料的標題行）
-                    const newRows = processedData.slice(1);
-                    workbookData['#履歷匯出資料'].push(...newRows);
-                } else {
-                    // 標題不一致，覆蓋（使用新格式）
-                    workbookData['#履歷匯出資料'] = processedData;
-                }
-            } else {
-                // 沒有歷史資料，直接使用
-                workbookData['#履歷匯出資料'] = processedData;
+        function appendRowsWithMatchingHeaders(targetData, incomingData, sourceLabel) {
+            if (!targetData || targetData.length === 0) {
+                return incomingData.map(row => [...row]);
             }
+            if (!incomingData || incomingData.length === 0) {
+                return targetData;
+            }
+
+            const targetHeaders = targetData[0].map(header => String(header || '').trim());
+            const incomingHeaders = incomingData[0].map(header => String(header || '').trim());
+            const targetHeaderSet = new Set(targetHeaders);
+            const incomingHeaderSet = new Set(incomingHeaders);
+
+            if (targetHeaderSet.size !== targetHeaders.length ||
+                incomingHeaderSet.size !== incomingHeaders.length) {
+                throw new Error(`${sourceLabel}：發現重複欄位名稱，為避免資料錯位，本次未匯入`);
+            }
+
+            const missingHeaders = targetHeaders.filter(header => !incomingHeaderSet.has(header));
+            const extraHeaders = incomingHeaders.filter(header => !targetHeaderSet.has(header));
+            if (missingHeaders.length > 0 || extraHeaders.length > 0) {
+                const details = [];
+                if (missingHeaders.length > 0) {
+                    details.push(`缺少欄位：${missingHeaders.join('、')}`);
+                }
+                if (extraHeaders.length > 0) {
+                    details.push(`新增欄位：${extraHeaders.join('、')}`);
+                }
+                throw new Error(
+                    `${sourceLabel}：欄位結構不一致（${details.join('；')}）。` +
+                    '為避免覆蓋或錯位，本次匯入已停止'
+                );
+            }
+
+            const incomingIndex = new Map(
+                incomingHeaders.map((header, index) => [header, index])
+            );
+            const alignedRows = incomingData.slice(1).map(row =>
+                targetHeaders.map(header => row[incomingIndex.get(header)] ?? '')
+            );
+
+            return [targetData[0], ...targetData.slice(1), ...alignedRows];
+        }
+
+        /**
+         * 合併新資料與現有資料。
+         */
+        function mergeWithExistingData(processedData, sourceLabel = '新履歷資料') {
+            const currentData = workbookData['#應徵紀錄'];
+            workbookData['#應徵紀錄'] =
+                appendRowsWithMatchingHeaders(currentData, processedData, sourceLabel);
         }
         
         /**
          * 正規化欄位名稱並去重
          */
         function normalizeAndDedupe() {
-            workbookData['#履歷匯出資料'] = normalizeResumeHeaders(workbookData['#履歷匯出資料']);
-            workbookData['#履歷匯出資料'] = ensureAnalysisColumns(workbookData['#履歷匯出資料']);
+            workbookData['#應徵紀錄'] = normalizeResumeHeaders(workbookData['#應徵紀錄']);
+            workbookData['#應徵紀錄'] = ensureAnalysisColumns(workbookData['#應徵紀錄']);
             
-            const dedupeResult = dedupeBy104Key(workbookData['#履歷匯出資料']);
-            workbookData['#履歷匯出資料'] = dedupeResult.data;
+            const dedupeResult = dedupeBy104Key(workbookData['#應徵紀錄']);
+            workbookData['#應徵紀錄'] = dedupeResult.data;
             
             return dedupeResult.removedCount;
+        }
+
+        /**
+         * 取得來源檔內的不重複 104 代碼，用於匯入對帳。
+         */
+        function collectUnique104Ids(data) {
+            if (!data || data.length <= 1) return [];
+
+            const headers = data[0].map(header => String(header || '').trim());
+            const idIndex = headers.indexOf('104代碼');
+            if (idIndex === -1) return [];
+
+            return Array.from(new Set(
+                data.slice(1)
+                    .map(row => String(row[idIndex] || '').trim())
+                    .filter(Boolean)
+            ));
+        }
+
+        /**
+         * 將日期轉成可排序數值；無法辨識時排在最舊。
+         */
+        function getDateSortValue(value) {
+            if (value === null || value === undefined || value === '') return -Infinity;
+
+            if (Utils.isExcelDate(value)) {
+                const parsed = XLSX.SSF.parse_date_code(value);
+                return parsed ? Date.UTC(parsed.y, parsed.m - 1, parsed.d) : -Infinity;
+            }
+
+            const text = String(value).trim();
+            const ymd = text.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (ymd) {
+                return Date.UTC(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+            }
+
+            const timestamp = Date.parse(text);
+            return Number.isNaN(timestamp) ? -Infinity : timestamp;
+        }
+
+        function normalizeIndustryMatchText(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '');
+        }
+
+        function getIndustryRules() {
+            const data = workbookData['#產業對照'];
+            if (!data || data.length <= 1) return [];
+
+            const headers = data[0].map(header => String(header || '').trim());
+            const fieldIndex = headers.indexOf('比對欄位');
+            const methodIndex = headers.indexOf('比對方式');
+            const keywordIndex = headers.indexOf('關鍵字');
+            const industryIndex = headers.indexOf('產業別');
+            const priorityIndex = headers.indexOf('優先序');
+            const enabledIndex = headers.indexOf('啟用');
+            if ([fieldIndex, methodIndex, keywordIndex, industryIndex].some(index => index === -1)) {
+                return [];
+            }
+
+            const rankMap = {
+                '公司|完全符合': 400,
+                '公司|包含': 300,
+                '職務|完全符合': 200,
+                '職務|包含': 100
+            };
+
+            return data.slice(1)
+                .map((row, order) => {
+                    const field = String(row[fieldIndex] || '').trim();
+                    const method = String(row[methodIndex] || '').trim();
+                    const keyword = String(row[keywordIndex] || '').trim();
+                    const industry = String(row[industryIndex] || '').trim();
+                    const enabled = enabledIndex === -1 ? 'Y' : String(row[enabledIndex] || 'Y').trim().toUpperCase();
+                    return {
+                        field,
+                        method,
+                        keyword,
+                        normalizedKeyword: normalizeIndustryMatchText(keyword),
+                        industry,
+                        priority: Number(row[priorityIndex]) || 0,
+                        enabled,
+                        rank: rankMap[`${field}|${method}`] || 0,
+                        order
+                    };
+                })
+                .filter(rule =>
+                    rule.enabled !== 'N' && rule.keyword && rule.industry && rule.rank > 0
+                )
+                .sort((a, b) =>
+                    b.rank - a.rank || b.priority - a.priority || a.order - b.order
+                );
+        }
+
+        function classifyLatestIndustry(companyValue, jobValue, rules) {
+            const company = normalizeIndustryMatchText(companyValue);
+            const job = normalizeIndustryMatchText(jobValue);
+
+            for (const rule of rules) {
+                const sourceText = rule.field === '公司' ? company : job;
+                if (!sourceText) continue;
+
+                const matched = rule.method === '完全符合'
+                    ? sourceText === rule.normalizedKeyword
+                    : sourceText.includes(rule.normalizedKeyword);
+                if (!matched) continue;
+
+                let confidence = '低';
+                if (rule.field === '公司' && rule.method === '完全符合') confidence = '高';
+                else if (rule.field === '公司' && rule.method === '包含') confidence = '中';
+                else if (rule.field === '職務' && rule.method === '完全符合') confidence = '中';
+
+                return {
+                    industry: rule.industry,
+                    basis: `${rule.field}${rule.method}：${rule.keyword}`,
+                    confidence
+                };
+            }
+
+            return {
+                industry: '待分類',
+                basis: '未命中規則',
+                confidence: '待確認'
+            };
+        }
+
+        function updateIndustryCoverage(candidateData) {
+            const el = document.getElementById('industryCoverageInfo');
+            if (!el) return;
+
+            if (!candidateData || candidateData.length <= 1) {
+                el.textContent = '尚未載入人才資料';
+                return;
+            }
+
+            const headers = candidateData[0];
+            const industryIndex = headers.indexOf('最近工作產業別');
+            const rows = candidateData.slice(1);
+            const classifiedCount = industryIndex === -1 ? 0 : rows.filter(row =>
+                row[industryIndex] && row[industryIndex] !== '待分類'
+            ).length;
+            const coverage = rows.length === 0 ? 0 : (classifiedCount / rows.length) * 100;
+            el.textContent =
+                `分類覆蓋：${classifiedCount}/${rows.length} 人（${coverage.toFixed(1)}%）｜` +
+                `待分類 ${rows.length - classifiedCount} 人`;
+        }
+
+        /**
+         * 由應徵紀錄重建人才主檔：每個 104 代碼一列，個人欄位取最近一筆資料。
+         */
+        function rebuildCandidateMaster() {
+            const applicationData = workbookData['#應徵紀錄'];
+            if (!applicationData || applicationData.length <= 1) {
+                workbookData['#人才主檔'] = [];
+                updateIndustryCoverage([]);
+                return;
+            }
+
+            const headers = applicationData[0];
+            const rows = applicationData.slice(1);
+            const idIndex = headers.findIndex(header => String(header || '').trim() === '104代碼');
+            const jobIndex = headers.findIndex(header => String(header || '').trim() === '應徵職務名稱');
+            const dateIndex = headers.findIndex(header => String(header || '').trim() === '應徵日期');
+            const idlIndex = headers.findIndex(header => String(header || '').trim() === 'IDL');
+            const companyIndex = headers.findIndex(header =>
+                String(header || '').replace(/\s+/g, '') === '工作經驗一公司名稱'
+            );
+            const latestJobIndex = headers.findIndex(header =>
+                String(header || '').replace(/\s+/g, '') === '工作經驗一職務名稱'
+            );
+
+            if (idIndex === -1) {
+                workbookData['#人才主檔'] = [];
+                updateIndustryCoverage([]);
+                return;
+            }
+
+            const applicationOnlyHeaders = new Set([
+                '月份', '應徵職務名稱', '應徵日期', 'IDL', '新鮮人職缺'
+            ]);
+            const profileIndexes = headers
+                .map((header, index) => ({ header, index }))
+                .filter(item => !applicationOnlyHeaders.has(String(item.header || '').trim()));
+            const summaryHeaders = [
+                '應徵次數', '首次應徵日期', '最近應徵日期', '最近應徵職務', '最近應徵職系',
+                '最近任職公司', '最近任職職務', '最近工作產業別', '產業判定依據', '產業判定信心'
+            ];
+            const candidateMap = new Map();
+            const industryRules = getIndustryRules();
+
+            rows.forEach((row, rowIndex) => {
+                const id = String(row[idIndex] || '').trim();
+                const key = id || `__缺少104代碼_${rowIndex}`;
+                const dateValue = dateIndex === -1 ? '' : row[dateIndex];
+                const dateSortValue = getDateSortValue(dateValue);
+                const existing = candidateMap.get(key);
+
+                if (!existing) {
+                    candidateMap.set(key, {
+                        latestRow: row,
+                        count: 1,
+                        firstDate: dateValue,
+                        firstSort: dateSortValue,
+                        latestDate: dateValue,
+                        latestSort: dateSortValue
+                    });
+                    return;
+                }
+
+                existing.count += 1;
+                if (dateSortValue < existing.firstSort) {
+                    existing.firstSort = dateSortValue;
+                    existing.firstDate = dateValue;
+                }
+                if (dateSortValue >= existing.latestSort) {
+                    existing.latestSort = dateSortValue;
+                    existing.latestDate = dateValue;
+                    existing.latestRow = row;
+                }
+            });
+
+            const candidateRows = Array.from(candidateMap.values())
+                .sort((a, b) => b.latestSort - a.latestSort)
+                .map(candidate => {
+                    const latestRow = candidate.latestRow;
+                    const profileValues = profileIndexes.map(item => latestRow[item.index] ?? '');
+                    const latestCompany = companyIndex === -1 ? '' : (latestRow[companyIndex] ?? '');
+                    const latestWorkJob = latestJobIndex === -1 ? '' : (latestRow[latestJobIndex] ?? '');
+                    const industryResult = classifyLatestIndustry(
+                        latestCompany,
+                        latestWorkJob,
+                        industryRules
+                    );
+                    return [
+                        ...profileValues,
+                        candidate.count,
+                        candidate.firstDate ?? '',
+                        candidate.latestDate ?? '',
+                        jobIndex === -1 ? '' : (latestRow[jobIndex] ?? ''),
+                        idlIndex === -1 ? '' : (latestRow[idlIndex] ?? ''),
+                        latestCompany,
+                        latestWorkJob,
+                        industryResult.industry,
+                        industryResult.basis,
+                        industryResult.confidence
+                    ];
+                });
+
+            workbookData['#人才主檔'] = [
+                [...profileIndexes.map(item => item.header), ...summaryHeaders],
+                ...candidateRows
+            ];
+            updateIndustryCoverage(workbookData['#人才主檔']);
+        }
+
+        function markApplicationTableForLazyRender() {
+            applicationTableDirty = true;
+            updateTotalCount();
+
+            const applicationTab = document.getElementById('tab2');
+            if (applicationTab && applicationTab.classList.contains('active')) {
+                displayTable(workbookData['#應徵紀錄'], 'mainTableContainer');
+                applicationTableDirty = false;
+                return;
+            }
+
+            const container = document.getElementById('mainTableContainer');
+            if (container) {
+                const count = Math.max(workbookData['#應徵紀錄'].length - 1, 0);
+                container.classList.add('empty-state');
+                container.innerHTML =
+                    `<div class="empty-state"><h3>${count} 筆應徵紀錄</h3>` +
+                    '<p>點選「#應徵紀錄」頁籤後載入表格</p></div>';
+            }
+        }
+
+        function refreshDualDataTables() {
+            rebuildCandidateMaster();
+            if (workbookData['#人才主檔'].length > 0) {
+                displayTable(workbookData['#人才主檔'], 'candidateTableContainer');
+            }
+            markApplicationTableForLazyRender();
         }
         
         /**
          * 更新新檔案狀態資訊
          */
-        function updateNewFileStatus(fileCount, resumeCount) {
+        function updateNewFileStatus(audit) {
             const newFileInfo = document.getElementById('newFileInfo');
-            newFileInfo.textContent = `✅ 已載入新資料：${fileCount} 個檔案，共 ${resumeCount} 筆履歷`;
+            newFileInfo.textContent = `✅ 已成功處理 ${audit.fileCount} 個檔案`;
             newFileInfo.style.display = 'block';
             newFileInfo.className = 'status status-success';
+
+            const auditInfo = document.getElementById('importAuditInfo');
+            auditInfo.textContent =
+                `📋 來源：${audit.sourceCandidateCount} 列求職者資料` +
+                `（${audit.sourceUniqueCandidateCount} 個不重複104代碼）` +
+                (audit.missing104IdCount > 0
+                    ? `，另有 ${audit.missing104IdCount} 列缺少104代碼`
+                    : '') +
+                ` → 展開 ${audit.expandedApplicationCount} 筆應徵紀錄` +
+                ` → 去除 ${audit.removedCount} 筆重複應徵；` +
+                `匯入結果：新增 ${audit.netAddedCandidateCount} 位人才、` +
+                `${audit.netAddedApplicationCount} 筆應徵紀錄；` +
+                `目前共 ${audit.finalCandidateCount} 位人才、` +
+                `${audit.finalApplicationCount} 筆應徵紀錄`;
+            auditInfo.style.display = 'block';
+            auditInfo.className = 'status status-info';
             
             document.getElementById('exportBtn').disabled = false;
         }
@@ -1516,17 +2024,19 @@
             if (!sheetName) return null;
             const normalized = sheetName.toString().replace(/\s+/g, '').replace(/#/g, '');
             const mapping = {
-                '履歷匯出資料': '#履歷匯出資料',
+                '人才主檔': '#人才主檔',
+                '應徵紀錄': '#應徵紀錄',
+                // 相容 V2 與更早版本的歷史檔。
+                '履歷匯出資料': '#應徵紀錄',
                 '職缺分類': '#職缺分類',
                 '目標學校': '#目標學校',
                 '學歷對照': '學歷對照',
-                '公司產業對照': '#公司產業對照',
-                '地域對照': '#地域對照'
+                '產業對照': '#產業對照'
             };
             return mapping[normalized] || null;
         }
         
-        // 正規化履歷匯出資料欄位名稱
+        // 正規化應徵紀錄欄位名稱
         function normalizeResumeHeaders(data) {
             if (!data || data.length === 0) return data;
             const headers = data[0];
@@ -1553,15 +2063,11 @@
             return data;
         }
         
-        // 確保分析欄位存在
+        // 確保四個分析欄位存在
         function ensureAnalysisColumns(data) {
             if (!data || data.length === 0) return data;
             const headers = data[0];
-            const required = [
-                'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW',
-                '應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類',
-                '年資區間', '最近工作產業', '產業確認狀態'
-            ];
+            const required = ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW'];
             const existing = new Set(headers.map(h => h ? h.toString() : ''));
             
             let insertIndex = headers.findIndex(h => h && h.toString().includes('應徵日期'));
@@ -1584,10 +2090,8 @@
         
         // 依規則更新四個欄位
         function applyDerivedFieldUpdates() {
-            ensureTalentMappingSheets();
             updateResumeDataWithJobInfo();
             updateResumeDataWithSchoolInfo();
-            updateResumeDataWithTalentAnalytics();
             
             const freshGradResult = updateFreshGraduateStatus();
             if (!freshGradResult.success) {
@@ -1653,12 +2157,7 @@
             const monthOffset = 1; // 前面加了「月份」
             const idOffset = insertedIdColumn && (idColumnIndex <= (dateColumnIndex + monthOffset)) ? 1 : 0; // 104代碼若在日期前，需位移
             const insertIndex = dateColumnIndex + monthOffset + idOffset + 1; // 在日期之後插入
-            const analysisColumns = [
-                'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW',
-                '應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類',
-                '年資區間', '最近工作產業', '產業確認狀態'
-            ];
-            newHeaders.splice(insertIndex, 0, ...analysisColumns);
+            newHeaders.splice(insertIndex, 0, 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW');
             
             // 處理每一行資料
             const newRows = rows.map(row => {
@@ -1675,7 +2174,7 @@
                 }
                 
                 // 在應徵日期後插入空白欄位
-                newRow.splice(insertIndex, 0, ...analysisColumns.map(() => ''));
+                newRow.splice(insertIndex, 0, '', '', '', '', '');
                 
                 return newRow;
             });
@@ -1786,68 +2285,13 @@
         function determineJobCategory(jobName) {
             return Utils.isDLJob(jobName) ? 'DL' : 'IDL';
         }
-
-        function suggestRecruitmentTrack(jobName, category) {
-            if (category !== 'IDL') return '';
-            const title = (jobName || '').toString();
-            const semiconductorKeywords = ['半導體', '封裝材料', '封裝測試', '晶圓', 'IC載板', '先進封裝', 'OSAT'];
-            const engineeringKeywords = ['研發', '製程', '設備', '工程', '材料', '配方', '品保', '品質', '生產', '製造', '技術', '光學', '生醫', '法規', '臨床'];
-            const businessKeywords = ['業務', '行銷', '產品經理', 'PM', '採購', '供應鏈', '人資', '財務', '會計', '法務', '行政', '管理師', '企劃', '客服'];
-            if (semiconductorKeywords.some(keyword => title.includes(keyword))) return '① 半導體經驗人才';
-            if (engineeringKeywords.some(keyword => title.includes(keyword))) return '② 理工人才（製造／研發）';
-            if (businessKeywords.some(keyword => title.includes(keyword))) return '③ 商管人才';
-            return '待確認';
-        }
-
-        function suggestSite(jobName) {
-            const title = (jobName || '').toString();
-            if (/雲科|雲林|斗六/.test(title)) return '雲科廠';
-            if (/龍科|龍潭/.test(title)) return '龍科廠';
-            if (/桃園|建東|龜山/.test(title)) return '桃園廠';
-            return '桃園廠';
-        }
-
-        function ensureJobClassificationColumns(data) {
-            if (!data || data.length === 0) {
-                return [['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區']];
-            }
-            const required = ['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區'];
-            const oldHeaders = data[0].map(header => header ? header.toString().trim() : '');
-            const oldIndex = Object.fromEntries(oldHeaders.map((header, idx) => [header, idx]));
-            const markerIndex = oldHeaders.length;
-            const rows = data.slice(1).map(row => {
-                const jobName = row[oldIndex['職務名稱'] ?? 0] || '';
-                const category = row[oldIndex['職系'] ?? 1] || determineJobCategory(jobName);
-                const confirmedTrack = oldIndex['人工確認賽道'] !== undefined ? (row[oldIndex['人工確認賽道']] || '') : '';
-                const values = {
-                    '職務名稱': jobName,
-                    '職系': category,
-                    '開放新鮮人': row[oldIndex['開放新鮮人'] ?? 2] || '',
-                    '月份': row[oldIndex['月份'] ?? 3] || '',
-                    '招募賽道建議': oldIndex['招募賽道建議'] !== undefined ? (row[oldIndex['招募賽道建議']] || suggestRecruitmentTrack(jobName, category)) : suggestRecruitmentTrack(jobName, category),
-                    '人工確認賽道': confirmedTrack,
-                    '確認狀態': oldIndex['確認狀態'] !== undefined ? (row[oldIndex['確認狀態']] || (confirmedTrack ? '已確認' : '待確認')) : (confirmedTrack ? '已確認' : '待確認'),
-                    '主要廠區': oldIndex['主要廠區'] !== undefined ? (row[oldIndex['主要廠區']] || suggestSite(jobName)) : suggestSite(jobName)
-                };
-                const oldMarker = row[markerIndex] === 'NEW' || row[oldHeaders.length - 1] === 'NEW' ? 'NEW' : '';
-                return [...required.map(header => values[header]), oldMarker];
-            });
-            return [required, ...rows];
-        }
-
-        function getJobMarkerIndex(data = workbookData['#職缺分類']) {
-            return data && data[0] ? data[0].length : 8;
-        }
         
         function getJobConfirmStatus(row) {
             const category = row[1] ? row[1].toString().trim() : '';
             const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
-            const confirmedTrack = row[5] ? row[5].toString().trim() : '';
-            const trackStatus = row[6] ? row[6].toString().trim() : '待確認';
-            const isNew = row[getJobMarkerIndex()] === 'NEW';
+            const isNew = row[4] === 'NEW';
             const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
-            const needsTrack = category === 'IDL' && (!confirmedTrack || trackStatus !== '已確認');
-            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsTrack: needsTrack, needsConfirm: isNew || needsFreshGrad || needsTrack };
+            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsConfirm: isNew || needsFreshGrad };
         }
         
         function sortJobClassificationData(data) {
@@ -1918,36 +2362,24 @@
                         const isNew = !existingJobs.has(jobKey);
                         
                         // 如果有歷史設定，使用歷史設定；否則自動判斷
-                        let category, openToFreshGrad, jobMonth, suggestedTrack, confirmedTrack, trackStatus, site;
+                        let category, openToFreshGrad, jobMonth;
                         
                         if (existingJobSettings.has(jobKey)) {
                             const settings = existingJobSettings.get(jobKey);
                             category = settings.category;
                             openToFreshGrad = settings.openToFreshGrad;
                             jobMonth = settings.month;
-                            suggestedTrack = settings.suggestedTrack || suggestRecruitmentTrack(jobKey, category);
-                            confirmedTrack = settings.confirmedTrack || '';
-                            trackStatus = settings.trackStatus || (confirmedTrack ? '已確認' : '待確認');
-                            site = settings.site || suggestSite(jobKey);
                         } else {
                             category = determineJobCategory(jobKey);
                             openToFreshGrad = '';
                             jobMonth = month || '';
-                            suggestedTrack = suggestRecruitmentTrack(jobKey, category);
-                            confirmedTrack = '';
-                            trackStatus = category === 'IDL' ? '待確認' : '不適用';
-                            site = suggestSite(jobKey);
                         }
                         
                         jobMap.set(jobKey, {
                             month: jobMonth,
                             isNew: isNew,
                             category: category,
-                            openToFreshGrad: openToFreshGrad,
-                            suggestedTrack: suggestedTrack,
-                            confirmedTrack: confirmedTrack,
-                            trackStatus: trackStatus,
-                            site: site
+                            openToFreshGrad: openToFreshGrad
                         });
                         
                         // 將此職務加入已存在集合
@@ -1956,11 +2388,7 @@
                             existingJobSettings.set(jobKey, {
                                 category: category,
                                 openToFreshGrad: openToFreshGrad,
-                                month: jobMonth,
-                                suggestedTrack: suggestedTrack,
-                                confirmedTrack: confirmedTrack,
-                                trackStatus: trackStatus,
-                                site: site
+                                month: jobMonth
                             });
                         }
                     }
@@ -1969,7 +2397,7 @@
             
             // 建立職缺分類工作表資料
             const classifyData = [
-                ['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道建議', '人工確認賽道', '確認狀態', '主要廠區']
+                ['職務名稱', '職系', '開放新鮮人', '月份']
             ];
             
             // 按照職務名稱排序
@@ -1983,10 +2411,6 @@
                     info.category,
                     info.openToFreshGrad,
                     info.month,
-                    info.suggestedTrack,
-                    info.confirmedTrack,
-                    info.trackStatus,
-                    info.site,
                     info.isNew ? 'NEW' : '' // 標記是否為新增（用於標示顏色）
                 ]);
             });
@@ -2032,12 +2456,11 @@
             
             // 添加資料行
             rows.forEach((row, rowIndex) => {
-                const isNew = row[getJobMarkerIndex(sortedData)] === 'NEW'; // 檢查是否為新增
+                const isNew = row[4] === 'NEW'; // 檢查是否為新增
                 const rowClass = isNew ? 'new-job-row' : '';
                 const category = row[1] ? row[1].toString().trim() : '';
                 const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
                 const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
-                const needsTrack = category === 'IDL' && (!row[5] || row[6] !== '已確認');
                 
                 html += `<tr class="${rowClass}">`;
                 
@@ -2066,36 +2489,14 @@
                 html += `<td class="editable-cell" data-row="${rowIndex}" data-col="3" data-type="input">`;
                 html += `<input type="text" value="${row[3] || ''}" onchange="updateJobClassificationCell(${rowIndex}, 3, this.value)" placeholder="Jan/Feb/Mar..." style="width: 80px;">`;
                 html += `</td>`;
-
-                // E欄：系統建議賽道（唯讀）
-                html += `<td>${escapeHtml(row[4] || (category === 'IDL' ? '待確認' : '不適用'))}</td>`;
-
-                // F欄：人工確認賽道
-                html += `<td class="editable-cell${needsTrack ? ' missing-fresh-cell' : ''}">`;
-                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 5, this.value)">`;
-                html += `<option value="" ${!row[5] ? 'selected' : ''}>請選擇</option>`;
-                Constants.TRACKS.forEach(track => {
-                    html += `<option value="${track}" ${row[5] === track ? 'selected' : ''}>${track}</option>`;
-                });
-                html += `</select></td>`;
-
-                // G欄：確認狀態（依人工確認自動更新）
-                html += `<td>${category === 'IDL' ? escapeHtml(row[6] || '待確認') : '不適用'}</td>`;
-
-                // H欄：主要廠區
-                html += `<td class="editable-cell"><select onchange="updateJobClassificationCell(${rowIndex}, 7, this.value)">`;
-                Constants.SITES.forEach(site => {
-                    html += `<option value="${site}" ${row[7] === site ? 'selected' : ''}>${site}</option>`;
-                });
-                html += `</select></td>`;
                 
                 html += '</tr>';
             });
             
             html += '</tbody></table></div>';
             
-            if (rows.some(row => row[getJobMarkerIndex(sortedData)] === 'NEW')) {
-                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增；IDL 職缺請人工確認招募賽道與主要廠區。</div>' + html;
+            if (rows.some(row => row[4] === 'NEW')) {
+                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增，請確認並填寫「職系」、「開放新鮮人」等資訊。</div>' + html;
             }
             
             container.innerHTML = html;
@@ -2133,55 +2534,19 @@
                             return;
                         }
                     }
-                } else if (colIndex === 5) { // 人工確認賽道
-                    if (trimmedValue && !Constants.TRACKS.includes(trimmedValue)) {
-                        alert('請從既有三條招募賽道中選擇');
-                        displayJobClassificationTable(workbookData['#職缺分類']);
-                        return;
-                    }
-                } else if (colIndex === 7) { // 主要廠區
-                    if (!Constants.SITES.includes(trimmedValue)) {
-                        alert('請選擇有效的主要廠區');
-                        displayJobClassificationTable(workbookData['#職缺分類']);
-                        return;
-                    }
                 }
                 
                 const data = workbookData['#職缺分類'];
                 if (data && data[rowIndex + 1]) {
-                    const row = data[rowIndex + 1];
-                    row[colIndex] = trimmedValue;
-
-                    if (colIndex === 1) {
-                        row[4] = suggestRecruitmentTrack(row[0], trimmedValue);
-                        if (trimmedValue === 'DL') {
-                            row[5] = '';
-                            row[6] = '不適用';
-                        } else if (!row[5]) {
-                            row[6] = '待確認';
-                        }
-                    } else if (colIndex === 5) {
-                        row[6] = trimmedValue ? '已確認' : '待確認';
-                    }
-
-                    existingJobSettings.set(row[0], {
-                        category: row[1] || 'IDL',
-                        openToFreshGrad: row[2] || '',
-                        month: row[3] || '',
-                        suggestedTrack: row[4] || '',
-                        confirmedTrack: row[5] || '',
-                        trackStatus: row[6] || '待確認',
-                        site: row[7] || '其他／待確認'
-                    });
+                    data[rowIndex + 1][colIndex] = trimmedValue;
                     
-                    // 職系、開放新鮮人、賽道或廠區更新後，同步更新履歷資料
-                    if ([1, 2, 5, 7].includes(colIndex)) {
+                    // 如果更新的是職系（B欄）或開放新鮮人（C欄），同步更新履歷資料
+                    if (colIndex === 1 || colIndex === 2) {
                         updateResumeDataWithJobInfo();
-                        updateResumeDataWithTalentAnalytics();
                         
                         // 重新顯示履歷資料（如果當前在該標籤）
-                        if (workbookData['#履歷匯出資料'].length > 0) {
-                            displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+                        if (workbookData['#應徵紀錄'].length > 0) {
+                            refreshDualDataTables();
                         }
                         
                         // 重新顯示職缺分類表格，以更新提醒樣式
@@ -2197,7 +2562,7 @@
 
         // 更新履歷資料中的 IDL 和新鮮人職缺欄位（從職缺分類比對）
         function updateResumeDataWithJobInfo() {
-            const resumeData = workbookData['#履歷匯出資料'];
+            const resumeData = workbookData['#應徵紀錄'];
             const classifyData = workbookData['#職缺分類'];
             
             if (resumeData.length === 0 || classifyData.length === 0) return;
@@ -2265,178 +2630,9 @@
             });
         }
 
-        function normalizeCountyName(value) {
-            return (value || '').toString().trim().replace(/^台北市/, '臺北市').replace(/^台南市/, '臺南市').replace(/^台中市/, '臺中市').replace(/^台東縣/, '臺東縣');
-        }
-
-        function extractResidenceCounty(address) {
-            const normalized = normalizeCountyName(address);
-            const counties = ['臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市', '基隆市', '新竹市', '嘉義市', '新竹縣', '苗栗縣', '彰化縣', '南投縣', '雲林縣', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣', '臺東縣', '澎湖縣', '金門縣', '連江縣'];
-            return counties.find(county => normalized.includes(county)) || '其他／未辨識';
-        }
-
-        function extractApplyYearMonth(value) {
-            if (value === null || value === undefined || value === '') return '';
-            const text = value.toString().trim();
-            const match = text.match(/(20\d{2})[-/](\d{1,2})/);
-            if (match) return `${match[1]}-${String(parseInt(match[2], 10)).padStart(2, '0')}`;
-            if (Utils.isExcelDate(value)) {
-                const parsed = XLSX.SSF.parse_date_code(value);
-                if (parsed && parsed.y && parsed.m) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}`;
-            }
-            return '';
-        }
-
-        function experienceBand(value) {
-            const text = (value || '').toString().trim().replace(/\s+/g, '').replace(/[～−—]/g, '~');
-            if (!text) return '未填寫';
-            if (text === '無' || text.includes('無工作經驗') || text.includes('無經驗')) return '無經驗';
-            if (text.includes('一年以下') || text.includes('1年以下')) return '2年以下';
-            const range = text.match(/^(\d+)~(\d+)年/);
-            let years = null;
-            if (range) years = parseInt(range[2], 10);
-            if (years === null) {
-                const number = text.match(/^(\d+)年/);
-                if (number) years = parseInt(number[1], 10);
-            }
-            if (years === null) {
-                const numberOnly = text.match(/^(\d+)$/);
-                if (numberOnly) years = parseInt(numberOnly[1], 10);
-            }
-            if (years === null) return '未辨識';
-            if (years <= 2) return '2年以下';
-            if (years <= 5) return '2–5年';
-            if (years <= 8) return '5–8年';
-            if (years <= 11) return '8–11年';
-            if (years <= 14) return '11–14年';
-            return '14年以上';
-        }
-
-        function regionGroupForSite(site, county) {
-            const normalizedCounty = normalizeCountyName(county);
-            if (site === '桃園廠' || site === '龍科廠') {
-                if (normalizedCounty === '桃園市') return '核心生活圈';
-                if (['臺北市', '新北市'].includes(normalizedCounty)) return '延伸通勤圈';
-                return '跨區';
-            }
-            if (site === '雲科廠') {
-                if (normalizedCounty === '雲林縣') return '核心生活圈';
-                if (['彰化縣', '嘉義市', '嘉義縣', '南投縣', '臺南市'].includes(normalizedCounty)) return '延伸通勤圈';
-                return '跨區';
-            }
-            return '未設定廠區';
-        }
-
-        function ensureTalentMappingSheets() {
-            if (!workbookData['#公司產業對照'] || workbookData['#公司產業對照'].length === 0) {
-                workbookData['#公司產業對照'] = [['公司原始名稱', '公司標準名稱', '產業大類', '產業子類', '賽道關聯', '確認狀態']];
-            }
-            if (!workbookData['#地域對照'] || workbookData['#地域對照'].length === 0) {
-                workbookData['#地域對照'] = [
-                    ['主要廠區', '縣市', '地域分類'],
-                    ['桃園廠／龍科廠', '桃園市', '核心生活圈'],
-                    ['桃園廠／龍科廠', '臺北市', '延伸通勤圈'],
-                    ['桃園廠／龍科廠', '新北市', '延伸通勤圈'],
-                    ['雲科廠', '雲林縣', '核心生活圈'],
-                    ['雲科廠', '彰化縣', '延伸通勤圈'],
-                    ['雲科廠', '嘉義市', '延伸通勤圈'],
-                    ['雲科廠', '嘉義縣', '延伸通勤圈'],
-                    ['雲科廠', '南投縣', '延伸通勤圈'],
-                    ['雲科廠', '臺南市', '延伸通勤圈']
-                ];
-            }
-            syncIndustryMappingFromResume();
-        }
-
-        function suggestIndustryFromCompany(companyName) {
-            const name = (companyName || '').toString();
-            if (/半導體.*材料|半導體.*設備/.test(name)) return '半導體設備／材料';
-            if (/半導體|晶圓|封測|積體電路/.test(name)) return '半導體製造／封測';
-            if (/光電|面板/.test(name)) return '光電／面板';
-            if (/電子|電機|電腦|科技製造/.test(name)) return '電子零組件／電子製造';
-            if (/化工|化學|材料/.test(name)) return '化工／材料';
-            if (/生技|醫材|醫療|醫院|製藥/.test(name)) return '生醫／醫材';
-            if (/軟體|資訊服務|數位科技/.test(name)) return '軟體／資訊';
-            if (/銀行|保險|證券|金融/.test(name)) return '金融／服務';
-            if (/大學|學院|研究院|研究所|學校/.test(name)) return '教育／研究機構';
-            return '其他／待分類';
-        }
-
-        function syncIndustryMappingFromResume() {
-            const resumeData = workbookData['#履歷匯出資料'];
-            const mappingData = workbookData['#公司產業對照'];
-            if (!resumeData || resumeData.length <= 1 || !mappingData || mappingData.length === 0) return;
-            const headers = resumeData[0];
-            const companyIndex = headers.findIndex(header => header === '工作經驗一公司名稱');
-            if (companyIndex === -1) return;
-            const existing = new Set(mappingData.slice(1).map(row => (row[0] || '').toString().trim()).filter(Boolean));
-            const companies = new Set();
-            resumeData.slice(1).forEach(row => {
-                const company = row[companyIndex] ? row[companyIndex].toString().trim() : '';
-                if (company && company !== '求職者設定隱藏' && company !== '未填寫') companies.add(company);
-            });
-            Array.from(companies).sort((a, b) => a.localeCompare(b, 'zh-TW')).forEach(company => {
-                if (!existing.has(company)) {
-                    mappingData.push([company, company, suggestIndustryFromCompany(company), '', '', '待確認']);
-                    existing.add(company);
-                }
-            });
-        }
-
-        function updateResumeDataWithTalentAnalytics() {
-            const resumeData = workbookData['#履歷匯出資料'];
-            if (!resumeData || resumeData.length <= 1) return;
-            ensureTalentMappingSheets();
-            const headers = resumeData[0];
-            const index = Object.fromEntries(headers.map((header, idx) => [header, idx]));
-            const required = ['應徵職務名稱', '應徵日期', '工作經驗', '通訊地址', '工作經驗一公司名稱'];
-            if (required.some(header => index[header] === undefined)) {
-                console.warn('人才賽道分析缺少必要欄位', required.filter(header => index[header] === undefined));
-                return;
-            }
-
-            const jobData = ensureJobClassificationColumns(workbookData['#職缺分類']);
-            workbookData['#職缺分類'] = jobData;
-            const jobHeaders = jobData[0];
-            const jobIndex = Object.fromEntries(jobHeaders.map((header, idx) => [header, idx]));
-            const jobLookup = new Map(jobData.slice(1).map(row => [
-                (row[jobIndex['職務名稱']] || '').toString().trim(),
-                {
-                    category: row[jobIndex['職系']] || '',
-                    track: row[jobIndex['人工確認賽道']] || '',
-                    status: row[jobIndex['確認狀態']] || '待確認',
-                    site: row[jobIndex['主要廠區']] || '其他／待確認'
-                }
-            ]));
-
-            const industryData = workbookData['#公司產業對照'];
-            const industryLookup = new Map(industryData.slice(1).map(row => [
-                (row[0] || '').toString().trim(),
-                { industry: row[2] || '其他／待分類', status: row[5] || '待確認' }
-            ]));
-
-            resumeData.slice(1).forEach(row => {
-                const jobName = (row[index['應徵職務名稱']] || '').toString().trim();
-                const job = jobLookup.get(jobName) || {};
-                const company = (row[index['工作經驗一公司名稱']] || '').toString().trim();
-                const industry = industryLookup.get(company) || { industry: '其他／待分類', status: '待確認' };
-                const county = extractResidenceCounty(row[index['通訊地址']]);
-                const isIdl = (job.category || row[index['IDL']] || '') === 'IDL';
-                row[index['應徵年月']] = extractApplyYearMonth(row[index['應徵日期']]);
-                row[index['招募賽道']] = isIdl && job.status === '已確認' && job.track ? job.track : (isIdl ? '待確認' : '不適用');
-                row[index['賽道確認狀態']] = isIdl ? (job.status || '待確認') : '不適用';
-                row[index['主要廠區']] = job.site || '其他／待確認';
-                row[index['居住縣市']] = county;
-                row[index['生活圈分類']] = regionGroupForSite(job.site, county);
-                row[index['年資區間']] = experienceBand(row[index['工作經驗']]);
-                row[index['最近工作產業']] = industry.industry;
-                row[index['產業確認狀態']] = industry.status;
-            });
-        }
-
         // 更新履歷資料中的學校相關欄位（學校NEW 和 目標學校）
         function updateResumeDataWithSchoolInfo() {
-            const resumeData = workbookData['#履歷匯出資料'];
+            const resumeData = workbookData['#應徵紀錄'];
             const eduMappingData = workbookData['學歷對照'];
             const targetSchoolData = workbookData['#目標學校'];
             
@@ -2528,7 +2724,7 @@
 
         // 更新履歷資料中的「新鮮人（2y內）」欄位
         function updateFreshGraduateStatus() {
-            const resumeData = workbookData['#履歷匯出資料'];
+            const resumeData = workbookData['#應徵紀錄'];
             
             if (resumeData.length === 0) {
                 return { success: false, message: '沒有履歷資料' };
@@ -2663,8 +2859,8 @@
             if (data.length === 0) {
                 container.classList.add('empty-state');
                 container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
-                if (containerId === 'mainTableContainer') {
-                    updateTotalCount(0);
+                if (containerId === 'mainTableContainer' || containerId === 'candidateTableContainer') {
+                    updateTotalCount();
                 }
                 return;
             }
@@ -2674,15 +2870,15 @@
             const headers = data[0];
             const rows = data.slice(1);
             
-            if (containerId === 'mainTableContainer') {
-                updateTotalCount(rows.length);
+            if (containerId === 'mainTableContainer' || containerId === 'candidateTableContainer') {
+                updateTotalCount();
             }
             
             // 定義使用下拉式選單的欄位
-            const selectFilterFields = ['月份', '應徵年月', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'];
+            const selectFilterFields = ['月份', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '最近應徵職務', '最近應徵職系', '最近工作產業別', '產業判定信心', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺'];
             
             // 定義使用關鍵字的欄位
-            const textFilterFields = ['姓名', '學校NEW'];
+            const textFilterFields = ['姓名', '學校NEW', '最近任職公司', '最近任職職務'];
             
             // 建立表格
             let html = '<div class="table-wrapper"><table><thead><tr>';
@@ -2691,8 +2887,7 @@
             headers.forEach((header, index) => {
                 const isNewColumn = index === 0 || // 月份欄位
                                    (header === 'IDL' || header === '新鮮人（2y內）' || 
-                                    header === '目標學校' || header === '新鮮人職缺' || header === '學校NEW' ||
-                                    ['應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'].includes(header));
+                                    header === '目標學校' || header === '新鮮人職缺' || header === '學校NEW');
                 const className = isNewColumn ? 'new-column' : '';
                 
                 // 設定欄位寬度
@@ -2756,7 +2951,7 @@
                     const isNewColumn = index === 0 || 
                                        (headers[index] === 'IDL' || headers[index] === '新鮮人（2y內）' || 
                                         headers[index] === '目標學校' || headers[index] === '新鮮人職缺' || 
-                                        headers[index] === '學校NEW' || ['應徵年月', '招募賽道', '賽道確認狀態', '主要廠區', '居住縣市', '生活圈分類', '年資區間', '最近工作產業', '產業確認狀態'].includes(headers[index]));
+                                        headers[index] === '學校NEW');
                     const className = isNewColumn ? 'new-column' : '';
                     
                     // 設定欄位寬度（與標題一致）
@@ -2800,12 +2995,14 @@
             el.className = 'status status-info';
         }
         
-        // 更新履歷匯出資料筆數顯示
-        function updateTotalCount(count) {
+        // 同時顯示人才與應徵兩種口徑。
+        function updateTotalCount() {
             const el = document.getElementById('totalCountInfo');
             if (!el) return;
-            
-            el.textContent = `📊 履歷匯出資料共 ${count} 筆`;
+
+            const candidateCount = Math.max(workbookData['#人才主檔'].length - 1, 0);
+            const applicationCount = Math.max(workbookData['#應徵紀錄'].length - 1, 0);
+            el.textContent = `📊 人才主檔 ${candidateCount} 人｜應徵紀錄 ${applicationCount} 筆`;
             el.style.display = 'block';
             el.className = 'status status-info';
         }
@@ -2815,6 +3012,8 @@
 
         function exportToXLSX() {
             try {
+                rebuildCandidateMaster();
+
                 // 驗證是否有資料可匯出
                 const hasData = Object.values(workbookData).some(data => data.length > 0);
                 if (!hasData) {
@@ -2823,7 +3022,7 @@
                 }
                 
                 // 驗證必要的履歷資料
-                if (workbookData['#履歷匯出資料'].length <= 1) {
+                if (workbookData['#應徵紀錄'].length <= 1) {
                     if (!confirm('履歷資料為空或只有標題列，確定要匯出嗎？')) {
                         return;
                     }
@@ -2838,8 +3037,7 @@
                     
                     // 特殊處理職缺分類：移除最後的 NEW 標記欄
                     if (sheetName === '#職缺分類' && data.length > 0) {
-                        const visibleColumnCount = data[0].length;
-                        data = data.map(row => row.slice(0, visibleColumnCount));
+                        data = data.map(row => row.slice(0, 4)); // 只保留前4欄
                     }
                     
                     // 如果是空的工作表，至少添加一個空陣列
@@ -2863,10 +3061,10 @@
                     XLSX.utils.book_append_sheet(wb, ws, sheetName);
                 });
                 
-                // 產生檔案名稱：2026 104應徵資料-日期
+                // 產生檔案名稱：同時包含人才主檔與應徵紀錄。
                 const today = new Date();
                 const dateStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
-                const fileName = `2026 104應徵資料-${dateStr}.xlsx`;
+                const fileName = `2026 104人才與應徵資料-${dateStr}.xlsx`;
                 
                 // 匯出檔案
                 XLSX.writeFile(wb, fileName);
@@ -2885,8 +3083,8 @@
             // 初始化學歷對照列表
             initEducationMapping();
 
-            // 初始化人才分析設定表
-            ensureTalentMappingSheets();
+            // 初始化產業對照規則
+            initIndustryMapping();
             
             // 顯示學校列表
             if (workbookData['#目標學校'].length > 0) {
@@ -2898,99 +3096,176 @@
                 displayEduMappingTable(workbookData['學歷對照']);
             }
 
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            displayRegionMappingTable(workbookData['#地域對照']);
+            if (workbookData['#產業對照'].length > 0) {
+                displayIndustryMappingTable(workbookData['#產業對照']);
+            }
+            updateIndustryCoverage(workbookData['#人才主檔']);
+        }
+
+        function buildIndustryCategoryOptions() {
+            return Constants.INDUSTRY_CATEGORIES
+                .map(category => `<option value="${escapeHtml(category)}"></option>`)
+                .join('');
         }
 
         function displayIndustryMappingTable(data) {
             const container = document.getElementById('industryTableContainer');
             if (!container) return;
-            const rows = (data || []).slice(1);
-            const pendingCount = rows.filter(row => (row[5] || '待確認') !== '已確認').length;
-            const info = document.getElementById('industryConfirmInfo');
-            if (info) info.textContent = `待確認公司：${pendingCount}／${rows.length}`;
+
             if (!data || data.length === 0) {
                 container.classList.add('empty-state');
-                container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
+                container.innerHTML = '<div class="empty-state"><h3>無產業規則</h3></div>';
                 return;
             }
+
             container.classList.remove('empty-state');
-            const query = industryViewState.query.toLowerCase();
-            const filteredRows = rows
-                .map((row, originalIndex) => ({ row, originalIndex }))
-                .filter(item => !query || `${item.row[0] || ''} ${item.row[1] || ''}`.toLowerCase().includes(query));
-            const pageCount = Math.max(1, Math.ceil(filteredRows.length / industryViewState.pageSize));
-            industryViewState.page = Math.min(industryViewState.page, pageCount);
-            const start = (industryViewState.page - 1) * industryViewState.pageSize;
-            const pageRows = filteredRows.slice(start, start + industryViewState.pageSize);
-            let html = '<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">';
-            html += `<input id="industrySearch" type="search" value="${escapeHtml(industryViewState.query)}" placeholder="搜尋公司" oninput="filterIndustryMapping(this.value)" style="width:min(360px,100%); padding:9px 12px; border:1px solid #dee2e6; border-radius:6px;">`;
-            html += `<span style="color:#6c757d;">顯示 ${filteredRows.length ? start + 1 : 0}–${Math.min(start + industryViewState.pageSize, filteredRows.length)}／${filteredRows.length}</span>`;
-            html += `<button type="button" onclick="changeIndustryPage(-1)" ${industryViewState.page <= 1 ? 'disabled' : ''}>上一頁</button>`;
-            html += `<span>第 ${industryViewState.page}／${pageCount} 頁</span>`;
-            html += `<button type="button" onclick="changeIndustryPage(1)" ${industryViewState.page >= pageCount ? 'disabled' : ''}>下一頁</button></div>`;
-            html += '<div class="table-wrapper"><table id="industryMappingTable"><thead><tr>';
-            ['公司原始名稱', '公司標準名稱', '產業大類', '產業子類', '賽道關聯', '確認狀態'].forEach(header => { html += `<th>${header}</th>`; });
+            const rows = data.slice(1);
+            let html = '<datalist id="industryCategoryOptions">' +
+                buildIndustryCategoryOptions() + '</datalist>';
+            html += '<div class="table-wrapper"><table><thead><tr>';
+            html += '<th style="min-width: 110px;">比對欄位</th>';
+            html += '<th style="min-width: 120px;">比對方式</th>';
+            html += '<th style="min-width: 220px;">關鍵字</th>';
+            html += '<th style="min-width: 180px;">產業別</th>';
+            html += '<th style="min-width: 90px;">優先序</th>';
+            html += '<th style="min-width: 80px;">啟用</th>';
+            html += '<th style="width: 90px;">操作</th>';
             html += '</tr></thead><tbody>';
-            pageRows.forEach(({ row, originalIndex: rowIndex }) => {
-                html += `<tr data-search="${escapeHtml(`${row[0] || ''} ${row[1] || ''}`.toLowerCase())}">`;
-                html += `<td>${escapeHtml(row[0] || '')}</td>`;
-                html += `<td class="editable-cell"><input type="text" value="${escapeHtml(row[1] || '')}" onchange="updateIndustryMappingCell(${rowIndex},1,this.value)" style="min-width:180px;"></td>`;
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',2,this.value)">';
-                Constants.INDUSTRIES.forEach(industry => { html += `<option value="${industry}" ${row[2] === industry ? 'selected' : ''}>${industry}</option>`; });
+
+            rows.forEach((row, rowIndex) => {
+                const field = String(row[0] || '公司');
+                const method = String(row[1] || '包含');
+                const keyword = String(row[2] || '');
+                const industry = String(row[3] || '待分類');
+                const priority = Number(row[4]) || 0;
+                const enabled = String(row[5] || 'Y').toUpperCase();
+
+                html += '<tr>';
+                html += `<td><select onchange="updateIndustryRuleCell(${rowIndex}, 0, this.value)">`;
+                ['公司', '職務'].forEach(option => {
+                    html += `<option value="${option}"${field === option ? ' selected' : ''}>${option}</option>`;
+                });
                 html += '</select></td>';
-                html += `<td class="editable-cell"><input type="text" value="${escapeHtml(row[3] || '')}" onchange="updateIndustryMappingCell(${rowIndex},3,this.value)" placeholder="選填"></td>`;
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',4,this.value)">';
-                ['', ...Constants.TRACKS, '跨賽道'].forEach(track => { html += `<option value="${track}" ${row[4] === track ? 'selected' : ''}>${track || '請選擇'}</option>`; });
+                html += `<td><select onchange="updateIndustryRuleCell(${rowIndex}, 1, this.value)">`;
+                ['完全符合', '包含'].forEach(option => {
+                    html += `<option value="${option}"${method === option ? ' selected' : ''}>${option}</option>`;
+                });
                 html += '</select></td>';
-                html += '<td class="editable-cell"><select onchange="updateIndustryMappingCell(' + rowIndex + ',5,this.value)">';
-                ['待確認', '已確認'].forEach(status => { html += `<option value="${status}" ${row[5] === status ? 'selected' : ''}>${status}</option>`; });
-                html += '</select></td></tr>';
+                html += `<td><input type="text" value="${escapeHtml(keyword)}" onchange="updateIndustryRuleCell(${rowIndex}, 2, this.value)" style="width: 100%;"></td>`;
+                html += `<td><input type="text" list="industryCategoryOptions" value="${escapeHtml(industry)}" onchange="updateIndustryRuleCell(${rowIndex}, 3, this.value)" style="width: 100%;"></td>`;
+                html += `<td><input type="number" value="${priority}" onchange="updateIndustryRuleCell(${rowIndex}, 4, this.value)" style="width: 80px;"></td>`;
+                html += `<td><select onchange="updateIndustryRuleCell(${rowIndex}, 5, this.value)">`;
+                html += `<option value="Y"${enabled !== 'N' ? ' selected' : ''}>Y</option>`;
+                html += `<option value="N"${enabled === 'N' ? ' selected' : ''}>N</option>`;
+                html += '</select></td>';
+                html += `<td style="text-align: center;"><button onclick="deleteIndustryRule(${rowIndex})" class="btn" style="padding: 5px 12px; background: #dc3545; color: white; font-size: 12px;">刪除</button></td>`;
+                html += '</tr>';
             });
+
+            html += '<tr>';
+            html += '<td><select id="industryAddField"><option value="公司">公司</option><option value="職務">職務</option></select></td>';
+            html += '<td><select id="industryAddMethod"><option value="包含">包含</option><option value="完全符合">完全符合</option></select></td>';
+            html += '<td><input id="industryAddKeyword" type="text" placeholder="輸入公司或職務關鍵字" style="width: 100%;"></td>';
+            html += '<td><input id="industryAddCategory" type="text" list="industryCategoryOptions" placeholder="選擇或輸入產業別" style="width: 100%;"></td>';
+            html += '<td><input id="industryAddPriority" type="number" value="50" style="width: 80px;"></td>';
+            html += '<td><select id="industryAddEnabled"><option value="Y">Y</option><option value="N">N</option></select></td>';
+            html += '<td style="text-align: center;"><button onclick="addIndustryRuleFromInputs()" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;">新增</button></td>';
+            html += '</tr>';
             html += '</tbody></table></div>';
             container.innerHTML = html;
         }
 
-        function updateIndustryMappingCell(rowIndex, colIndex, value) {
-            const row = workbookData['#公司產業對照'][rowIndex + 1];
-            if (!row) return;
-            const sanitized = Utils.sanitizeInput(value);
-            if (colIndex === 2 && !Constants.INDUSTRIES.includes(sanitized)) return;
-            row[colIndex] = sanitized;
-            if (colIndex === 2) row[5] = sanitized === '其他／待分類' ? '待確認' : '已確認';
-            updateResumeDataWithTalentAnalytics();
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            if (workbookData['#履歷匯出資料'].length > 0) displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+        function validateIndustryRule(rule, editingRowIndex = -1) {
+            if (!['公司', '職務'].includes(rule[0])) return '比對欄位只能是公司或職務';
+            if (!['完全符合', '包含'].includes(rule[1])) return '比對方式只能是完全符合或包含';
+            if (!rule[2]) return '關鍵字不可空白';
+            if (!rule[3]) return '產業別不可空白';
+            if (!Number.isFinite(Number(rule[4]))) return '優先序必須是數字';
+            if (!['Y', 'N'].includes(String(rule[5]).toUpperCase())) return '啟用欄位只能是 Y 或 N';
+
+            const duplicateKey = `${rule[0]}|${rule[1]}|${normalizeIndustryMatchText(rule[2])}`;
+            const duplicate = workbookData['#產業對照'].slice(1).some((row, index) => {
+                if (index === editingRowIndex) return false;
+                return `${row[0]}|${row[1]}|${normalizeIndustryMatchText(row[2])}` === duplicateKey;
+            });
+            return duplicate ? '相同欄位、方式與關鍵字的規則已存在' : '';
+        }
+
+        function refreshIndustryClassification() {
+            rebuildCandidateMaster();
+            const candidateTab = document.getElementById('tab1');
+            if (workbookData['#人才主檔'].length > 0 &&
+                candidateTab && candidateTab.classList.contains('active')) {
+                displayTable(workbookData['#人才主檔'], 'candidateTableContainer');
+                candidateTableDirty = false;
+            } else {
+                candidateTableDirty = true;
+            }
             enableExport();
         }
 
-        function filterIndustryMapping(value) {
-            industryViewState.query = (value || '').toString().trim();
-            industryViewState.page = 1;
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
-            const search = document.getElementById('industrySearch');
-            if (search) {
-                search.focus();
-                search.setSelectionRange(search.value.length, search.value.length);
+        function addNewIndustryRule() {
+            const input = document.getElementById('industryAddKeyword');
+            if (input) input.focus();
+        }
+
+        function addIndustryRuleFromInputs() {
+            const field = document.getElementById('industryAddField');
+            const method = document.getElementById('industryAddMethod');
+            const keyword = document.getElementById('industryAddKeyword');
+            const category = document.getElementById('industryAddCategory');
+            const priority = document.getElementById('industryAddPriority');
+            const enabled = document.getElementById('industryAddEnabled');
+            if (![field, method, keyword, category, priority, enabled].every(Boolean)) return;
+
+            const rule = [
+                field.value,
+                method.value,
+                Utils.sanitizeInput(keyword.value),
+                Utils.sanitizeInput(category.value),
+                Number(priority.value) || 0,
+                enabled.value
+            ];
+            const error = validateIndustryRule(rule);
+            if (error) {
+                alert(error);
+                return;
             }
+
+            workbookData['#產業對照'].push(rule);
+            displayIndustryMappingTable(workbookData['#產業對照']);
+            refreshIndustryClassification();
         }
 
-        function changeIndustryPage(delta) {
-            industryViewState.page = Math.max(1, industryViewState.page + delta);
-            displayIndustryMappingTable(workbookData['#公司產業對照']);
+        function updateIndustryRuleCell(rowIndex, colIndex, value) {
+            const data = workbookData['#產業對照'];
+            if (!data || !data[rowIndex + 1]) return;
+
+            const updatedRule = [...data[rowIndex + 1]];
+            updatedRule[colIndex] = colIndex === 4
+                ? (Number(value) || 0)
+                : Utils.sanitizeInput(value);
+            if (colIndex === 5) updatedRule[colIndex] = String(value).toUpperCase();
+
+            const error = validateIndustryRule(updatedRule, rowIndex);
+            if (error) {
+                alert(error);
+                displayIndustryMappingTable(data);
+                return;
+            }
+
+            data[rowIndex + 1] = updatedRule;
+            refreshIndustryClassification();
         }
 
-        function displayRegionMappingTable(data) {
-            const container = document.getElementById('regionTableContainer');
-            if (!container) return;
-            const rows = (data || []).slice(1);
-            container.classList.remove('empty-state');
-            let html = '<div class="table-wrapper"><table><thead><tr><th>主要廠區</th><th>縣市</th><th>地域分類</th></tr></thead><tbody>';
-            rows.forEach(row => {
-                html += `<tr><td>${escapeHtml(row[0] || '')}</td><td>${escapeHtml(row[1] || '')}</td><td>${escapeHtml(row[2] || '')}</td></tr>`;
-            });
-            html += '<tr><td>全部廠區</td><td>上述以外</td><td>跨區</td></tr></tbody></table></div>';
-            container.innerHTML = html;
+        function deleteIndustryRule(rowIndex) {
+            if (!confirm('確定要刪除這個產業對照規則嗎？')) return;
+            const data = workbookData['#產業對照'];
+            if (!data || !data[rowIndex + 1]) return;
+
+            data.splice(rowIndex + 1, 1);
+            displayIndustryMappingTable(data);
+            refreshIndustryClassification();
         }
 
         // 顯示學校列表
@@ -3039,10 +3314,9 @@
          */
         function refreshResumeDisplay() {
             updateResumeDataWithSchoolInfo();
-            updateResumeDataWithTalentAnalytics();
             
-            if (workbookData['#履歷匯出資料'].length > 0) {
-                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+            if (workbookData['#應徵紀錄'].length > 0) {
+                refreshDualDataTables();
             }
         }
         
@@ -3196,9 +3470,9 @@
         }
         
         function buildEduComparePrompt() {
-            const resumeData = workbookData['#履歷匯出資料'];
+            const resumeData = workbookData['#應徵紀錄'];
             if (!resumeData || resumeData.length <= 1) {
-                alert('尚未載入履歷匯出資料，無法產生比對指令。');
+                alert('尚未載入應徵紀錄，無法產生比對指令。');
                 return null;
             }
             
@@ -3245,7 +3519,7 @@
             lines.push('也請指出可能是同校異名或可合併的項目。');
             lines.push('請用條列或表格輸出：原學校名稱 | 建議調整後名稱 | 理由/依據。');
             lines.push('');
-            lines.push(`【履歷匯出資料 - 學歷學校名稱一】共 ${resumeSchools.length} 筆：`);
+            lines.push(`【應徵紀錄 - 學歷學校名稱一】共 ${resumeSchools.length} 筆：`);
             lines.push(resumeSchools.map((name, idx) => `${idx + 1}. ${name}`).join('\n'));
             lines.push('');
             lines.push(`【學歷對照 - 原 -> 調整】共 ${eduPairs.length} 筆：`);
@@ -3460,8 +3734,8 @@
             updateResumeDataWithSchoolInfo();
             
             // 重新顯示履歷資料
-            if (workbookData['#履歷匯出資料'].length > 0) {
-                displayTable(workbookData['#履歷匯出資料'], 'mainTableContainer');
+            if (workbookData['#應徵紀錄'].length > 0) {
+                refreshDualDataTables();
             }
             
             // 啟用匯出按鈕
@@ -3489,11 +3763,12 @@
         // 表格篩選功能（支援多欄位同時篩選，支援下拉選單和文字輸入）
         function filterTable() {
             try {
-                const table = document.querySelector('.table-wrapper table');
+                const activeTab = document.querySelector('.tab-content.active');
+                const table = activeTab ? activeTab.querySelector('.table-wrapper table') : null;
                 if (!table) return;
 
                 const rows = table.querySelectorAll('tbody tr');
-                const filterInputs = document.querySelectorAll('.filter-input');
+                const filterInputs = table.querySelectorAll('.filter-input');
                 
                 // 收集所有篩選條件
                 const filters = [];
@@ -3552,7 +3827,8 @@
 
         // 清除所有篩選
         function clearAllFilters() {
-            const table = document.querySelector('.table-wrapper table');
+            const activeTab = document.querySelector('.tab-content.active');
+            const table = activeTab ? activeTab.querySelector('.table-wrapper table') : null;
             if (!table) return;
 
             const rows = table.querySelectorAll('tbody tr');
@@ -3561,7 +3837,7 @@
             });
 
             // 清空所有篩選控件
-            const filterInputs = document.querySelectorAll('.filter-input');
+            const filterInputs = table.querySelectorAll('.filter-input');
             filterInputs.forEach(input => {
                 if (input.tagName === 'SELECT') {
                     input.selectedIndex = 0;
@@ -3588,12 +3864,13 @@
         window.deleteEduMapping = deleteEduMapping;
         window.addEduMappingFromInputs = addEduMappingFromInputs;
         window.copyEduComparePrompt = copyEduComparePrompt;
+        window.addNewIndustryRule = addNewIndustryRule;
+        window.addIndustryRuleFromInputs = addIndustryRuleFromInputs;
+        window.updateIndustryRuleCell = updateIndustryRuleCell;
+        window.deleteIndustryRule = deleteIndustryRule;
         window.exportToExcel = exportToXLSX;
         window.exportToXLSX = exportToXLSX;
         window.updateJobClassificationCell = updateJobClassificationCell;
-        window.updateIndustryMappingCell = updateIndustryMappingCell;
-        window.filterIndustryMapping = filterIndustryMapping;
-        window.changeIndustryPage = changeIndustryPage;
         window.filterTable = filterTable;
         window.debouncedFilterTable = debouncedFilterTable;
         window.clearAllFilters = clearAllFilters;
