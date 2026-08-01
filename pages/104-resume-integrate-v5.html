@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>104匯出履歷整併工具 V4</title>
+    <title>104匯出履歷整併工具 V5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -487,27 +487,525 @@
                 justify-content: center;
             }
         }
+
+        /* ========== V5 專業企業風格 ========== */
+        :root {
+            --color-canvas: #f3f5f7;
+            --color-surface: #ffffff;
+            --color-surface-muted: #f8fafc;
+            --color-navy: #1f2a44;
+            --color-navy-hover: #2b3858;
+            --color-accent: #2563eb;
+            --color-accent-hover: #1d4ed8;
+            --color-success: #0f766e;
+            --color-warning: #b45309;
+            --color-danger: #b91c1c;
+            --color-text: #1f2937;
+            --color-text-secondary: #5f6b7a;
+            --color-border: #d8dee6;
+            --color-border-strong: #c4ccd6;
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+                "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+            font-size: 13px;
+            color: var(--color-text);
+            background: var(--color-canvas);
+            padding: 12px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: none;
+            height: calc(100vh - 24px);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            background: var(--color-surface);
+        }
+
+        .header {
+            min-height: 54px;
+            padding: 10px 18px;
+            background: var(--color-navy);
+            border-bottom: 1px solid #111827;
+        }
+
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            line-height: 1.25;
+            font-weight: 650;
+            letter-spacing: 0.01em;
+            text-shadow: none;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            height: 22px;
+            padding: 0 7px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 999px;
+            color: #dbeafe;
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            font-weight: 650;
+            letter-spacing: 0.04em;
+        }
+
+        .help-btn {
+            min-height: 30px;
+            padding: 5px 11px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .help-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.7);
+            transform: none;
+        }
+
+        .controls {
+            padding: 10px 16px;
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .controls-inner {
+            gap: 8px;
+        }
+
+        .controls-actions {
+            gap: 8px;
+        }
+
+        .controls-status {
+            gap: 6px;
+        }
+
+        .btn {
+            min-height: 32px;
+            padding: 6px 12px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 600;
+            gap: 5px;
+            transition: background-color 0.15s ease, border-color 0.15s ease,
+                color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:hover,
+        .btn-primary:hover,
+        .btn-success:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary,
+        label[for="newFileInput"] {
+            color: #ffffff !important;
+            background: var(--color-accent) !important;
+            border-color: var(--color-accent) !important;
+        }
+
+        .btn-primary:hover,
+        label[for="newFileInput"]:hover {
+            background: var(--color-accent-hover) !important;
+            border-color: var(--color-accent-hover) !important;
+        }
+
+        label[for="historyFileInput"],
+        #clearFilterBtn {
+            color: #374151 !important;
+            background: #ffffff !important;
+            border-color: var(--color-border-strong) !important;
+        }
+
+        label[for="historyFileInput"]:hover,
+        #clearFilterBtn:hover {
+            color: var(--color-navy) !important;
+            background: var(--color-surface-muted) !important;
+            border-color: #9aa6b2 !important;
+        }
+
+        .btn-success,
+        #exportBtn {
+            color: #ffffff !important;
+            background: var(--color-success) !important;
+            border-color: var(--color-success) !important;
+        }
+
+        .btn-success:hover,
+        #exportBtn:hover {
+            background: #0b625c !important;
+            border-color: #0b625c !important;
+        }
+
+        .btn-secondary {
+            color: #374151 !important;
+            background: #ffffff !important;
+            border-color: var(--color-border-strong) !important;
+        }
+
+        .btn-secondary:hover {
+            color: var(--color-navy) !important;
+            background: var(--color-surface-muted) !important;
+            border-color: #9aa6b2 !important;
+        }
+
+        .btn:disabled {
+            color: #8993a1 !important;
+            background: #eef1f4 !important;
+            border-color: #dde2e8 !important;
+            opacity: 1;
+        }
+
+        .status {
+            min-height: 26px;
+            padding: 4px 8px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface-muted);
+            color: var(--color-text-secondary);
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 550;
+        }
+
+        .status-success {
+            border-color: #a7d7cf;
+            background: #eefaf7;
+            color: #0b625c;
+        }
+
+        .status-info {
+            border-color: #cbd7e7;
+            background: #f4f7fb;
+            color: #41546e;
+        }
+
+        #importAuditInfo {
+            flex-basis: 100%;
+        }
+
+        .tabs {
+            min-height: 40px;
+            padding: 0 16px;
+            background: #f7f8fa;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .tab {
+            min-height: 40px;
+            padding: 9px 14px 8px;
+            border-bottom-width: 2px;
+            color: #667085;
+            font-size: 12px;
+            font-weight: 600;
+            transition: color 0.15s ease, border-color 0.15s ease,
+                background-color 0.15s ease;
+        }
+
+        .tab:hover {
+            color: var(--color-text);
+            background: #eef1f5;
+        }
+
+        .tab.active {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+            background: var(--color-surface);
+        }
+
+        .tab-content {
+            padding: 10px 14px 12px;
+        }
+
+        .tab-content.active {
+            gap: 8px;
+        }
+
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 0;
+        }
+
+        .section-note {
+            margin-top: 8px;
+        }
+
+        .info-box {
+            padding: 7px 10px;
+            margin-bottom: 4px;
+            border: 1px solid #d9e2ec;
+            border-left: 3px solid #6683a5;
+            border-radius: var(--radius-sm);
+            background: #f7f9fc;
+            color: #4a586b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .info-box strong {
+            color: #32445c;
+            font-weight: 650;
+        }
+
+        .table-wrapper {
+            min-height: 280px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+        }
+
+        table {
+            font-size: 12px;
+            color: var(--color-text);
+        }
+
+        th {
+            padding: 7px 6px;
+            border-right: 1px solid #e2e7ed;
+            border-bottom: 1px solid var(--color-border-strong);
+            background: #eef2f6;
+            color: #344054;
+            font-size: 11px;
+            line-height: 1.3;
+            font-weight: 650;
+            letter-spacing: 0.01em;
+        }
+
+        td {
+            padding: 6px;
+            border-right: 1px solid #edf0f3;
+            border-bottom: 1px solid #e6eaf0;
+            line-height: 1.35;
+            vertical-align: middle;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fbfcfd;
+        }
+
+        tbody tr:hover {
+            background: #f3f6fa;
+        }
+
+        .filter-input {
+            min-height: 26px;
+            margin-top: 4px;
+            padding: 3px 6px;
+            border-color: #c9d1dc;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .filter-input:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+        }
+
+        .new-column,
+        td.new-column {
+            border-left: 1px solid #cbd8ea;
+            background: #f1f6fd !important;
+            color: #31567f;
+            font-weight: 550;
+        }
+
+        th.new-column {
+            border-left: 1px solid #bdcbe0;
+            background: #e4ebf5 !important;
+            color: #304a69;
+        }
+
+        .new-job-row {
+            background: #fff5f3 !important;
+        }
+
+        .editable-cell:hover {
+            background: #edf4ff !important;
+        }
+
+        .editable-cell input,
+        .editable-cell select,
+        .edu-add-row input,
+        #industryTableContainer input,
+        #industryTableContainer select {
+            min-height: 28px;
+            padding: 4px 6px;
+            border: 1px solid #b8c2cf;
+            border-radius: 3px;
+            background: #ffffff;
+            color: var(--color-text);
+            font-size: 12px;
+        }
+
+        .empty-state {
+            padding: 34px 16px;
+            color: #7a8696;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+            opacity: 0.35;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 5px;
+            color: #5d6877;
+            font-size: 14px;
+            line-height: 1.4;
+            font-weight: 650;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+        }
+
+        .help-modal {
+            background: rgba(15, 23, 42, 0.45);
+            animation: none;
+        }
+
+        .help-modal-content {
+            width: min(560px, calc(100% - 32px));
+            max-width: 560px;
+            margin: 6vh auto;
+            padding: 22px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+            animation: none;
+        }
+
+        .help-modal-header {
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .help-modal-header h2 {
+            color: var(--color-navy);
+            font-size: 17px;
+        }
+
+        .help-modal-body {
+            color: #465467;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .help-modal-body p {
+            margin-bottom: 10px;
+        }
+
+        .close-btn {
+            color: #697586;
+            font-size: 22px;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 0;
+            }
+
+            .container {
+                height: 100vh;
+                border: none;
+                border-radius: 0;
+            }
+
+            .header {
+                padding: 9px 12px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .controls {
+                padding: 8px 10px;
+            }
+
+            .btn,
+            .file-input-wrapper .btn {
+                width: auto !important;
+                justify-content: center;
+            }
+
+            .tabs {
+                padding: 0 8px;
+            }
+
+            .tab-content {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 16px;
+            }
+
+            .controls-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .file-input-wrapper,
+            .controls-actions .btn {
+                width: 100% !important;
+            }
+
+            .file-input-wrapper .btn {
+                width: 100% !important;
+                justify-content: center;
+            }
+
+            .tab {
+                padding-inline: 11px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 104匯出履歷整併工具 V4</h1>
-            <button class="help-btn" onclick="showHelpModal()">❓ 使用說明</button>
+            <h1>104 履歷整併與人才分析 <span class="version-badge">V5</span></h1>
+            <button class="help-btn" onclick="showHelpModal()">使用說明</button>
         </div>
 
         <!-- 幫助說明模態框 -->
         <div id="helpModal" class="help-modal">
             <div class="help-modal-content">
                 <div class="help-modal-header">
-                    <h2>📖 使用說明</h2>
+                    <h2>使用說明</h2>
                     <button class="close-btn" onclick="closeHelpModal()">&times;</button>
                 </div>
                 <div class="help-modal-body">
-                    <p><strong>📌 雙層資料：</strong>「#人才主檔」每個 104 代碼只保留一人；「#應徵紀錄」每個人才 × 職缺 × 應徵日期保留一筆。</p>
-                    <p><strong>💡 提示：</strong>地域、年資、學歷與最近產業請看人才主檔；職缺與應徵趨勢請看應徵紀錄。</p>
+                    <p><strong>雙層資料：</strong>「#人才主檔」每個 104 代碼只保留一人；「#應徵紀錄」每個人才 × 職缺 × 應徵日期保留一筆。</p>
+                    <p><strong>使用提示：</strong>地域、年資、學歷與最近產業請看人才主檔；職缺與應徵趨勢請看應徵紀錄。</p>
                     <hr style="margin: 20px 0; border: none; border-top: 1px solid #e9ecef;">
-                    <p><strong>📋 自動填充欄位說明：</strong></p>
+                    <p><strong>自動填充欄位說明：</strong></p>
                     <ul style="margin-left: 20px;">
                         <li><strong>月份</strong>：從應徵日期自動提取</li>
                         <li><strong>IDL</strong>：從「#職缺分類」比對填入</li>
@@ -525,22 +1023,22 @@
             <div class="controls-inner">
                 <div class="controls-actions">
                     <div class="file-input-wrapper">
-                        <label for="historyFileInput" class="btn btn-primary" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                            📂 匯入歷史資料（含設定）
+                        <label for="historyFileInput" class="btn btn-primary">
+                            匯入歷史資料
                         </label>
                         <input type="file" id="historyFileInput" accept=".xlsx,.xls">
                     </div>
                     <div class="file-input-wrapper">
                         <label for="newFileInput" class="btn btn-primary">
-                            📄 匯入新履歷資料
+                            匯入新履歷資料
                         </label>
                         <input type="file" id="newFileInput" accept=".xlsx,.xls,.csv" multiple>
                     </div>
                     <button id="exportBtn" class="btn btn-success" disabled>
-                        💾 匯出 XLSX
+                        匯出 XLSX
                     </button>
                     <button id="clearFilterBtn" class="btn btn-primary" onclick="clearAllFilters()">
-                        🔄 清除所有篩選
+                        清除篩選
                     </button>
                 </div>
                 <div class="controls-status">
@@ -564,7 +1062,7 @@
 
         <div id="tab1" class="tab-content active">
             <div class="info-box">
-                <strong>👤 人才口徑：</strong>每個 104 代碼一列，保留最近一次應徵時的個人資料，並彙整應徵次數、首次與最近應徵日期。
+                <strong>人才口徑：</strong>每個 104 代碼一列，保留最近一次應徵時的個人資料，並彙整應徵次數、首次與最近應徵日期。
             </div>
             <div id="candidateTableContainer" class="empty-state data-container">
                 <h3>尚未匯入資料</h3>
@@ -574,7 +1072,7 @@
 
         <div id="tab2" class="tab-content">
             <div class="info-box">
-                <strong>📨 應徵口徑：</strong>同一人應徵不同職缺或不同日期會各算一筆，適合分析職缺與應徵趨勢。
+                <strong>應徵口徑：</strong>同一人應徵不同職缺或不同日期會各算一筆，適合分析職缺與應徵趨勢。
             </div>
             <div id="mainTableContainer" class="empty-state data-container">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -587,7 +1085,7 @@
 
         <div id="tab3" class="tab-content">
             <div class="info-box">
-                <strong>📌 說明：</strong>職缺分類工作表 - 自動提取職務名稱並設定屬性。<strong style="color: #dc3545;">紅色標示</strong>為新增職務，請確認並填寫資料。<strong>除A欄外，其他欄位皆可點選編輯。</strong>
+                <strong>說明：</strong>職缺分類工作表會自動提取職務名稱並設定屬性。<strong style="color: #b91c1c;">紅色標示</strong>為新增職務，請確認並填寫資料。<strong>除 A 欄外，其他欄位皆可點選編輯。</strong>
                 <div id="jobConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
             </div>
             <div id="classifyTableContainer" class="empty-state data-container">
@@ -598,11 +1096,11 @@
 
         <div id="tab4" class="tab-content">
             <div class="info-box">
-                <strong>📌 說明：</strong>目標學校工作表 - 用於管理目標學校列表。可以新增、編輯或刪除學校。
+                <strong>說明：</strong>目標學校工作表用於管理目標學校列表，可以新增、編輯或刪除學校。
             </div>
-            <div style="margin-bottom: 15px;">
-                <button id="addSchoolBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    ➕ 新增學校
+            <div class="section-actions">
+                <button id="addSchoolBtn" class="btn btn-primary">
+                    新增學校
                 </button>
             </div>
             <div id="schoolTableContainer" class="empty-state data-container">
@@ -613,14 +1111,14 @@
 
         <div id="tab5" class="tab-content">
             <div class="info-box">
-                <strong>📌 說明：</strong>學歷對照工作表 - 用於學歷資料的對照與轉換。可以新增、編輯或刪除學校對照。
+                <strong>說明：</strong>學歷對照工作表用於學歷資料的對照與轉換，可以新增、編輯或刪除學校對照。
             </div>
-            <div style="margin-bottom: 15px;">
-                <button id="addEduBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    ➕ 新增對照
+            <div class="section-actions">
+                <button id="addEduBtn" class="btn btn-primary">
+                    新增對照
                 </button>
-                <button id="copyEduCompareBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #17a2b8 0%, #2ecc71 100%); margin-left: 8px;">
-                    📋 複製比斷
+                <button id="copyEduCompareBtn" class="btn btn-secondary">
+                    複製比對指令
                 </button>
             </div>
             <div id="eduTableContainer" class="empty-state data-container">
@@ -631,20 +1129,20 @@
 
         <div id="tab6" class="tab-content">
             <div class="info-box">
-                <strong>🏭 判定順序：</strong>以 104 的「工作經驗一」作為最近一份工作；公司完全符合 → 公司包含 → 職務完全符合 → 職務包含。公司規則優先，職務規則只作低信心補充；未命中保留為「待分類」。
+                <strong>判定順序：</strong>以 104 的「工作經驗一」作為最近一份工作；公司完全符合 → 公司包含 → 職務完全符合 → 職務包含。公司規則優先，職務規則只作低信心補充；未命中保留為「待分類」。
                 <div id="industryCoverageInfo" style="margin-top: 8px; font-weight: 600;"></div>
             </div>
-            <div style="margin-bottom: 15px;">
-                <button id="addIndustryRuleBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    ➕ 新增產業規則
+            <div class="section-actions">
+                <button id="addIndustryRuleBtn" class="btn btn-primary">
+                    新增產業規則
                 </button>
             </div>
             <div id="industryTableContainer" class="empty-state data-container">
                 <h3>產業對照</h3>
                 <p>可依公司名稱或職務名稱建立產業分類規則</p>
             </div>
-            <div class="info-box" style="margin-top: 20px;">
-                <strong>📝 待分類清單：</strong>只列公司、職務與人數，不顯示候選人姓名。建議先處理人數較多的公司。
+            <div class="info-box section-note">
+                <strong>待分類清單：</strong>只列公司、職務與人數，不顯示候選人姓名。建議先處理人數較多的公司。
             </div>
             <div id="unmatchedIndustryContainer" class="empty-state data-container">
                 <h3>尚未載入人才資料</h3>
@@ -1233,7 +1731,7 @@
             updateStatusInfo(jobCount, candidateCount, applicationCount) {
                 const historyInfo = document.getElementById('historyInfo');
                 historyInfo.textContent =
-                    `📂 已載入歷史資料：${candidateCount} 位人才、` +
+                    `已載入歷史資料：${candidateCount} 位人才、` +
                     `${applicationCount} 筆應徵紀錄、${jobCount} 個職務`;
                 historyInfo.style.display = 'block';
                 historyInfo.className = 'status status-info';
@@ -1735,7 +2233,7 @@
                 .sort((a, b) => b.count - a.count || a.company.localeCompare(b.company, 'zh-Hant'));
             if (rows.length === 0) {
                 container.classList.remove('empty-state');
-                container.innerHTML = '<div class="empty-state"><h3>✅ 全部已分類</h3></div>';
+                container.innerHTML = '<div class="empty-state"><h3>全部已分類</h3></div>';
                 return;
             }
 
@@ -1925,13 +2423,13 @@
          */
         function updateNewFileStatus(audit) {
             const newFileInfo = document.getElementById('newFileInfo');
-            newFileInfo.textContent = `✅ 已成功處理 ${audit.fileCount} 個檔案`;
+            newFileInfo.textContent = `已成功處理 ${audit.fileCount} 個檔案`;
             newFileInfo.style.display = 'block';
             newFileInfo.className = 'status status-success';
 
             const auditInfo = document.getElementById('importAuditInfo');
             auditInfo.textContent =
-                `📋 來源：${audit.sourceCandidateCount} 列求職者資料` +
+                `來源：${audit.sourceCandidateCount} 列求職者資料` +
                 `（${audit.sourceUniqueCandidateCount} 個不重複104代碼）` +
                 (audit.missing104IdCount > 0
                     ? `，另有 ${audit.missing104IdCount} 列缺少104代碼`
@@ -3070,7 +3568,7 @@
             if (!el) return;
             
             const sourceText = sourceLabel ? `（來源：${sourceLabel}）` : '';
-            el.textContent = `🧹 去重完成，刪除 ${removedCount} 筆重複資料${sourceText}`;
+            el.textContent = `去重完成：刪除 ${removedCount} 筆重複資料${sourceText}`;
             el.style.display = 'block';
             el.className = 'status status-info';
         }
@@ -3082,7 +3580,7 @@
 
             const candidateCount = Math.max(workbookData['#人才主檔'].length - 1, 0);
             const applicationCount = Math.max(workbookData['#應徵紀錄'].length - 1, 0);
-            el.textContent = `📊 人才主檔 ${candidateCount} 人｜應徵紀錄 ${applicationCount} 筆`;
+            el.textContent = `人才主檔 ${candidateCount} 人｜應徵紀錄 ${applicationCount} 筆`;
             el.style.display = 'block';
             el.className = 'status status-info';
         }
@@ -3149,7 +3647,7 @@
                 // 匯出檔案
                 XLSX.writeFile(wb, fileName);
                 
-                alert('✅ 檔案已成功匯出！\n檔案名稱：' + fileName);
+                alert('檔案已成功匯出。\n檔案名稱：' + fileName);
             } catch (error) {
                 ErrorHandler.handle('檔案匯出', error);
             }
@@ -3612,7 +4110,7 @@
             const promptText = buildEduComparePrompt();
             if (!promptText) return;
             
-            const onSuccess = () => alert('✅ 已複製比對指令，可直接貼到其他 AI chatbot。');
+            const onSuccess = () => alert('已複製比對指令，可直接貼到其他 AI chatbot。');
             const onError = () => alert('❌ 複製失敗，請重試或改用手動複製。');
             
             if (navigator.clipboard && navigator.clipboard.writeText) {
