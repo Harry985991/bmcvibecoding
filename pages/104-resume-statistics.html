@@ -438,9 +438,31 @@
     .talent-alert { border-left:4px solid #d97706; background:#fff7ed; padding:10px 12px; border-radius:6px; margin:8px 0; line-height:1.5; }
     .talent-note { border-left:4px solid #64748b; background:#f8fafc; padding:10px 12px; border-radius:6px; line-height:1.5; color:#475569; }
     .talent-table-wrap { overflow:auto; max-height:520px; }
+    .exp-composition-header { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+    .exp-composition-header > div:first-child { flex:1 1 460px; min-width:0; }
+    .exp-composition-header > .muted { flex:0 0 auto; margin-left:auto; white-space:nowrap; }
+    .exp-composition-title { margin:0 0 5px; color:var(--primary); font-size:16px; }
+    .exp-composition-subtitle { color:var(--muted); font-size:12px; line-height:1.5; }
+    .exp-composition-legend { display:flex; flex-wrap:wrap; gap:8px 14px; margin:16px 0 12px; }
+    .exp-composition-legend-item { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text); white-space:nowrap; }
+    .exp-composition-swatch { width:12px; height:12px; border:1px solid rgba(15,23,42,.25); border-radius:2px; flex:0 0 auto; }
+    .exp-composition-layout { display:grid; grid-template-columns:42px minmax(0,1fr); gap:8px; }
+    .exp-composition-y-axis { height:260px; margin-top:24px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+    .exp-composition-scroll { overflow-x:auto; padding-bottom:6px; }
+    .exp-composition-plot { position:relative; height:312px; padding:0 12px; }
+    .exp-composition-gridline { position:absolute; left:12px; right:12px; border-top:1px solid #e2e8f0; z-index:0; }
+    .exp-composition-columns { position:relative; z-index:1; height:312px; display:flex; align-items:flex-start; gap:14px; }
+    .exp-composition-column { min-width:72px; flex:1 0 72px; display:flex; flex-direction:column; align-items:center; }
+    .exp-composition-n { height:24px; display:flex; align-items:center; color:var(--muted); font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .exp-composition-n.small-sample { color:#b45309; }
+    .exp-composition-stack { width:72%; max-width:110px; min-width:48px; height:260px; display:flex; flex-direction:column-reverse; border:1px solid #64748b; background:#f8fafc; overflow:hidden; }
+    .exp-composition-segment { width:100%; display:flex; align-items:center; justify-content:center; border-top:1px solid rgba(255,255,255,.65); overflow:hidden; font-size:10px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+    .exp-composition-month { height:28px; padding-top:8px; color:var(--primary); font-size:11px; font-weight:700; white-space:nowrap; }
+    .exp-composition-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.5; }
     @media (max-width: 900px) {
       .talent-grid { grid-template-columns:1fr; }
       .talent-bar-row { grid-template-columns:minmax(100px,1.2fr) minmax(100px,2fr) 60px; }
+      .exp-composition-layout { grid-template-columns:36px minmax(0,1fr); }
     }
   </style>
 </head>
@@ -579,7 +601,7 @@
           <section class="talent-card" style="grid-column:1/-1;"><h4>每月不重複人才</h4><div class="chart-subtitle">依104代碼去重；若資料少於8個月份，使用分組長條呈現。</div><div id="talentTrackTrend"></div></section>
           <section class="talent-card"><h4>地域結構</h4><div class="chart-subtitle">依應徵廠區判斷核心、延伸與跨區。</div><div id="talentTrackRegion"></div></section>
           <section class="talent-card"><h4>年資結構</h4><div class="chart-subtitle">年資僅描述人才池，不作單一錄用門檻。</div><div id="talentTrackExperience"></div></section>
-          <section class="talent-card" style="grid-column:1/-1;"><h4>最近工作產業</h4><div class="chart-subtitle">僅使用已人工確認的產業資料；待確認公司列於下方清單。</div><div id="talentTrackIndustry"></div></section>
+          <section class="talent-card" style="grid-column:1/-1;"><h4>最近工作產業</h4><div class="chart-subtitle">僅使用已有分類結果的產業資料；待分類公司列於下方清單。</div><div id="talentTrackIndustry"></div></section>
         </div>
         <section class="talent-card" style="margin-bottom:16px;"><h4>趨勢提醒</h4><div class="chart-subtitle">最近3個月與前3個月比較；不足6個月份時不產生警示。</div><div id="talentTrackAlerts"></div></section>
         <section class="talent-card" style="margin-bottom:16px;"><h4>待確認項目</h4><div class="chart-subtitle">尚未人工確認賽道，或最近工作產業尚未分類。</div><div id="talentTrackPending"></div></section>
@@ -790,7 +812,7 @@
           <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
           <p style="color: var(--muted); line-height: 1.6; margin: 0;">
             支援匯入 <strong>Excel（.xlsx / .xls）</strong> 或 <strong>CSV</strong> 格式。<br>
-            若選擇 Excel 檔案，系統將自動讀取「<strong>#履歷匯出資料</strong>」活頁。<br>
+            Excel 同時支援舊版「<strong>#履歷匯出資料</strong>」與新版「<strong>#應徵紀錄＋#人才主檔</strong>」。<br>
             系統將自動分析並提供統計報表。
           </p>
         </div>
@@ -891,9 +913,12 @@
         // 檔案相關
         FILE: {
           DEFAULT_PATH: '', // 預設由使用者選擇最新檔案，避免誤載舊年度資料
-          MAX_SIZE: 20 * 1024 * 1024, // 20MB
           ALLOWED_EXTENSIONS: ['.csv', '.xlsx', '.xls'],
-          TARGET_SHEET: '#履歷匯出資料'
+          TARGET_SHEET: '#履歷匯出資料',
+          NEW_APPLICATION_SHEET: '#應徵紀錄',
+          NEW_TALENT_SHEET: '#人才主檔',
+          NEW_JOB_SHEET: '#職缺分類',
+          AUTO_RESTORE_MAX_BYTES: 4 * 1024 * 1024
         },
         
         // UI 相關
@@ -953,6 +978,7 @@
         },
         
         getUserMessage(operation, error) {
+          if(error && error.userMessage) return error.userMessage;
           const errorMessages = {
             '檔案匯入': '檔案匯入失敗，請確認檔案格式是否正確（需為 CSV 或 Excel 檔案）',
             '檔案讀取': '無法讀取檔案，請重試',
@@ -997,14 +1023,7 @@
             };
           }
           
-          if (file.size > Constants.FILE.MAX_SIZE) {
-            const sizeMB = (Constants.FILE.MAX_SIZE / 1024 / 1024).toFixed(0);
-            return { 
-              valid: false, 
-              message: `檔案大小超過限制（最大 ${sizeMB}MB）` 
-            };
-          }
-          
+          // 不設定固定檔案大小上限；可匯入容量由瀏覽器與裝置可用記憶體決定。
           return { valid: true };
         },
         
@@ -1459,7 +1478,7 @@
         o.__FUNC_LABEL = FUNC_LABELS.find(x=>x.key===o.__FUNC)?.label || '其他';
         o.__LOC = guessLocation(title);
         o.__LOC_LABEL = o['主要廠區'] || LOC_LABELS.find(x=>x.key===o.__LOC)?.label || '桃園廠';
-        o.__COMP = o['工作經驗一公司名稱'] || '未填寫';
+        o.__COMP = o['最近任職公司'] || o['工作經驗一公司名稱'] || '未填寫';
         o.__IDL = (o['IDL']||'').toUpperCase();
         o.__APPLY = o['應徵日期'] || o['應徵職務一應徵日期'] || '';
         o.__APPLY_YM = o['應徵年月'] || deriveApplyYearMonth(o.__APPLY);
@@ -1480,8 +1499,12 @@
         o.__SITE = o['主要廠區'] || o.__LOC_LABEL || '其他／待確認';
         o.__COUNTY = o['居住縣市'] || deriveCounty(o['通訊地址'] || '');
         o.__REGION_GROUP = o['生活圈分類'] || deriveRegionGroup(o.__SITE, o.__COUNTY);
-        o.__INDUSTRY = o['最近工作產業'] || '其他／待分類';
-        o.__INDUSTRY_STATUS = o['產業確認狀態'] || '待確認';
+        const importedIndustry = o['最近工作產業'] || o['最近工作產業別'] || '';
+        const pendingIndustryValues = ['待分類', '其他／待分類', '其他/待分類', '未填寫', '未辨識'];
+        o.__INDUSTRY = importedIndustry || '其他／待分類';
+        o.__INDUSTRY_STATUS = o['產業確認狀態'] || (
+          importedIndustry && !pendingIndustryValues.includes(importedIndustry) ? '已確認' : '待確認'
+        );
         return o;
       });
     }
@@ -2432,6 +2455,110 @@
 
 
     
+    const EXPERIENCE_COMPOSITION_BANDS = [
+      { key:'無經驗', label:'無經驗', color:'#dbeafe', textColor:'#1e3a8a' },
+      { key:'2年以下', label:'2年以下', color:'#bfdbfe', textColor:'#1e3a8a' },
+      { key:'2–5年', label:'2–5年', color:'#93c5fd', textColor:'#172554' },
+      { key:'5–8年', label:'5–8年', color:'#60a5fa', textColor:'#172554' },
+      { key:'8–11年', label:'8–11年', color:'#3b82f6', textColor:'#ffffff' },
+      { key:'11–14年', label:'11–14年', color:'#1d4ed8', textColor:'#ffffff' },
+      { key:'14年以上', label:'14年以上', color:'#1e3a8a', textColor:'#ffffff' },
+      { key:'未填寫／未辨識', label:'未填寫／未辨識', color:'#94a3b8', textColor:'#ffffff' }
+    ];
+
+    function normalizeExperienceBandForComposition(value) {
+      const text = (value || '').toString().trim().replace(/-/g, '–');
+      if(text === '無' || text === '無（無工作經驗）' || text === '無工作經驗' || text === '無經驗') return '無經驗';
+      if(text === '2年以下') return '2年以下';
+      if(text === '2–5年') return '2–5年';
+      if(text === '5–8年') return '5–8年';
+      if(text === '8–11年') return '8–11年';
+      if(text === '11–14年') return '11–14年';
+      if(text === '14年以上') return '14年以上';
+      return '未填寫／未辨識';
+    }
+
+    function buildMonthlyExperienceComposition(rows) {
+      const monthPeople = new Map();
+      (rows || []).forEach(row => {
+        const month = (row.__MONTH || '').toString().trim();
+        if(!month) return;
+        if(!monthPeople.has(month)) monthPeople.set(month, new Map());
+        const people = monthPeople.get(month);
+        const key = personKey(row);
+        const existing = people.get(key);
+        if(!existing || (row.__APPLY || '').localeCompare(existing.__APPLY || '') >= 0) people.set(key, row);
+      });
+
+      return Array.from(monthPeople.keys()).sort(comparePeriods).map(month => {
+        const counts = Object.fromEntries(EXPERIENCE_COMPOSITION_BANDS.map(item => [item.key, 0]));
+        const people = monthPeople.get(month);
+        people.forEach(row => {
+          const derived = row.__EXP_BAND || deriveExperienceBand(row.__EXP || row['工作經驗'] || row['年資'] || '');
+          counts[normalizeExperienceBandForComposition(derived)] += 1;
+        });
+        const total = people.size;
+        return {
+          month,
+          total,
+          segments: EXPERIENCE_COMPOSITION_BANDS.map(item => ({
+            ...item,
+            count: counts[item.key],
+            share: total ? counts[item.key] / total * 100 : 0
+          }))
+        };
+      });
+    }
+
+    function renderMonthlyExperienceComposition(rows) {
+      const monthly = buildMonthlyExperienceComposition(rows);
+      if(monthly.length === 0) {
+        return '<div class="block" style="margin-top:12px;"><div class="talent-note">目前篩選條件沒有可呈現的月份年資資料。</div></div>';
+      }
+
+      const legend = EXPERIENCE_COMPOSITION_BANDS.map(item => `
+        <span class="exp-composition-legend-item">
+          <span class="exp-composition-swatch" style="background:${item.color};"></span>${escapeHtml(item.label)}
+        </span>`).join('');
+      const minWidth = Math.max(720, monthly.length * 86);
+      const gridlines = [100,75,50,25,0].map((value, index) => `<div class="exp-composition-gridline" style="top:${24 + index * 65}px;"></div>`).join('');
+      const columns = monthly.map(item => {
+        const segments = item.segments.filter(segment => segment.count > 0).map(segment => {
+          const label = segment.share >= 8 ? `${segment.share.toFixed(1)}%` : '';
+          const title = `${item.month}｜${segment.label}：${segment.count.toLocaleString()}人（${segment.share.toFixed(1)}%）`;
+          return `<div class="exp-composition-segment" style="height:${segment.share}%; background:${segment.color}; color:${segment.textColor};" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${label}</div>`;
+        }).join('');
+        const smallSample = item.total < 30;
+        return `<div class="exp-composition-column">
+          <div class="exp-composition-n${smallSample ? ' small-sample' : ''}" title="${smallSample ? '樣本少於30人，解讀時請留意' : '當月不重複人才數'}">n=${item.total.toLocaleString()}${smallSample ? '＊' : ''}</div>
+          <div class="exp-composition-stack" role="img" aria-label="${escapeHtml(`${item.month}年資結構，共${item.total}位不重複人才`)}">${segments}</div>
+          <div class="exp-composition-month">${escapeHtml(item.month)}</div>
+        </div>`;
+      }).join('');
+      const smallSampleNote = monthly.some(item => item.total < 30) ? '＊ 樣本少於30人，月份間占比變動可能較不穩定。' : '';
+
+      return `<div class="block" style="margin-top:12px;">
+        <div class="exp-composition-header">
+          <div>
+            <h4 class="exp-composition-title">各月份年資結構占比</h4>
+            <div class="exp-composition-subtitle">每月以104代碼優先去重；同一人才當月多次投遞只計一次。每根柱合計100%。</div>
+          </div>
+          <div class="muted">月份數：${monthly.length.toLocaleString()}</div>
+        </div>
+        <div class="exp-composition-legend">${legend}</div>
+        <div class="exp-composition-layout">
+          <div class="exp-composition-y-axis"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>
+          <div class="exp-composition-scroll">
+            <div class="exp-composition-plot" style="min-width:${minWidth}px;">
+              ${gridlines}
+              <div class="exp-composition-columns">${columns}</div>
+            </div>
+          </div>
+        </div>
+        <div class="exp-composition-note">未填寫與無法辨識的年資保留為灰色區塊，不從分母排除。${smallSampleNote}</div>
+      </div>`;
+    }
+
     function getExperienceColor(experience) {
       const colors = {
         '無': '#90EE90',
@@ -2943,8 +3070,8 @@
       fillTalentSelect($talentSiteFilter, uniqueSorted(idlRows.map(row => row.__SITE)));
       fillTalentSelect($talentRegionFilter, ['核心生活圈', '延伸通勤圈', '跨區', '未設定廠區']);
       fillTalentSelect($talentExperienceFilter, Constants.EXPERIENCE_BANDS.filter(value => idlRows.some(row => row.__EXP_BAND === value)));
-      fillTalentSelect($talentIndustryFilter, Constants.INDUSTRIES.filter(value => idlRows.some(row => row.__INDUSTRY === value)));
-      fillTalentSelect($talentStatusFilter, ['賽道已確認', '賽道待確認', '產業已確認', '產業待確認']);
+      fillTalentSelect($talentIndustryFilter, uniqueSorted(idlRows.map(row => row.__INDUSTRY)));
+      fillTalentSelect($talentStatusFilter, ['賽道已確認', '賽道待確認', '產業已分類', '產業待分類']);
     }
 
     function applyTalentFilters(rows){
@@ -2957,8 +3084,8 @@
         if(talentFilters.industry && row.__INDUSTRY !== talentFilters.industry) return false;
         if(talentFilters.status === '賽道已確認' && row.__TRACK_STATUS !== '已確認') return false;
         if(talentFilters.status === '賽道待確認' && row.__TRACK_STATUS === '已確認') return false;
-        if(talentFilters.status === '產業已確認' && row.__INDUSTRY_STATUS !== '已確認') return false;
-        if(talentFilters.status === '產業待確認' && row.__INDUSTRY_STATUS === '已確認') return false;
+        if(talentFilters.status === '產業已分類' && row.__INDUSTRY_STATUS !== '已確認') return false;
+        if(talentFilters.status === '產業待分類' && row.__INDUSTRY_STATUS === '已確認') return false;
         return true;
       });
     }
@@ -3130,7 +3257,7 @@
         renderTalentKpi('不重複人才', people.toLocaleString(), '優先以104代碼去重'),
         renderTalentKpi('正式賽道人才', confirmedPeople.toLocaleString(), `賽道確認覆蓋率 ${percent(confirmedPeople, people)}`),
         renderTalentKpi('核心＋延伸地域', percent(targetRegionPeople, confirmedPeople), `${targetRegionPeople.toLocaleString()} 位正式賽道人才`),
-        renderTalentKpi('產業分類覆蓋率', percent(industryConfirmedPeople, people), `${industryConfirmedPeople.toLocaleString()} 位人才已確認產業`),
+        renderTalentKpi('產業分類覆蓋率', percent(industryConfirmedPeople, people), `${industryConfirmedPeople.toLocaleString()} 位人才已有產業分類`),
         renderTalentKpi('重複投遞人才率', percent(repeatPeople, people), `${repeatPeople.toLocaleString()} 位人才投遞超過1筆`)
       ].join('');
       $talentTrackTrend.innerHTML = renderMonthlyTrackChart(rows);
@@ -3187,7 +3314,7 @@
         // 更新年資統計
         const experienceAgg = groupByExperience(rows);
         const experienceHtml = renderExperienceTable(experienceAgg, '目前篩選條件下的年資分布');
-        $experienceOutput.innerHTML = experienceHtml;
+        $experienceOutput.innerHTML = renderMonthlyExperienceComposition(rows) + experienceHtml;
 
     // 更新職務統計（可在職務統計頁面查看）
     if(typeof updateJobStatistics === 'function') updateJobStatistics(rows);
@@ -4765,21 +4892,117 @@
       }catch(err){ console.error('載入 CSV 失敗', err); return false; }
     }
     
-    // 解析 Excel 活頁並轉為物件陣列（與 parseCSV 格式相同）
-    function parseExcelSheet(workbook, sheetName){
-      const TARGET_SHEET = '#履歷匯出資料';
-      let sheet = workbook.Sheets[TARGET_SHEET];
-      if(!sheet){
-        // 找不到目標活頁時列出所有活頁供除錯，並回傳 null
-        console.warn('找不到活頁「' + TARGET_SHEET + '」，現有活頁：', workbook.SheetNames.join(', '));
-        return null;
-      }
+    // 將指定 Excel 活頁轉為正規化物件陣列（與 parseCSV 格式相同）
+    function worksheetToRows(workbook, sheetName){
+      const sheet = workbook.Sheets[sheetName];
+      if(!sheet) return [];
       const jsonRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       return jsonRows.map(row => {
         const obj = {};
         Object.keys(row).forEach(k => { obj[normalizeKey(k)] = normalizeVal(row[k]); });
         return obj;
       });
+    }
+
+    function buildJobClassificationMaps(rows){
+      const byMonthAndTitle = new Map();
+      const byTitle = new Map();
+      rows.forEach(row => {
+        const title = (row['職務名稱'] || '').toString().trim();
+        if(!title) return;
+        const month = (row['月份'] || '').toString().trim();
+        if(month) byMonthAndTitle.set(`${month}||${title}`, row);
+        byTitle.set(title, row);
+      });
+      return { byMonthAndTitle, byTitle };
+    }
+
+    function mergeRowsPreferNonEmpty(baseRow, overrideRow){
+      const merged = { ...(baseRow || {}) };
+      Object.entries(overrideRow || {}).forEach(([key, value]) => {
+        if((value !== '' && value != null) || !(key in merged)) merged[key] = value;
+      });
+      return merged;
+    }
+
+    function parseExcelWorkbook(workbook){
+      const legacySheet = Constants.FILE.TARGET_SHEET;
+      if(workbook.Sheets[legacySheet]){
+        return {
+          rows: worksheetToRows(workbook, legacySheet),
+          format: 'legacy',
+          sourceLabel: legacySheet
+        };
+      }
+
+      const applicationSheet = Constants.FILE.NEW_APPLICATION_SHEET;
+      const talentSheet = Constants.FILE.NEW_TALENT_SHEET;
+      if(!workbook.Sheets[applicationSheet] || !workbook.Sheets[talentSheet]){
+        const sheetList = workbook.SheetNames.join('、');
+        const error = new Error(`找不到可支援的104資料活頁。現有活頁：${sheetList}`);
+        error.userMessage = `無法辨識104匯出格式。請確認 Excel 包含舊版「${legacySheet}」，或新版「${applicationSheet}」與「${talentSheet}」。\n目前活頁：${sheetList}`;
+        throw error;
+      }
+
+      const applicationRows = worksheetToRows(workbook, applicationSheet);
+      const talentRows = worksheetToRows(workbook, talentSheet);
+      const jobRows = worksheetToRows(workbook, Constants.FILE.NEW_JOB_SHEET);
+      const talentByCode = new Map();
+      talentRows.forEach(row => {
+        const code = (row['104代碼'] || '').toString().trim();
+        if(code) talentByCode.set(code, row);
+      });
+      const jobMaps = buildJobClassificationMaps(jobRows);
+      let matchedTalentCount = 0;
+      let matchedJobCount = 0;
+      const rows = applicationRows.map(application => {
+        const code = (application['104代碼'] || '').toString().trim();
+        const talent = code ? talentByCode.get(code) : null;
+        if(talent) matchedTalentCount += 1;
+        const merged = talent ? mergeRowsPreferNonEmpty(talent, application) : { ...application };
+        const month = (merged['月份'] || deriveApplyYearMonth(merged['應徵日期'] || '')).toString().trim();
+        const title = (merged['應徵職務名稱'] || '').toString().trim();
+        const job = jobMaps.byMonthAndTitle.get(`${month}||${title}`) || jobMaps.byTitle.get(title);
+        if(job){
+          matchedJobCount += 1;
+          if(!merged['職系']) merged['職系'] = job['職系'] || '';
+          if(!merged['新鮮人職缺']) merged['新鮮人職缺'] = job['開放新鮮人'] || '';
+        }
+        return merged;
+      });
+
+      console.log(`✅ 新版104格式串接：應徵 ${applicationRows.length} 筆，人才主檔命中 ${matchedTalentCount} 筆，職缺分類命中 ${matchedJobCount} 筆`);
+      return {
+        rows,
+        format: 'split-v2',
+        sourceLabel: `${applicationSheet}＋${talentSheet}`
+      };
+    }
+
+    function persistImportedText(text, filename){
+      try {
+        if(filename) localStorage.setItem('lastImportName', filename);
+        const byteLength = new Blob([text]).size;
+        if(byteLength > Constants.FILE.AUTO_RESTORE_MAX_BYTES){
+          localStorage.removeItem('lastImportedCsv');
+          console.info('ℹ️ 資料量較大，本次匯入成功但不保存自動還原快取。');
+          return false;
+        }
+        localStorage.setItem('lastImportedCsv', text);
+        return true;
+      } catch(error) {
+        try { localStorage.removeItem('lastImportedCsv'); } catch(e){}
+        console.info('ℹ️ 瀏覽器儲存空間不足，本次匯入成功但不保存自動還原快取。');
+        return false;
+      }
+    }
+
+    function clearImportedTextCache(filename){
+      try {
+        localStorage.removeItem('lastImportedCsv');
+        if(filename) localStorage.setItem('lastImportName', filename);
+      } catch(e){}
+      console.info('ℹ️ Excel 資料量較大，本次匯入成功但不保存自動還原快取。');
     }
 
     // 匯入成功後套用資料並切換頁面
@@ -4844,12 +5067,8 @@
             try {
               const data_ab = reader.result;
               const workbook = XLSX.read(data_ab, { type: 'array' });
-              const rows = parseExcelSheet(workbook);
-              if(rows === null){
-                const sheetList = workbook.SheetNames.join('、');
-                ErrorHandler.handle('檔案匯入', new Error(`找不到「${Constants.FILE.TARGET_SHEET}」活頁。\n此 Excel 包含的活頁：${sheetList}`));
-                return;
-              }
+              const parsedWorkbook = parseExcelWorkbook(workbook);
+              const rows = parsedWorkbook.rows;
               
               // 資料結構驗證
               const dataValidation = DataValidator.validateDataStructure(rows);
@@ -4858,11 +5077,15 @@
                 return;
               }
               
-              const csvText = XLSX.utils.sheet_to_csv(workbook.Sheets[Constants.FILE.TARGET_SHEET]);
-              try { localStorage.setItem('lastImportedCsv', csvText); } catch(e){}
+              if(file.size <= Constants.FILE.AUTO_RESTORE_MAX_BYTES && parsedWorkbook.format === 'legacy'){
+                const csvText = XLSX.utils.sheet_to_csv(workbook.Sheets[Constants.FILE.TARGET_SHEET]);
+                persistImportedText(csvText, file.name);
+              } else {
+                clearImportedTextCache(file.name);
+              }
               applyImportedData(rows, file.name);
               
-              console.log(`✅ 成功匯入 ${dataValidation.rowCount} 筆資料`);
+              console.log(`✅ 成功匯入 ${dataValidation.rowCount} 筆資料（${parsedWorkbook.sourceLabel}）`);
             } catch(err){
               ErrorHandler.handle('檔案匯入', err);
             }
@@ -4882,7 +5105,7 @@
                 return;
               }
               
-              try { localStorage.setItem('lastImportedCsv', text); } catch(e){}
+              persistImportedText(text, file.name);
               applyImportedData(rows, file.name);
               
               console.log(`✅ 成功匯入 ${dataValidation.rowCount} 筆資料`);
