@@ -459,6 +459,17 @@
     .exp-composition-segment { width:100%; display:flex; align-items:center; justify-content:center; border-top:1px solid rgba(255,255,255,.65); overflow:hidden; font-size:10px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
     .exp-composition-month { height:28px; padding-top:8px; color:var(--primary); font-size:11px; font-weight:700; white-space:nowrap; }
     .exp-composition-note { margin-top:10px; color:var(--muted); font-size:11px; line-height:1.5; }
+    .exp-area-scroll { overflow-x:auto; padding:2px 0 8px; }
+    .exp-area-svg { display:block; width:100%; height:auto; overflow:visible; }
+    .exp-area-grid { stroke:#e2e8f0; stroke-width:1; }
+    .exp-area-axis { fill:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+    .exp-area-month { fill:var(--primary); font-size:11px; font-weight:700; }
+    .exp-area-sample { fill:var(--muted); font-size:10px; font-weight:600; font-variant-numeric:tabular-nums; }
+    .exp-area-sample.small-sample { fill:#b45309; }
+    .exp-area-boundary { fill:none; stroke:rgba(255,255,255,.9); stroke-width:1.4; pointer-events:none; }
+    .exp-area-month-hit rect { fill:transparent; cursor:crosshair; }
+    .exp-area-month-hit line { opacity:0; stroke:#334155; stroke-width:1; stroke-dasharray:4 3; pointer-events:none; }
+    .exp-area-month-hit:hover line { opacity:.8; }
     @media (max-width: 900px) {
       .talent-grid { grid-template-columns:1fr; }
       .talent-bar-row { grid-template-columns:minmax(100px,1.2fr) minmax(100px,2fr) 60px; }
@@ -2559,6 +2570,92 @@
       </div>`;
     }
 
+    function renderMonthlyExperienceAreaChart(rows) {
+      const monthly = buildMonthlyExperienceComposition(rows);
+      if(monthly.length < 2) {
+        return `<div class="block" style="margin-top:12px;">
+          <div class="exp-composition-header">
+            <div><h4 class="exp-composition-title">年資結構演變趨勢</h4><div class="exp-composition-subtitle">100% 區域堆疊圖需要至少兩個月份。</div></div>
+          </div>
+          <div class="talent-note" style="margin-top:12px;">目前只有 ${monthly.length.toLocaleString()} 個月份，暫時無法呈現演變趨勢。</div>
+        </div>`;
+      }
+
+      const chartWidth = Math.max(820, monthly.length * 100);
+      const chartHeight = 350;
+      const margin = { top:20, right:34, bottom:66, left:52 };
+      const plotWidth = chartWidth - margin.left - margin.right;
+      const plotHeight = chartHeight - margin.top - margin.bottom;
+      const plotBottom = margin.top + plotHeight;
+      const xAt = index => margin.left + index * (plotWidth / (monthly.length - 1));
+      const yAt = value => margin.top + (100 - value) / 100 * plotHeight;
+      const formatPoint = (x, y) => `${x.toFixed(2)},${y.toFixed(2)}`;
+
+      let cumulative = monthly.map(() => 0);
+      const areas = EXPERIENCE_COMPOSITION_BANDS.map((band, bandIndex) => {
+        const upper = monthly.map((item, monthIndex) => cumulative[monthIndex] + item.segments[bandIndex].share);
+        const upperPoints = upper.map((value, index) => formatPoint(xAt(index), yAt(value)));
+        const lowerPoints = cumulative.map((value, index) => formatPoint(xAt(index), yAt(value))).reverse();
+        const areaPath = `M ${upperPoints.join(' L ')} L ${lowerPoints.join(' L ')} Z`;
+        const boundaryPath = `M ${upperPoints.join(' L ')}`;
+        cumulative = upper;
+        return `<path d="${areaPath}" fill="${band.color}" stroke="rgba(15,23,42,.18)" stroke-width=".7"><title>${escapeHtml(band.label)}</title></path>
+          <path class="exp-area-boundary" d="${boundaryPath}"></path>`;
+      }).join('');
+
+      const grid = [100,75,50,25,0].map(value => {
+        const y = yAt(value);
+        return `<line class="exp-area-grid" x1="${margin.left}" x2="${chartWidth - margin.right}" y1="${y}" y2="${y}"></line>
+          <text class="exp-area-axis" x="${margin.left - 10}" y="${y + 4}" text-anchor="end">${value}%</text>`;
+      }).join('');
+
+      const monthLabels = monthly.map((item, index) => {
+        const x = xAt(index);
+        const smallSample = item.total < 30;
+        return `<text class="exp-area-month" x="${x}" y="${plotBottom + 22}" text-anchor="middle">${escapeHtml(item.month)}</text>
+          <text class="exp-area-sample${smallSample ? ' small-sample' : ''}" x="${x}" y="${plotBottom + 40}" text-anchor="middle">n=${item.total.toLocaleString()}${smallSample ? '＊' : ''}</text>`;
+      }).join('');
+
+      const monthHits = monthly.map((item, index) => {
+        const x = xAt(index);
+        const left = index === 0 ? margin.left : (xAt(index - 1) + x) / 2;
+        const right = index === monthly.length - 1 ? chartWidth - margin.right : (x + xAt(index + 1)) / 2;
+        const detail = item.segments.map(segment => `${segment.label}：${segment.count.toLocaleString()}人（${segment.share.toFixed(1)}%）`).join('\n');
+        const title = `${item.month}｜n=${item.total.toLocaleString()}\n${detail}`;
+        return `<g class="exp-area-month-hit">
+          <line x1="${x}" x2="${x}" y1="${margin.top}" y2="${plotBottom}"></line>
+          <rect x="${left}" y="${margin.top}" width="${right - left}" height="${plotHeight}" tabindex="0" aria-label="${escapeHtml(title)}"><title>${escapeHtml(title)}</title></rect>
+        </g>`;
+      }).join('');
+
+      const legend = EXPERIENCE_COMPOSITION_BANDS.map(item => `
+        <span class="exp-composition-legend-item">
+          <span class="exp-composition-swatch" style="background:${item.color};"></span>${escapeHtml(item.label)}
+        </span>`).join('');
+      const smallSampleNote = monthly.some(item => item.total < 30) ? '＊ 樣本少於30人，月份間占比變動可能較不穩定。' : '';
+      const coverageNote = monthly.length < 8 ? `目前涵蓋 ${monthly.length} 個月份，先視為初步趨勢；累積8–12個月後更適合判讀長期演變。` : `目前涵蓋 ${monthly.length} 個月份，可用來觀察年資結構的中期演變。`;
+
+      return `<div class="block" style="margin-top:12px;">
+        <div class="exp-composition-header">
+          <div>
+            <h4 class="exp-composition-title">年資結構演變趨勢</h4>
+            <div class="exp-composition-subtitle">每月以104代碼優先去重；各月份合計100%。區域採直線連接，滑鼠移入月份可查看人數與占比。</div>
+          </div>
+          <div class="muted">月份數：${monthly.length.toLocaleString()}</div>
+        </div>
+        <div class="exp-composition-legend">${legend}</div>
+        <div class="exp-area-scroll">
+          <svg class="exp-area-svg" viewBox="0 0 ${chartWidth} ${chartHeight}" style="min-width:${chartWidth}px;" role="img" aria-label="各月份年資結構100%區域堆疊趨勢圖">
+            ${grid}
+            ${areas}
+            ${monthHits}
+            ${monthLabels}
+          </svg>
+        </div>
+        <div class="exp-composition-note">${coverageNote} 未填寫與無法辨識的年資保留為灰色區域。${smallSampleNote}</div>
+      </div>`;
+    }
+
     function getExperienceColor(experience) {
       const colors = {
         '無': '#90EE90',
@@ -3314,7 +3411,7 @@
         // 更新年資統計
         const experienceAgg = groupByExperience(rows);
         const experienceHtml = renderExperienceTable(experienceAgg, '目前篩選條件下的年資分布');
-        $experienceOutput.innerHTML = renderMonthlyExperienceComposition(rows) + experienceHtml;
+        $experienceOutput.innerHTML = renderMonthlyExperienceComposition(rows) + renderMonthlyExperienceAreaChart(rows) + experienceHtml;
 
     // 更新職務統計（可在職務統計頁面查看）
     if(typeof updateJobStatistics === 'function') updateJobStatistics(rows);
