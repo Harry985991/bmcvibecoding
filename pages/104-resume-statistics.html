@@ -623,7 +623,7 @@
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
             <div>
               <h3 style="margin:0 0 6px; color:var(--primary);">人才賽道趨勢</h3>
-              <div class="muted" style="font-size:13px; line-height:1.55;">僅分析 IDL 職缺；正式賽道數據以人工確認結果為準。104資料代表主動應徵池，不等同完整人才市場。</div>
+              <div class="muted" style="font-size:13px; line-height:1.55;">僅分析 IDL 職缺；正式賽道數據以人工確認結果為準，狀態為「系統建議」的職缺尚未確認，不計入正式賽道。104資料代表主動應徵池，不等同完整人才市場。</div>
             </div>
             <button id="talentResetFilters" class="filter-btn" type="button">重設賽道篩選</button>
           </div>
@@ -3399,7 +3399,7 @@
       fillTalentSelect($talentRegionFilter, ['核心生活圈', '延伸通勤圈', '跨區', '未設定廠區']);
       fillTalentSelect($talentExperienceFilter, Constants.EXPERIENCE_BANDS.filter(value => idlRows.some(row => row.__EXP_BAND === value)));
       fillTalentSelect($talentIndustryFilter, uniqueSorted(idlRows.map(row => row.__INDUSTRY)));
-      fillTalentSelect($talentStatusFilter, ['賽道已確認', '賽道待確認', '產業已分類', '產業待分類']);
+      fillTalentSelect($talentStatusFilter, ['賽道已確認', '賽道待確認', '賽道系統建議', '產業已分類', '產業待分類']);
     }
 
     function applyTalentFilters(rows){
@@ -3412,6 +3412,8 @@
         if(talentFilters.industry && row.__INDUSTRY !== talentFilters.industry) return false;
         if(talentFilters.status === '賽道已確認' && row.__TRACK_STATUS !== '已確認') return false;
         if(talentFilters.status === '賽道待確認' && row.__TRACK_STATUS === '已確認') return false;
+        // 系統建議是「尚未人工確認」的一種，僅供辨識，不計入正式賽道統計
+        if(talentFilters.status === '賽道系統建議' && row.__TRACK_STATUS !== '系統建議') return false;
         if(talentFilters.status === '產業已分類' && row.__INDUSTRY_STATUS !== '已確認') return false;
         if(talentFilters.status === '產業待分類' && row.__INDUSTRY_STATUS === '已確認') return false;
         return true;
@@ -3546,7 +3548,9 @@
       const companyMap = new Map();
       rows.forEach(row => {
         if(row.__TRACK_STATUS !== '已確認'){
-          const job = row.__JOBTITLE || '未填寫';
+          const jobTitle = row.__JOBTITLE || '未填寫';
+          // 標註系統建議，讓 HR 分辨「已有建議待確認」與「完全未分類」
+          const job = row.__TRACK_STATUS === '系統建議' ? `${jobTitle}（系統建議）` : jobTitle;
           if(!jobMap.has(job)) jobMap.set(job, new Set());
           jobMap.get(job).add(personKey(row));
         }
@@ -5272,6 +5276,9 @@
       });
     }
 
+    // 由「#職缺分類」帶入應徵紀錄的賽道欄位
+    const JOB_TRACK_FIELDS = ['招募賽道', '賽道確認狀態', '分類負責人', '生效日期'];
+
     function buildJobClassificationMaps(rows){
       const byMonthAndTitle = new Map();
       const byTitle = new Map();
@@ -5335,6 +5342,10 @@
           matchedJobCount += 1;
           if(!merged['職系']) merged['職系'] = job['職系'] || '';
           if(!merged['新鮮人職缺']) merged['新鮮人職缺'] = job['開放新鮮人'] || '';
+          // 職缺分類是招募賽道的維護來源；舊版四欄檔案沒有這些欄位時維持空白，由 preprocess 套用預設
+          JOB_TRACK_FIELDS.forEach(field => {
+            if(!merged[field] && job[field]) merged[field] = job[field];
+          });
         }
         return merged;
       });

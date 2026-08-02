@@ -839,6 +839,57 @@
             background: #fff5f3 !important;
         }
 
+        .editable-cell.suggested-track-cell select {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+            background: #eef4ff;
+        }
+
+        .job-batch-bar {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 6px 8px;
+            border: 1px solid #dbe3ee;
+            border-radius: var(--radius-sm);
+            background: #f8fafd;
+        }
+
+        .job-batch-field {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #4a586b;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .job-batch-field input,
+        .job-batch-field select {
+            min-height: 28px;
+            padding: 4px 6px;
+            border: 1px solid #b8c2cf;
+            border-radius: 3px;
+            background: #ffffff;
+            font-size: 12px;
+        }
+
+        .job-batch-info {
+            color: #31567f;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .job-select-cell {
+            width: 34px;
+            text-align: center;
+        }
+
+        .job-select-cell input {
+            width: auto;
+            min-height: 0;
+            cursor: pointer;
+        }
+
         .editable-cell:hover {
             background: #edf4ff !important;
         }
@@ -1201,6 +1252,7 @@
                         <li><strong>學校NEW</strong>：從「學歷對照」比對填入</li>
                         <li><strong>目標學校</strong>：比對「#目標學校」清單</li>
                         <li><strong>新鮮人職缺</strong>：從「#職缺分類」比對填入</li>
+                        <li><strong>招募賽道／賽道確認狀態／分類負責人／生效日期</strong>：從「#職缺分類」比對填入；找不到對應職缺時填「待確認」</li>
                         <li><strong>最近工作產業別</strong>：依「#產業對照」先比公司、再比職務；未命中則標示待分類</li>
                     </ul>
                 </div>
@@ -1282,7 +1334,52 @@
         <div id="tab3" class="tab-content">
             <div class="info-box">
                 <strong>說明：</strong>職缺分類工作表會自動提取職務名稱並設定屬性。<strong style="color: #b91c1c;">紅色標示</strong>為新增職務，請確認並填寫資料。<strong>除 A 欄外，其他欄位皆可點選編輯。</strong>
+                <div style="margin-top: 6px;">招募賽道與確認狀態在此以職缺為單位維護，會自動帶入「#應徵紀錄」供人才賽道分析使用。同一職缺跨月份會沿用已確認的設定；新職缺若有明確關鍵詞會給「系統建議」（藍框），沒把握則維持「待確認」（黃框），DL 職缺一律「不適用」。系統建議只有改成「已確認」後才會進入統計頁的正式賽道數據。</div>
                 <div id="jobConfirmInfo" style="margin-top: 6px; font-weight: 600; color: #d9534f;"></div>
+            </div>
+            <div class="section-actions job-batch-bar">
+                <label class="job-batch-field">
+                    篩選職缺
+                    <input type="text" id="jobFilterKeyword" placeholder="職務名稱關鍵字">
+                </label>
+                <label class="job-batch-field">
+                    狀態
+                    <select id="jobFilterStatus">
+                        <option value="">全部</option>
+                        <option value="待處理">待處理（待確認＋系統建議）</option>
+                        <option value="待確認">待確認</option>
+                        <option value="系統建議">系統建議</option>
+                        <option value="已確認">已確認</option>
+                        <option value="不適用">不適用</option>
+                    </select>
+                </label>
+                <span id="jobSelectionInfo" class="job-batch-info">已勾選 0 個職缺</span>
+                <button id="clearJobSelectionBtn" class="btn btn-secondary">清除勾選</button>
+            </div>
+            <div class="section-actions job-batch-bar">
+                <label class="job-batch-field">
+                    批次賽道
+                    <select id="batchTrackSelect">
+                        <option value="">不變更</option>
+                    </select>
+                </label>
+                <label class="job-batch-field">
+                    批次狀態
+                    <select id="batchStatusSelect">
+                        <option value="">不變更</option>
+                    </select>
+                </label>
+                <label class="job-batch-field">
+                    分類負責人
+                    <input type="text" id="batchOwnerInput" placeholder="留白＝不變更">
+                </label>
+                <label class="job-batch-field">
+                    生效日期
+                    <input type="text" id="batchDateInput" placeholder="YYYY-MM-DD，留白＝不變更">
+                </label>
+                <button id="applyBatchJobBtn" class="btn btn-primary">套用到所選</button>
+                <button id="confirmSelectedSuggestionBtn" class="btn btn-success">確認所選系統建議</button>
+                <button id="confirmAllSuggestionBtn" class="btn btn-secondary">確認全部系統建議</button>
             </div>
             <div id="classifyTableContainer" class="empty-state data-container">
                 <h3>職缺分類</h3>
@@ -1379,9 +1476,66 @@
                     TARGET_SCHOOL: '目標學校',
                     FRESH_JOB: '新鮮人職缺',
                     SCHOOL_NEW: '學校NEW',
-                    EDU_SCHOOL: '學歷學校名稱一'
+                    EDU_SCHOOL: '學歷學校名稱一',
+                    TRACK: '招募賽道',
+                    TRACK_STATUS: '賽道確認狀態',
+                    TRACK_OWNER: '分類負責人',
+                    TRACK_DATE: '生效日期'
                 },
                 
+                // 職缺分類工作表結構（第 9 欄為記憶體內的 NEW 標記，不匯出）
+                JOB_CLASS_HEADERS: ['職務名稱', '職系', '開放新鮮人', '月份', '招募賽道', '賽道確認狀態', '分類負責人', '生效日期'],
+                JOB_CLASS_COL: {
+                    NAME: 0,
+                    CATEGORY: 1,
+                    FRESH: 2,
+                    MONTH: 3,
+                    TRACK: 4,
+                    TRACK_STATUS: 5,
+                    OWNER: 6,
+                    EFFECTIVE_DATE: 7,
+                    NEW_FLAG: 8
+                },
+
+                // 招募賽道合法值（不使用性別、年齡等敏感特徵）
+                RECRUIT_TRACKS: ['① 半導體經驗人才', '② 理工人才（製造／研發）', '③ 商管人才', '待確認', '不適用'],
+                TRACK_STATUSES: ['已確認', '系統建議', '待確認', '不適用'],
+
+                /**
+                 * 賽道建議規則：只看職缺名稱關鍵詞，不使用年齡、性別等敏感資訊。
+                 * priority 數字小者優先；半導體規則命中時優先於理工規則。
+                 * 命中兩個以上互斥賽道（例如理工＋商管）視為衝突，保守回到待確認。
+                 */
+                TRACK_SUGGESTION_RULES: [
+                    {
+                        track: '① 半導體經驗人才',
+                        priority: 1,
+                        keywords: [
+                            '半導體', '晶圓', '晶片', '晶粒', '封裝', '封測', '載板', '基板',
+                            '黃光', '微影', '蝕刻', '薄膜', '擴散', '研磨', '打線', '切割',
+                            'IC', 'CMP', 'Wafer', 'Fab', 'Foundry'
+                        ]
+                    },
+                    {
+                        track: '② 理工人才（製造／研發）',
+                        priority: 2,
+                        keywords: [
+                            '研發', '材料', '製程', '設備', '品質', '品保', '品管', '化學', '化工',
+                            '機械', '機構', '電機', '電子', '光學', '物理', '工程師', '技術',
+                            '生產', '製造', '產線', '工程', '實驗', '檢測', '自動化', '資訊', '軟體'
+                        ]
+                    },
+                    {
+                        track: '③ 商管人才',
+                        priority: 3,
+                        keywords: [
+                            '業務', '銷售', '行銷', '採購', '財務', '會計', '稽核', '人資',
+                            '人力資源', '供應鏈', '管理師', '客服', '法務', '總務', '企劃',
+                            '專案管理', '經營', '貿易', '行政'
+                        ]
+                    }
+                ],
+
                 // 驗證規則
                 VALIDATION: {
                     MAX_SCHOOL_NAME_LENGTH: 100,
@@ -1845,6 +1999,50 @@
         // 新增產業對照規則
         document.getElementById('addIndustryRuleBtn').addEventListener('click', addNewIndustryRule);
 
+        // 職缺分類：篩選與批次操作
+        initJobClassificationControls();
+
+        function initJobClassificationControls() {
+            const trackSelect = document.getElementById('batchTrackSelect');
+            const statusSelect = document.getElementById('batchStatusSelect');
+
+            // 批次選單的第一個選項固定是「不變更」，其餘沿用合法值清單
+            if (trackSelect) {
+                Constants.RECRUIT_TRACKS.forEach(track => {
+                    const option = document.createElement('option');
+                    option.value = track;
+                    option.textContent = track;
+                    trackSelect.appendChild(option);
+                });
+            }
+            if (statusSelect) {
+                Constants.TRACK_STATUSES.forEach(status => {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    statusSelect.appendChild(option);
+                });
+            }
+
+            const keywordInput = document.getElementById('jobFilterKeyword');
+            if (keywordInput) keywordInput.addEventListener('input', Utils.debounce(updateJobClassFilters, Constants.UI.DEBOUNCE_DELAY));
+
+            const filterStatus = document.getElementById('jobFilterStatus');
+            if (filterStatus) filterStatus.addEventListener('change', updateJobClassFilters);
+
+            const clearSelectionBtn = document.getElementById('clearJobSelectionBtn');
+            if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearJobSelection);
+
+            const applyBatchBtn = document.getElementById('applyBatchJobBtn');
+            if (applyBatchBtn) applyBatchBtn.addEventListener('click', applyBatchJobUpdate);
+
+            const confirmSelectedBtn = document.getElementById('confirmSelectedSuggestionBtn');
+            if (confirmSelectedBtn) confirmSelectedBtn.addEventListener('click', () => confirmTrackSuggestions('selected'));
+
+            const confirmAllBtn = document.getElementById('confirmAllSuggestionBtn');
+            if (confirmAllBtn) confirmAllBtn.addEventListener('click', () => confirmTrackSuggestions('all'));
+        }
+
         // ========== 檔案處理模組 ==========
         const FileProcessor = {
             /**
@@ -1914,23 +2112,15 @@
             loadJobSettings() {
                 if (workbookData['#職缺分類'].length <= 1) return 0;
                 
-                const classifyData = workbookData['#職缺分類'];
-                const headers = classifyData[0];
-                const rows = classifyData.slice(1);
+                // 舊版四欄檔案在此補齊賽道欄位，已填寫的值不會被覆蓋
+                workbookData['#職缺分類'] = normalizeJobClassificationData(workbookData['#職缺分類']);
                 
-                rows.forEach(row => {
-                    const jobName = row[0];
-                    if (jobName) {
-                        existingJobs.add(jobName);
-                        existingJobSettings.set(jobName, {
-                            category: row[1] || 'IDL',
-                            openToFreshGrad: row[2] || '',
-                            month: row[3] || ''
-                        });
-                    }
-                });
+                const jobCount = syncJobSettingsFromClassification();
+
+                // 尚未分類的職缺套用賽道建議，減少 HR 逐筆設定
+                applyTrackSuggestions();
                 
-                return existingJobs.size;
+                return jobCount;
             },
             
             /**
@@ -2896,7 +3086,8 @@
             }
 
             const applicationOnlyHeaders = new Set([
-                '月份', '應徵職務名稱', '應徵日期', 'IDL', '新鮮人職缺'
+                '月份', '應徵職務名稱', '應徵日期', 'IDL', '新鮮人職缺',
+                '招募賽道', '賽道確認狀態', '分類負責人', '生效日期'
             ]);
             const profileIndexes = headers
                 .map((header, index) => ({ header, index }))
@@ -3212,11 +3403,18 @@
         function ensureAnalysisColumns(data) {
             if (!data || data.length === 0) return data;
             const headers = data[0];
-            const required = ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW'];
+            const required = ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW', '招募賽道', '賽道確認狀態', '分類負責人', '生效日期'];
             const existing = new Set(headers.map(h => h ? h.toString() : ''));
             
             let insertIndex = headers.findIndex(h => h && h.toString().includes('應徵日期'));
             if (insertIndex === -1) insertIndex = headers.length - 1;
+
+            // 已存在的分析欄位維持原位，新欄位接在分析欄位區塊之後
+            headers.forEach((header, index) => {
+                const headerText = header ? header.toString() : '';
+                if (required.includes(headerText) && index > insertIndex) insertIndex = index;
+            });
+
             let currentIndex = insertIndex + 1;
             
             required.forEach(col => {
@@ -3302,7 +3500,7 @@
             const monthOffset = 1; // 前面加了「月份」
             const idOffset = insertedIdColumn && (idColumnIndex <= (dateColumnIndex + monthOffset)) ? 1 : 0; // 104代碼若在日期前，需位移
             const insertIndex = dateColumnIndex + monthOffset + idOffset + 1; // 在日期之後插入
-            newHeaders.splice(insertIndex, 0, 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW');
+            newHeaders.splice(insertIndex, 0, 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW', '招募賽道', '賽道確認狀態', '分類負責人', '生效日期');
             
             // 處理每一行資料
             const newRows = rows.map(row => {
@@ -3318,8 +3516,8 @@
                     newRow.splice(idColumnIndex, 0, '');
                 }
                 
-                // 在應徵日期後插入空白欄位
-                newRow.splice(insertIndex, 0, '', '', '', '', '');
+                // 在應徵日期後插入空白欄位（數量需與上方新增的標題一致）
+                newRow.splice(insertIndex, 0, '', '', '', '', '', '', '', '', '');
                 copyRowLineage(row, newRow);
                 
                 return newRow;
@@ -3575,12 +3773,198 @@
             return Utils.isDLJob(jobName) ? 'DL' : 'IDL';
         }
         
+        /**
+         * 職缺名稱正規化，僅用於「同職缺沿用」的比對鍵，不改變顯示名稱。
+         * 只做保守處理：NFKC（全形→半形）、去頭尾空白、連續空白合一、英文大小寫統一。
+         * 不做去除標點或模糊比對，避免把不同職缺誤判為同一個。
+         */
+        function normalizeJobNameKey(jobName) {
+            if (jobName === null || jobName === undefined) return '';
+            let text = jobName.toString();
+            if (typeof text.normalize === 'function') {
+                text = text.normalize('NFKC');
+            }
+            return text.replace(/\s+/g, ' ').trim().toUpperCase();
+        }
+
+        /**
+         * 賽道關鍵詞比對。短英文代碼（如 IC、CMP）要求前後不是英數字，
+         * 避免 IC 誤命中 ICT、Basic 之類的字串。
+         */
+        function matchesTrackKeyword(normalizedName, keyword) {
+            const target = keyword.toUpperCase();
+            if (/^[A-Z0-9]{1,4}$/.test(target)) {
+                return new RegExp(`(^|[^A-Z0-9])${target}([^A-Z0-9]|$)`).test(normalizedName);
+            }
+            return normalizedName.includes(target);
+        }
+
+        /**
+         * 依職缺名稱建議招募賽道（純函式，不碰全域資料）。
+         * DL 一律不適用；命中規則者狀態為「系統建議」；衝突或無命中維持「待確認」。
+         */
+        function suggestTrackForJob(jobName, category) {
+            const normalizedCategory = category ? category.toString().trim().toUpperCase() : '';
+            if (normalizedCategory === 'DL') {
+                return { track: '不適用', trackStatus: '不適用', matchedTracks: [], reason: 'DL 職缺不納入賽道' };
+            }
+
+            const normalizedName = normalizeJobNameKey(jobName);
+            if (!normalizedName) {
+                return { track: '待確認', trackStatus: '待確認', matchedTracks: [], reason: '職缺名稱為空' };
+            }
+
+            const matchedTracks = Constants.TRACK_SUGGESTION_RULES
+                .slice()
+                .sort((a, b) => a.priority - b.priority)
+                .filter(rule => rule.keywords.some(keyword => matchesTrackKeyword(normalizedName, keyword)))
+                .map(rule => rule.track);
+
+            if (matchedTracks.length === 0) {
+                return { track: '待確認', trackStatus: '待確認', matchedTracks: matchedTracks, reason: '沒有明確關鍵詞命中' };
+            }
+            if (matchedTracks.length === 1) {
+                return { track: matchedTracks[0], trackStatus: '系統建議', matchedTracks: matchedTracks, reason: '單一規則命中' };
+            }
+
+            // 半導體＋理工並存時，半導體是更精確的描述，優先採用
+            const semiconductorTrack = Constants.TRACK_SUGGESTION_RULES[0].track;
+            const engineeringTrack = Constants.TRACK_SUGGESTION_RULES[1].track;
+            const isSemiconductorAndEngineering = matchedTracks.length === 2
+                && matchedTracks.includes(semiconductorTrack)
+                && matchedTracks.includes(engineeringTrack);
+
+            if (isSemiconductorAndEngineering) {
+                return { track: semiconductorTrack, trackStatus: '系統建議', matchedTracks: matchedTracks, reason: '半導體規則優先於理工規則' };
+            }
+
+            return { track: '待確認', trackStatus: '待確認', matchedTracks: matchedTracks, reason: '關鍵詞衝突' };
+        }
+
+        /**
+         * 對尚未人工處理的職缺套用賽道建議。
+         * 只動狀態為「待確認」的列，已確認 / 系統建議 / 不適用一律不覆蓋。
+         */
+        function applyTrackSuggestions() {
+            const classifyData = workbookData['#職缺分類'];
+            if (!Array.isArray(classifyData) || classifyData.length <= 1) return 0;
+
+            const COL = Constants.JOB_CLASS_COL;
+            let suggestedCount = 0;
+
+            classifyData.slice(1).forEach(row => {
+                const status = row[COL.TRACK_STATUS] ? row[COL.TRACK_STATUS].toString().trim() : '';
+                if (status !== '待確認') return;
+
+                const suggestion = suggestTrackForJob(row[COL.NAME], row[COL.CATEGORY]);
+                if (suggestion.trackStatus !== '系統建議') return;
+
+                row[COL.TRACK] = suggestion.track;
+                row[COL.TRACK_STATUS] = suggestion.trackStatus;
+                suggestedCount += 1;
+            });
+
+            if (suggestedCount > 0) {
+                syncJobSettingsFromClassification();
+            }
+
+            return suggestedCount;
+        }
+
+        // 招募賽道預設值：DL 一律不適用，其餘（含職系未判斷）保守給待確認
+        function getDefaultTrackByCategory(category) {
+            const normalized = category ? category.toString().trim().toUpperCase() : '';
+            if (normalized === 'DL') {
+                return { track: '不適用', trackStatus: '不適用' };
+            }
+            return { track: '待確認', trackStatus: '待確認' };
+        }
+
+        // 生效日期只接受 YYYY-MM-DD 或空白
+        function isValidEffectiveDate(value) {
+            const text = value === null || value === undefined ? '' : value.toString().trim();
+            if (!text) return true;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+            const [year, month, day] = text.split('-').map(Number);
+            if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        }
+
+        // Excel 讀進來的日期可能是序號，統一轉成 YYYY-MM-DD
+        function normalizeEffectiveDateValue(value) {
+            if (value === null || value === undefined || value === '') return '';
+            if (Utils.isExcelDate(value)) {
+                const parsed = XLSX.SSF.parse_date_code(value);
+                if (parsed && parsed.y) {
+                    const month = String(parsed.m).padStart(2, '0');
+                    const day = String(parsed.d).padStart(2, '0');
+                    return `${parsed.y}-${month}-${day}`;
+                }
+            }
+            const text = value.toString().trim();
+            const slashMatch = text.match(/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})$/);
+            if (slashMatch) {
+                return `${slashMatch[1]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[3].padStart(2, '0')}`;
+            }
+            return text;
+        }
+
+        /**
+         * 將職缺分類資料補齊為現行八欄結構。
+         * 依標題名稱對應，因此舊版四欄檔案（職務名稱/職系/開放新鮮人/月份）可直接沿用，
+         * 已填寫的賽道欄位不會被覆蓋。
+         */
+        function normalizeJobClassificationData(data) {
+            if (!Array.isArray(data) || data.length === 0) return data;
+
+            const COL = Constants.JOB_CLASS_COL;
+            const targetHeaders = Constants.JOB_CLASS_HEADERS;
+            const sourceHeaders = (data[0] || []).map(h => (h === null || h === undefined) ? '' : h.toString().trim());
+            const headerIndexMap = targetHeaders.map(name => sourceHeaders.indexOf(name));
+            const hasHeaderRow = headerIndexMap[COL.NAME] !== -1;
+            const bodyRows = hasHeaderRow ? data.slice(1) : data;
+            const newFlagIndex = hasHeaderRow ? sourceHeaders.length : COL.NEW_FLAG;
+
+            const normalizedRows = bodyRows.map(row => {
+                const source = Array.isArray(row) ? row : [];
+                const target = targetHeaders.map((name, targetIndex) => {
+                    const sourceIndex = hasHeaderRow ? headerIndexMap[targetIndex] : targetIndex;
+                    if (sourceIndex === -1) return '';
+                    const value = source[sourceIndex];
+                    return (value === null || value === undefined) ? '' : value.toString().trim();
+                });
+
+                const defaults = getDefaultTrackByCategory(target[COL.CATEGORY]);
+                if (!Constants.RECRUIT_TRACKS.includes(target[COL.TRACK])) {
+                    target[COL.TRACK] = defaults.track;
+                }
+                if (!Constants.TRACK_STATUSES.includes(target[COL.TRACK_STATUS])) {
+                    target[COL.TRACK_STATUS] = defaults.trackStatus;
+                }
+                target[COL.EFFECTIVE_DATE] = normalizeEffectiveDateValue(target[COL.EFFECTIVE_DATE]);
+                target[COL.NEW_FLAG] = source[newFlagIndex] === 'NEW' ? 'NEW' : '';
+
+                return target;
+            }).filter(row => row[COL.NAME] !== '');
+
+            return [[...targetHeaders], ...normalizedRows];
+        }
+
         function getJobConfirmStatus(row) {
-            const category = row[1] ? row[1].toString().trim() : '';
-            const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
-            const isNew = row[4] === 'NEW';
+            const COL = Constants.JOB_CLASS_COL;
+            const category = row[COL.CATEGORY] ? row[COL.CATEGORY].toString().trim() : '';
+            const openToFreshGrad = row[COL.FRESH] ? row[COL.FRESH].toString().trim() : '';
+            const trackStatus = row[COL.TRACK_STATUS] ? row[COL.TRACK_STATUS].toString().trim() : '';
+            const isNew = row[COL.NEW_FLAG] === 'NEW';
             const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
-            return { isNew: isNew, needsFreshGrad: needsFreshGrad, needsConfirm: isNew || needsFreshGrad };
+            const needsTrack = category !== 'DL' && trackStatus !== '已確認' && trackStatus !== '不適用';
+            return {
+                isNew: isNew,
+                needsFreshGrad: needsFreshGrad,
+                needsTrack: needsTrack,
+                needsConfirm: isNew || needsFreshGrad || needsTrack
+            };
         }
         
         function sortJobClassificationData(data) {
@@ -3607,16 +3991,63 @@
             return [headers, ...rows];
         }
         
-        function updateJobConfirmInfo(count) {
+        // 待處理數量同時包含「待確認」與「系統建議」，但分開顯示讓 HR 分辨
+        function updateJobConfirmInfo(summary) {
             const el = document.getElementById('jobConfirmInfo');
             if (!el) return;
-            el.textContent = `需確認筆數：${count}`;
+
+            if (typeof summary === 'number') {
+                el.textContent = `需確認筆數：${summary}`;
+                return;
+            }
+
+            const parts = [
+                `待確認 ${summary.pendingCount}`,
+                `系統建議 ${summary.suggestedCount}`,
+                `缺新鮮人設定 ${summary.missingFreshCount}`
+            ];
+            el.textContent = `需確認筆數：${summary.needsConfirmCount}（${parts.join('／')}）`;
+        }
+
+        /**
+         * 以目前的「#職缺分類」內容回寫職缺設定快取。
+         * 重建分類表前先同步，避免 HR 已編輯的欄位被舊快取覆蓋。
+         */
+        function syncJobSettingsFromClassification() {
+            const classifyData = workbookData['#職缺分類'];
+            if (!Array.isArray(classifyData) || classifyData.length <= 1) return 0;
+
+            const COL = Constants.JOB_CLASS_COL;
+            classifyData.slice(1).forEach(row => {
+                const displayName = row[COL.NAME] ? row[COL.NAME].toString().trim() : '';
+                const jobKey = normalizeJobNameKey(displayName);
+                if (!jobKey) return;
+
+                const defaults = getDefaultTrackByCategory(row[COL.CATEGORY]);
+                existingJobs.add(jobKey);
+                existingJobSettings.set(jobKey, {
+                    displayName: displayName,
+                    category: row[COL.CATEGORY] || 'IDL',
+                    openToFreshGrad: row[COL.FRESH] || '',
+                    month: row[COL.MONTH] || '',
+                    track: row[COL.TRACK] || defaults.track,
+                    trackStatus: row[COL.TRACK_STATUS] || defaults.trackStatus,
+                    owner: row[COL.OWNER] || '',
+                    effectiveDate: row[COL.EFFECTIVE_DATE] || ''
+                });
+            });
+
+            return existingJobs.size;
         }
 
         // 生成職缺分類工作表
         function generateJobClassification(mainData) {
             if (mainData.length === 0) return;
             
+            // 先把畫面上已編輯的職缺設定收回快取，確保人工欄位不被預設值覆蓋
+            workbookData['#職缺分類'] = normalizeJobClassificationData(workbookData['#職缺分類']);
+            syncJobSettingsFromClassification();
+
             const headers = mainData[0];
             const rows = mainData.slice(1);
             
@@ -3644,40 +4075,64 @@
                 const month = row[monthIndex];
                 
                 if (jobName && jobName.toString().trim() !== '') {
-                    const jobKey = jobName.toString().trim();
+                    const displayName = jobName.toString().trim();
+                    // 以正規化名稱為鍵，讓同一個職缺跨月份沿用已確認的賽道設定
+                    const jobKey = normalizeJobNameKey(displayName);
                     
                     if (!jobMap.has(jobKey)) {
                         // 判斷是否為新增職務（不在歷史資料中）
                         const isNew = !existingJobs.has(jobKey);
                         
                         // 如果有歷史設定，使用歷史設定；否則自動判斷
-                        let category, openToFreshGrad, jobMonth;
+                        let category, openToFreshGrad, jobMonth, track, trackStatus, owner, effectiveDate;
+                        let jobDisplayName = displayName;
                         
                         if (existingJobSettings.has(jobKey)) {
                             const settings = existingJobSettings.get(jobKey);
+                            const fallback = getDefaultTrackByCategory(settings.category);
+                            jobDisplayName = settings.displayName || displayName;
                             category = settings.category;
                             openToFreshGrad = settings.openToFreshGrad;
                             jobMonth = settings.month;
+                            track = settings.track || fallback.track;
+                            trackStatus = settings.trackStatus || fallback.trackStatus;
+                            owner = settings.owner || '';
+                            effectiveDate = settings.effectiveDate || '';
                         } else {
-                            category = determineJobCategory(jobKey);
+                            category = determineJobCategory(displayName);
+                            const defaults = getDefaultTrackByCategory(category);
                             openToFreshGrad = '';
                             jobMonth = month || '';
+                            track = defaults.track;
+                            trackStatus = defaults.trackStatus;
+                            owner = '';
+                            effectiveDate = '';
                         }
                         
                         jobMap.set(jobKey, {
+                            displayName: jobDisplayName,
                             month: jobMonth,
                             isNew: isNew,
                             category: category,
-                            openToFreshGrad: openToFreshGrad
+                            openToFreshGrad: openToFreshGrad,
+                            track: track,
+                            trackStatus: trackStatus,
+                            owner: owner,
+                            effectiveDate: effectiveDate
                         });
                         
                         // 將此職務加入已存在集合
                         existingJobs.add(jobKey);
                         if (!existingJobSettings.has(jobKey)) {
                             existingJobSettings.set(jobKey, {
+                                displayName: jobDisplayName,
                                 category: category,
                                 openToFreshGrad: openToFreshGrad,
-                                month: jobMonth
+                                month: jobMonth,
+                                track: track,
+                                trackStatus: trackStatus,
+                                owner: owner,
+                                effectiveDate: effectiveDate
                             });
                         }
                     }
@@ -3686,20 +4141,24 @@
             
             // 建立職缺分類工作表資料
             const classifyData = [
-                ['職務名稱', '職系', '開放新鮮人', '月份']
+                [...Constants.JOB_CLASS_HEADERS]
             ];
             
             // 按照職務名稱排序
-            const sortedJobs = Array.from(jobMap.entries()).sort((a, b) => 
-                a[0].localeCompare(b[0], 'zh-TW')
+            const sortedJobs = Array.from(jobMap.values()).sort((a, b) =>
+                (a.displayName || '').localeCompare(b.displayName || '', 'zh-TW')
             );
             
-            sortedJobs.forEach(([jobName, info]) => {
+            sortedJobs.forEach(info => {
                 classifyData.push([
-                    jobName,
+                    info.displayName,
                     info.category,
                     info.openToFreshGrad,
                     info.month,
+                    info.track,
+                    info.trackStatus,
+                    info.owner,
+                    info.effectiveDate,
                     info.isNew ? 'NEW' : '' // 標記是否為新增（用於標示顏色）
                 ]);
             });
@@ -3708,9 +4167,17 @@
             // 儲存到全域變數
             workbookData['#職缺分類'] = sortedClassifyData;
             
+            // 新職缺與尚未分類的職缺套用賽道建議（已確認的不會被覆蓋）
+            applyTrackSuggestions();
+
             // 顯示職缺分類表格
-            displayJobClassificationTable(sortedClassifyData);
+            displayJobClassificationTable(workbookData['#職缺分類']);
         }
+
+        // 勾選以正規化職缺名稱保存；篩選條件只影響顯示，不影響已勾選的資料
+        const jobClassSelection = new Set();
+        const jobClassFilters = { keyword: '', status: '' };
+        let visibleJobRowIndexes = [];
 
         // 顯示職缺分類表格（支援編輯）
         function displayJobClassificationTable(data) {
@@ -3720,63 +4187,124 @@
                 container.classList.add('empty-state');
                 container.innerHTML = '<div class="empty-state"><h3>無資料</h3></div>';
                 updateJobConfirmInfo(0);
+                visibleJobRowIndexes = [];
+                updateJobSelectionInfo();
                 return;
             }
             
-            const sortedData = sortJobClassificationData(data);
+            const COL = Constants.JOB_CLASS_COL;
+            const sortedData = sortJobClassificationData(normalizeJobClassificationData(data));
             workbookData['#職缺分類'] = sortedData;
             
             container.classList.remove('empty-state');
             
             const headers = sortedData[0];
             const rows = sortedData.slice(1);
-            const confirmCount = rows.filter(row => getJobConfirmStatus(row).needsConfirm).length;
-            updateJobConfirmInfo(confirmCount);
+
+            // 待處理數量：待確認與系統建議都要處理，但分開計數
+            const summary = { needsConfirmCount: 0, pendingCount: 0, suggestedCount: 0, missingFreshCount: 0 };
+            rows.forEach(row => {
+                const info = getJobConfirmStatus(row);
+                if (info.needsConfirm) summary.needsConfirmCount += 1;
+                if (info.needsFreshGrad) summary.missingFreshCount += 1;
+                const status = row[COL.TRACK_STATUS] ? row[COL.TRACK_STATUS].toString().trim() : '';
+                if (status === '系統建議') summary.suggestedCount += 1;
+                else if (info.needsTrack) summary.pendingCount += 1;
+            });
+            updateJobConfirmInfo(summary);
+
+            // 只渲染符合篩選條件的列，但保留原始索引，讓編輯與批次操作指向同一列
+            const visibleRows = rows
+                .map((row, rowIndex) => ({ row: row, rowIndex: rowIndex }))
+                .filter(item => matchesJobClassFilter(item.row));
+            visibleJobRowIndexes = visibleRows.map(item => item.rowIndex);
+
+            // 勾選狀態以正規化職缺名稱保存，重新排序或篩選後仍然有效
+            const visibleKeys = visibleRows.map(item => normalizeJobNameKey(item.row[COL.NAME]));
+            const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every(key => jobClassSelection.has(key));
             
             // 建立表格
             let html = '<div class="table-wrapper"><table><thead><tr>';
             
+            html += `<th class="job-select-cell"><input type="checkbox" id="jobSelectAll" ${allVisibleSelected ? 'checked' : ''} onchange="toggleAllVisibleJobRows(this.checked)" title="全選目前顯示的職缺"></th>`;
+
             // 添加標題（不顯示最後的 NEW 標記欄）
             for (let i = 0; i < headers.length; i++) {
-                html += `<th>${headers[i] || ''}</th>`;
+                html += `<th>${escapeHtml(headers[i] || '')}</th>`;
             }
             
             html += '</tr></thead><tbody>';
             
             // 添加資料行
-            rows.forEach((row, rowIndex) => {
-                const isNew = row[4] === 'NEW'; // 檢查是否為新增
-                const rowClass = isNew ? 'new-job-row' : '';
-                const category = row[1] ? row[1].toString().trim() : '';
-                const openToFreshGrad = row[2] ? row[2].toString().trim() : '';
-                const needsFreshGrad = category === 'IDL' && openToFreshGrad !== 'Y' && openToFreshGrad !== 'N';
+            visibleRows.forEach(item => {
+                const row = item.row;
+                const rowIndex = item.rowIndex;
+                const info = getJobConfirmStatus(row);
+                const isSuggested = (row[COL.TRACK_STATUS] || '').toString().trim() === '系統建議';
+                const rowClass = info.isNew ? 'new-job-row' : '';
+                const jobKey = normalizeJobNameKey(row[COL.NAME]);
+                const isSelected = jobClassSelection.has(jobKey);
                 
                 html += `<tr class="${rowClass}">`;
                 
+                // 勾選欄（批次操作用）
+                html += `<td class="job-select-cell"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleJobRowSelection(${rowIndex}, this.checked)"></td>`;
+
                 // A欄：職務名稱（不可編輯）
-                html += `<td>${row[0] || ''}</td>`;
+                html += `<td>${escapeHtml(row[COL.NAME] || '')}</td>`;
                 
                 // B欄：職系（可編輯，下拉選單）
-                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="1" data-type="select">`;
-                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 1, this.value)">`;
-                html += `<option value="IDL" ${row[1] === 'IDL' ? 'selected' : ''}>IDL</option>`;
-                html += `<option value="DL" ${row[1] === 'DL' ? 'selected' : ''}>DL</option>`;
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="${COL.CATEGORY}" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, ${COL.CATEGORY}, this.value)">`;
+                html += `<option value="IDL" ${row[COL.CATEGORY] === 'IDL' ? 'selected' : ''}>IDL</option>`;
+                html += `<option value="DL" ${row[COL.CATEGORY] === 'DL' ? 'selected' : ''}>DL</option>`;
                 html += `</select>`;
                 html += `</td>`;
                 
                 // C欄：開放新鮮人（可編輯，下拉選單）
-                const missingClass = needsFreshGrad ? ' missing-fresh-cell' : '';
-                html += `<td class="editable-cell${missingClass}" data-row="${rowIndex}" data-col="2" data-type="select">`;
-                html += `<select onchange="updateJobClassificationCell(${rowIndex}, 2, this.value)">`;
-                html += `<option value="" ${row[2] === '' ? 'selected' : ''}>請選擇</option>`;
-                html += `<option value="Y" ${row[2] === 'Y' ? 'selected' : ''}>Y</option>`;
-                html += `<option value="N" ${row[2] === 'N' ? 'selected' : ''}>N</option>`;
+                const missingClass = info.needsFreshGrad ? ' missing-fresh-cell' : '';
+                html += `<td class="editable-cell${missingClass}" data-row="${rowIndex}" data-col="${COL.FRESH}" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, ${COL.FRESH}, this.value)">`;
+                html += `<option value="" ${row[COL.FRESH] === '' ? 'selected' : ''}>請選擇</option>`;
+                html += `<option value="Y" ${row[COL.FRESH] === 'Y' ? 'selected' : ''}>Y</option>`;
+                html += `<option value="N" ${row[COL.FRESH] === 'N' ? 'selected' : ''}>N</option>`;
                 html += `</select>`;
                 html += `</td>`;
                 
                 // D欄：月份（可編輯，文字輸入）
-                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="3" data-type="input">`;
-                html += `<input type="text" value="${row[3] || ''}" onchange="updateJobClassificationCell(${rowIndex}, 3, this.value)" placeholder="Jan/Feb/Mar..." style="width: 80px;">`;
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="${COL.MONTH}" data-type="input">`;
+                html += `<input type="text" value="${escapeAttribute(row[COL.MONTH] || '')}" onchange="updateJobClassificationCell(${rowIndex}, ${COL.MONTH}, this.value)" placeholder="Jan/Feb/Mar..." style="width: 80px;">`;
+                html += `</td>`;
+
+                // E欄：招募賽道（可編輯，下拉選單）；系統建議與待確認用不同顏色區分
+                const trackClass = isSuggested ? ' suggested-track-cell' : (info.needsTrack ? ' missing-fresh-cell' : '');
+                html += `<td class="editable-cell${trackClass}" data-row="${rowIndex}" data-col="${COL.TRACK}" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, ${COL.TRACK}, this.value)">`;
+                Constants.RECRUIT_TRACKS.forEach(track => {
+                    const selected = row[COL.TRACK] === track ? 'selected' : '';
+                    html += `<option value="${escapeAttribute(track)}" ${selected}>${escapeHtml(track)}</option>`;
+                });
+                html += `</select>`;
+                html += `</td>`;
+
+                // F欄：賽道確認狀態（可編輯，下拉選單）
+                html += `<td class="editable-cell${trackClass}" data-row="${rowIndex}" data-col="${COL.TRACK_STATUS}" data-type="select">`;
+                html += `<select onchange="updateJobClassificationCell(${rowIndex}, ${COL.TRACK_STATUS}, this.value)">`;
+                Constants.TRACK_STATUSES.forEach(status => {
+                    const selected = row[COL.TRACK_STATUS] === status ? 'selected' : '';
+                    html += `<option value="${escapeAttribute(status)}" ${selected}>${escapeHtml(status)}</option>`;
+                });
+                html += `</select>`;
+                html += `</td>`;
+
+                // G欄：分類負責人（可編輯，文字輸入）
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="${COL.OWNER}" data-type="input">`;
+                html += `<input type="text" value="${escapeAttribute(row[COL.OWNER] || '')}" onchange="updateJobClassificationCell(${rowIndex}, ${COL.OWNER}, this.value)" placeholder="填寫人" style="width: 100px;">`;
+                html += `</td>`;
+
+                // H欄：生效日期（可編輯，文字輸入）
+                html += `<td class="editable-cell" data-row="${rowIndex}" data-col="${COL.EFFECTIVE_DATE}" data-type="input">`;
+                html += `<input type="text" value="${escapeAttribute(row[COL.EFFECTIVE_DATE] || '')}" onchange="updateJobClassificationCell(${rowIndex}, ${COL.EFFECTIVE_DATE}, this.value)" placeholder="YYYY-MM-DD" style="width: 110px;">`;
                 html += `</td>`;
                 
                 html += '</tr>';
@@ -3784,33 +4312,258 @@
             
             html += '</tbody></table></div>';
             
-            if (rows.some(row => row[4] === 'NEW')) {
-                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增，請確認並填寫「職系」、「開放新鮮人」等資訊。</div>' + html;
+            if (visibleRows.length === 0) {
+                html = '<div class="info-box">目前篩選條件沒有符合的職缺。</div>' + html;
+            } else if (rows.some(row => row[COL.NEW_FLAG] === 'NEW')) {
+                html = '<div style="background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>⚠️ 注意：</strong>紅色標示的職務為本次新增，請確認並填寫「職系」、「開放新鮮人」、「招募賽道」等資訊。</div>' + html;
             }
             
             container.innerHTML = html;
+            updateJobSelectionInfo();
+        }
+
+        // ========== 職缺分類篩選與批次操作 ==========
+
+        function matchesJobClassFilter(row) {
+            const COL = Constants.JOB_CLASS_COL;
+            const keyword = jobClassFilters.keyword;
+            if (keyword) {
+                const name = normalizeJobNameKey(row[COL.NAME]);
+                if (!name.includes(keyword)) return false;
+            }
+
+            const status = jobClassFilters.status;
+            if (!status) return true;
+
+            const rowStatus = row[COL.TRACK_STATUS] ? row[COL.TRACK_STATUS].toString().trim() : '';
+            if (status === '待處理') return rowStatus === '待確認' || rowStatus === '系統建議';
+            return rowStatus === status;
+        }
+
+        function updateJobClassFilters() {
+            const keywordInput = document.getElementById('jobFilterKeyword');
+            const statusSelect = document.getElementById('jobFilterStatus');
+            jobClassFilters.keyword = normalizeJobNameKey(keywordInput ? keywordInput.value : '');
+            jobClassFilters.status = statusSelect ? statusSelect.value : '';
+            displayJobClassificationTable(workbookData['#職缺分類']);
+        }
+
+        function updateJobSelectionInfo() {
+            const el = document.getElementById('jobSelectionInfo');
+            if (!el) return;
+            el.textContent = `已勾選 ${jobClassSelection.size} 個職缺（目前顯示 ${visibleJobRowIndexes.length} 筆）`;
+        }
+
+        function getJobKeyByRowIndex(rowIndex) {
+            const data = workbookData['#職缺分類'];
+            const row = data && data[rowIndex + 1];
+            return row ? normalizeJobNameKey(row[Constants.JOB_CLASS_COL.NAME]) : '';
+        }
+
+        function toggleJobRowSelection(rowIndex, checked) {
+            const jobKey = getJobKeyByRowIndex(rowIndex);
+            if (!jobKey) return;
+
+            if (checked) jobClassSelection.add(jobKey);
+            else jobClassSelection.delete(jobKey);
+
+            updateJobSelectionInfo();
+
+            // 同步全選勾勾的狀態，避免顯示不一致
+            const selectAll = document.getElementById('jobSelectAll');
+            if (selectAll) {
+                const visibleKeys = visibleJobRowIndexes.map(getJobKeyByRowIndex);
+                selectAll.checked = visibleKeys.length > 0 && visibleKeys.every(key => jobClassSelection.has(key));
+            }
+        }
+
+        function toggleAllVisibleJobRows(checked) {
+            visibleJobRowIndexes.forEach(rowIndex => {
+                const jobKey = getJobKeyByRowIndex(rowIndex);
+                if (!jobKey) return;
+                if (checked) jobClassSelection.add(jobKey);
+                else jobClassSelection.delete(jobKey);
+            });
+            displayJobClassificationTable(workbookData['#職缺分類']);
+        }
+
+        function clearJobSelection() {
+            jobClassSelection.clear();
+            displayJobClassificationTable(workbookData['#職缺分類']);
+        }
+
+        // 取得目前勾選到的資料列（以正規化職缺名稱比對，不受排序影響）
+        function getSelectedJobRows() {
+            const data = workbookData['#職缺分類'];
+            if (!Array.isArray(data) || data.length <= 1) return [];
+
+            const COL = Constants.JOB_CLASS_COL;
+            return data.slice(1).filter(row => jobClassSelection.has(normalizeJobNameKey(row[COL.NAME])));
+        }
+
+        /**
+         * 批次更新後的共同收尾：回寫職缺設定快取、同步應徵紀錄、重畫表格。
+         */
+        function finalizeJobClassificationChange() {
+            syncJobSettingsFromClassification();
+            updateResumeDataWithJobInfo();
+
+            if (workbookData['#應徵紀錄'].length > 0) {
+                refreshDualDataTables();
+            }
+            displayJobClassificationTable(workbookData['#職缺分類']);
+        }
+
+        /**
+         * 批次設定賽道／狀態／負責人／生效日期。
+         * 留白或選「不變更」的欄位一律不動，避免意外清空既有資料。
+         */
+        function applyBatchJobUpdate() {
+            try {
+                const COL = Constants.JOB_CLASS_COL;
+                const selectedRows = getSelectedJobRows();
+                if (selectedRows.length === 0) {
+                    alert('請先勾選要批次更新的職缺。');
+                    return;
+                }
+
+                const trackSelect = document.getElementById('batchTrackSelect');
+                const statusSelect = document.getElementById('batchStatusSelect');
+                const ownerInput = document.getElementById('batchOwnerInput');
+                const dateInput = document.getElementById('batchDateInput');
+
+                const track = trackSelect ? trackSelect.value : '';
+                const status = statusSelect ? statusSelect.value : '';
+                const owner = Utils.sanitizeInput(ownerInput ? ownerInput.value : '');
+                const rawDate = Utils.sanitizeInput(dateInput ? dateInput.value : '');
+                const effectiveDate = normalizeEffectiveDateValue(rawDate);
+
+                if (!track && !status && !owner && !effectiveDate) {
+                    alert('沒有要變更的欄位。\n請至少選擇賽道、確認狀態，或填寫分類負責人／生效日期。');
+                    return;
+                }
+                if (track && !Constants.RECRUIT_TRACKS.includes(track)) {
+                    alert('批次賽道值不合法。');
+                    return;
+                }
+                if (status && !Constants.TRACK_STATUSES.includes(status)) {
+                    alert('批次確認狀態值不合法。');
+                    return;
+                }
+                if (effectiveDate && !isValidEffectiveDate(effectiveDate)) {
+                    alert('生效日期格式須為 YYYY-MM-DD（例如 2026-08-01）或留白。');
+                    return;
+                }
+
+                selectedRows.forEach(row => {
+                    if (track) row[COL.TRACK] = track;
+                    if (status) row[COL.TRACK_STATUS] = status;
+                    if (owner) row[COL.OWNER] = owner;
+                    if (effectiveDate) row[COL.EFFECTIVE_DATE] = effectiveDate;
+                });
+
+                finalizeJobClassificationChange();
+
+                const changedFields = [];
+                if (track) changedFields.push('招募賽道');
+                if (status) changedFields.push('賽道確認狀態');
+                if (owner) changedFields.push('分類負責人');
+                if (effectiveDate) changedFields.push('生效日期');
+                alert(`已更新 ${selectedRows.length} 個職缺的：${changedFields.join('、')}`);
+            } catch (error) {
+                ErrorHandler.handle('批次更新職缺分類', error);
+            }
+        }
+
+        /**
+         * 把「系統建議」改為「已確認」，保留建議的賽道值。
+         * scope='selected' 只處理勾選的列；scope='all' 處理全部系統建議。
+         */
+        function confirmTrackSuggestions(scope) {
+            try {
+                const COL = Constants.JOB_CLASS_COL;
+                const data = workbookData['#職缺分類'];
+                if (!Array.isArray(data) || data.length <= 1) {
+                    alert('目前沒有職缺分類資料。');
+                    return;
+                }
+
+                const candidateRows = scope === 'all' ? data.slice(1) : getSelectedJobRows();
+                if (scope !== 'all' && candidateRows.length === 0) {
+                    alert('請先勾選要確認的職缺。');
+                    return;
+                }
+
+                const suggestedRows = candidateRows.filter(
+                    row => (row[COL.TRACK_STATUS] || '').toString().trim() === '系統建議'
+                );
+                if (suggestedRows.length === 0) {
+                    alert(scope === 'all' ? '目前沒有狀態為「系統建議」的職缺。' : '所勾選的職缺中沒有狀態為「系統建議」的列。');
+                    return;
+                }
+
+                if (scope === 'all') {
+                    const preview = suggestedRows.slice(0, 5).map(row => `・${row[COL.NAME]} → ${row[COL.TRACK]}`).join('\n');
+                    const more = suggestedRows.length > 5 ? `\n…等共 ${suggestedRows.length} 個職缺` : '';
+                    const confirmed = confirm(
+                        `即將把目前全部 ${suggestedRows.length} 個「系統建議」職缺改為「已確認」，並沿用系統建議的賽道。\n` +
+                        `此動作會同步更新應徵紀錄，且不會自動復原。\n\n${preview}${more}\n\n確定要繼續嗎？`
+                    );
+                    if (!confirmed) return;
+                }
+
+                suggestedRows.forEach(row => {
+                    row[COL.TRACK_STATUS] = '已確認';
+                });
+
+                finalizeJobClassificationChange();
+                alert(`已確認 ${suggestedRows.length} 個職缺的系統建議賽道。`);
+            } catch (error) {
+                ErrorHandler.handle('確認系統建議賽道', error);
+            }
         }
 
         // 更新職缺分類儲存格
         function updateJobClassificationCell(rowIndex, colIndex, value) {
             try {
                 // 驗證輸入值
-                const trimmedValue = Utils.sanitizeInput(value);
+                const COL = Constants.JOB_CLASS_COL;
+                let trimmedValue = Utils.sanitizeInput(value);
                 
                 // 驗證特定欄位的值
-                if (colIndex === 1) { // 職系欄位
+                if (colIndex === COL.CATEGORY) { // 職系欄位
                     if (!['IDL', 'DL'].includes(trimmedValue)) {
                         alert('職系只能是 IDL 或 DL');
                         displayJobClassificationTable(workbookData['#職缺分類']);
                         return;
                     }
-                } else if (colIndex === 2) { // 開放新鮮人欄位
+                } else if (colIndex === COL.FRESH) { // 開放新鮮人欄位
                     if (trimmedValue && !['Y', 'N', ''].includes(trimmedValue)) {
                         alert('開放新鮮人只能是 Y、N 或空白');
                         displayJobClassificationTable(workbookData['#職缺分類']);
                         return;
                     }
-                } else if (colIndex === 3) { // 月份欄位
+                } else if (colIndex === COL.TRACK) { // 招募賽道欄位
+                    if (!Constants.RECRUIT_TRACKS.includes(trimmedValue)) {
+                        alert(`招募賽道只能是：${Constants.RECRUIT_TRACKS.join('、')}`);
+                        displayJobClassificationTable(workbookData['#職缺分類']);
+                        return;
+                    }
+                } else if (colIndex === COL.TRACK_STATUS) { // 賽道確認狀態欄位
+                    if (!Constants.TRACK_STATUSES.includes(trimmedValue)) {
+                        alert(`賽道確認狀態只能是：${Constants.TRACK_STATUSES.join('、')}`);
+                        displayJobClassificationTable(workbookData['#職缺分類']);
+                        return;
+                    }
+                } else if (colIndex === COL.EFFECTIVE_DATE) { // 生效日期欄位
+                    const normalizedDate = normalizeEffectiveDateValue(trimmedValue);
+                    if (!isValidEffectiveDate(normalizedDate)) {
+                        alert('生效日期格式須為 YYYY-MM-DD（例如 2026-08-01）或留白');
+                        displayJobClassificationTable(workbookData['#職缺分類']);
+                        return;
+                    }
+                    trimmedValue = normalizedDate;
+                } else if (colIndex === COL.MONTH) { // 月份欄位
                     if (trimmedValue) {
                         // 驗證月份格式（例如：Jan, Feb, Mar）
                         const validMonths = Constants.MONTHS;
@@ -3829,8 +4582,20 @@
                 if (data && data[rowIndex + 1]) {
                     data[rowIndex + 1][colIndex] = trimmedValue;
                     
-                    // 如果更新的是職系（B欄）或開放新鮮人（C欄），同步更新履歷資料
-                    if (colIndex === 1 || colIndex === 2) {
+                    // 職系改為 DL 時，賽道欄位一併回到不適用預設（僅在尚未人工確認時）
+                    if (colIndex === COL.CATEGORY) {
+                        const targetRow = data[rowIndex + 1];
+                        const defaults = getDefaultTrackByCategory(trimmedValue);
+                        if (targetRow[COL.TRACK_STATUS] !== '已確認') {
+                            targetRow[COL.TRACK] = defaults.track;
+                            targetRow[COL.TRACK_STATUS] = defaults.trackStatus;
+                        }
+                    }
+
+                    syncJobSettingsFromClassification();
+
+                    // 影響應徵紀錄衍生欄位者，同步更新履歷資料
+                    if (colIndex !== COL.MONTH) {
                         updateResumeDataWithJobInfo();
                         
                         // 重新顯示履歷資料（如果當前在該標籤）
@@ -3849,20 +4614,24 @@
             }
         }
 
-        // 更新履歷資料中的 IDL 和新鮮人職缺欄位（從職缺分類比對）
+        // 更新履歷資料中的 IDL、新鮮人職缺與招募賽道欄位（從職缺分類比對）
         function updateResumeDataWithJobInfo() {
             const resumeData = workbookData['#應徵紀錄'];
             const classifyData = workbookData['#職缺分類'];
             
             if (resumeData.length === 0 || classifyData.length === 0) return;
             
+            const COL = Constants.JOB_CLASS_COL;
             const resumeHeaders = resumeData[0];
-            const classifyHeaders = classifyData[0];
             
             // 找到履歷資料中的欄位索引
             let jobNameIndex = -1;
             let idlIndex = -1;
             let freshGradJobIndex = -1;
+            let trackIndex = -1;
+            let trackStatusIndex = -1;
+            let trackOwnerIndex = -1;
+            let trackDateIndex = -1;
             
             for (let i = 0; i < resumeHeaders.length; i++) {
                 const header = resumeHeaders[i];
@@ -3872,6 +4641,14 @@
                     idlIndex = i;
                 } else if (header === '新鮮人職缺') {
                     freshGradJobIndex = i;
+                } else if (header === Constants.COLUMNS.TRACK) {
+                    trackIndex = i;
+                } else if (header === Constants.COLUMNS.TRACK_STATUS) {
+                    trackStatusIndex = i;
+                } else if (header === Constants.COLUMNS.TRACK_OWNER) {
+                    trackOwnerIndex = i;
+                } else if (header === Constants.COLUMNS.TRACK_DATE) {
+                    trackDateIndex = i;
                 }
             }
             
@@ -3880,42 +4657,57 @@
                 return;
             }
             
-            // 建立職缺分類的查找表（職務名稱 -> {職系, 開放新鮮人}）
+            // 建立職缺分類的查找表（職務名稱 -> 職缺屬性）
             const jobLookup = new Map();
             const classifyRows = classifyData.slice(1);
             
             classifyRows.forEach(row => {
-                const jobName = row[0]; // A欄：職務名稱
-                const category = row[1]; // B欄：職系
-                const openToFreshGrad = row[2]; // C欄：開放新鮮人
+                const jobKey = normalizeJobNameKey(row[COL.NAME]);
+                if (!jobKey) return;
                 
-                if (jobName) {
-                    jobLookup.set(jobName.toString().trim(), {
-                        category: category || '',
-                        openToFreshGrad: openToFreshGrad || ''
-                    });
-                }
+                const category = row[COL.CATEGORY] || '';
+                const defaults = getDefaultTrackByCategory(category);
+                jobLookup.set(jobKey, {
+                    category: category,
+                    openToFreshGrad: row[COL.FRESH] || '',
+                    track: row[COL.TRACK] || defaults.track,
+                    trackStatus: row[COL.TRACK_STATUS] || defaults.trackStatus,
+                    owner: row[COL.OWNER] || '',
+                    effectiveDate: row[COL.EFFECTIVE_DATE] || ''
+                });
             });
             
+            // 沒有對應職缺時的保守預設，讓 HR 只需處理新增／未分類職缺
+            const unmatchedInfo = {
+                track: '待確認',
+                trackStatus: '待確認',
+                owner: '',
+                effectiveDate: ''
+            };
+
             // 更新履歷資料的每一行
             const resumeRows = resumeData.slice(1);
             
             resumeRows.forEach(row => {
                 const jobName = row[jobNameIndex];
+                if (!jobName) return;
                 
-                if (jobName) {
-                    const jobKey = jobName.toString().trim();
+                const jobKey = normalizeJobNameKey(jobName);
+                const matched = jobLookup.get(jobKey);
+
+                if (matched) {
+                    // 更新 IDL 欄位
+                    row[idlIndex] = matched.category;
                     
-                    if (jobLookup.has(jobKey)) {
-                        const jobInfo = jobLookup.get(jobKey);
-                        
-                        // 更新 IDL 欄位
-                        row[idlIndex] = jobInfo.category;
-                        
-                        // 更新 新鮮人職缺 欄位
-                        row[freshGradJobIndex] = jobInfo.openToFreshGrad;
-                    }
+                    // 更新 新鮮人職缺 欄位
+                    row[freshGradJobIndex] = matched.openToFreshGrad;
                 }
+
+                const trackInfo = matched || unmatchedInfo;
+                if (trackIndex !== -1) row[trackIndex] = trackInfo.track;
+                if (trackStatusIndex !== -1) row[trackStatusIndex] = trackInfo.trackStatus;
+                if (trackOwnerIndex !== -1) row[trackOwnerIndex] = trackInfo.owner;
+                if (trackDateIndex !== -1) row[trackDateIndex] = trackInfo.effectiveDate;
             });
         }
 
@@ -4141,7 +4933,7 @@
             };
         }
 
-        const selectFilterFields = ['月份', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '最近應徵職務', '最近應徵職系', '最近工作產業別', '產業判定信心', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺'];
+        const selectFilterFields = ['月份', '性別', '工作經驗', '國籍', '學歷', '應徵職務名稱', '最近應徵職務', '最近應徵職系', '最近工作產業別', '產業判定信心', '職務名稱一', 'IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '招募賽道', '賽道確認狀態'];
         const textFilterFields = ['姓名', '學校NEW', '最近任職公司', '最近任職職務', '公司名稱', '職務名稱', '學校名稱', '科系名稱'];
 
         function getFilterType(header) {
@@ -4169,7 +4961,7 @@
         }
 
         function isAnalysisColumn(header, index) {
-            return index === 0 || ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW'].includes(String(header || ''));
+            return index === 0 || ['IDL', '新鮮人（2y內）', '目標學校', '新鮮人職缺', '學校NEW', '招募賽道', '賽道確認狀態', '分類負責人', '生效日期'].includes(String(header || ''));
         }
 
         function createTableViewState(data, containerId, previousState) {
@@ -4364,6 +5156,11 @@
             return div.innerHTML;
         }
         
+        // 屬性值轉義（額外處理引號，避免屬性提前結束）
+        function escapeAttribute(text) {
+            return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         // 顯示去重結果
         function showDedupeInfo(removedCount, sourceLabel) {
             const el = document.getElementById('dedupeInfo');
@@ -4416,9 +5213,10 @@
                 Object.keys(workbookData).forEach(sheetName => {
                     let data = workbookData[sheetName];
                     
-                    // 特殊處理職缺分類：移除最後的 NEW 標記欄
+                    // 特殊處理職缺分類：補齊欄位結構並移除最後的 NEW 標記欄
                     if (sheetName === '#職缺分類' && data.length > 0) {
-                        data = data.map(row => row.slice(0, 4)); // 只保留前4欄
+                        const columnCount = Constants.JOB_CLASS_HEADERS.length;
+                        data = normalizeJobClassificationData(data).map(row => row.slice(0, columnCount));
                     }
                     
                     // 如果是空的工作表，至少添加一個空陣列
@@ -5213,6 +6011,8 @@
         window.exportToExcel = exportToXLSX;
         window.exportToXLSX = exportToXLSX;
         window.updateJobClassificationCell = updateJobClassificationCell;
+        window.toggleJobRowSelection = toggleJobRowSelection;
+        window.toggleAllVisibleJobRows = toggleAllVisibleJobRows;
         window.filterTable = filterTable;
         window.debouncedFilterTable = debouncedFilterTable;
         window.clearAllFilters = clearAllFilters;
