@@ -32,8 +32,9 @@
 
 ## 新增功能總覽
 
-- **首頁**：今日行動面板（停損停利/月線/配置偏差/現金安全線/預約單彙總，可點擊跳轉）、
-  KPI 三組分群（資產/報酬/風險含最大回撤）、分層配置子彈圖（vs 目標 75/15/5/5 ±5%）、現金水位計（安全線 5%）
+- **首頁**：投資導航（資料健康、80/10/5/5 配置進度、階段判定、今日／下一交易日預約單、紀律提醒與收盤檢討）及
+  今日警示（停損停利/月線/配置偏差/現金安全線，可點擊跳轉）、KPI 三組分群（資產/報酬/風險含最大回撤）、
+  分層配置子彈圖（vs 目標 80/10/5/5，警示容忍值沿用 ±5%）、現金水位計（安全線 5%）
 - **重點看盤（2026-07-23）**：六個隔夜核心訊號、加權指數與全部實際持股、必要／輔助指標、六道風險閘門；
   分頁停留期間每 10 秒更新，切離或瀏覽器進入背景即停止輪詢。行情由本機 proxy 的 `/api/market-monitor` 聚合，個別來源失敗時保留其他可用數據。
   看盤區採 1180px 緊湊固定版面，六張行情卡與下方三欄不換行；較窄視窗改用區域水平捲動。
@@ -54,7 +55,7 @@
 
 ```
 js/charts/sparkline.js / bullet.js / cash-gauge.js   — 原生 SVG/HTML 微圖表
-js/views/action-panel.js                              — 今日行動面板 + 分層目標 dialog
+js/views/action-panel.js                              — 投資導航、今日警示 + 分層目標 dialog
 js/views/decision-package.js                          — 決策資料包（產生/存檔/查詢）
 js/views/market-monitor.js                            — 重點看盤、10 秒輪詢、風險閘門
 js/views/trade-journal.js                             — 每日預約單、成交結果、JSON 匯入、成交轉交易
@@ -168,3 +169,14 @@ node scripts/check-investment-return-archive.js \
   報酬「總報酬」子頁切入時補繪回撤圖。
 
 改動前的 db.json 備份：`data/backups/db-pre-phase1-20260707.json`
+
+## 投資導航（2026-08-16）
+
+- 首頁 `#action-panel` 升級為單頁投資導航，不新增第二套資料來源。
+- `meta.tierTargets` 為配置目標 SSOT；目前正式目標為核心 80%、衛星 10%、偵查／策略外 5%、現金 5%。
+- 階段由當日配置自動判定：現金未達 5% → 建立現金；非核心超標 → 降低非核心；核心未達 80% → 分批補足核心；其餘維持。
+- 每日行動讀取 `meta.tradeJournals`；今日沒有計畫時，顯示最近下一交易日的預約單。
+- 報價日、snapshot 日、`meta.dailyArchive` 日未對齊，或 Data Health 有警告／錯誤時，導航狀態顯示 `WAIT`／`BLOCKED`，不產生新的配置動作。
+- 收盤檢討沿用交易日誌的成交狀態與結果備註，不另建 daily review 資料表。
+
+本次改動前的 db.json 備份：`data/backups/db-pre-portfolio-navigator-20260816.json`

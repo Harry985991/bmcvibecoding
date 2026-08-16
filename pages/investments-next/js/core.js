@@ -543,7 +543,7 @@
   }
 
   // ========= 分層配置目標 / 現金安全線（存於 meta.*，新舊版並存安全）=========
-  const TIER_TARGET_PRESET = { core: 75, satellite: 15, flex: 5, cash: 5, tolerance: 5 };
+  const TIER_TARGET_PRESET = { core: 80, satellite: 10, flex: 5, cash: 5, tolerance: 5 };
   const CASH_FLOOR_PRESET_PCT = 5;
 
   function getTierTargets(){
@@ -661,4 +661,3 @@
       selectTxn.value = currentValueTxn;
     }
   }
-

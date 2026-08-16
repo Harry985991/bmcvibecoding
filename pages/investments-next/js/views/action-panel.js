@@ -22,6 +22,198 @@
     };
   }
 
+  // ========= 投資導航（目標、進度、階段、每日行動與檢討）=========
+  function navigatorEscapeHtml(value){
+    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function navigatorTaipeiDate(iso){
+    const date = new Date(iso);
+    if(Number.isNaN(date.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(date);
+    const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+  }
+
+  function navigatorLatestDate(values){
+    return (values || []).filter(Boolean).map(String).sort().at(-1) || '';
+  }
+
+  function navigatorFormatPrice(value){
+    const price = Number(value);
+    return Number.isFinite(price)
+      ? price.toLocaleString('zh-TW', { maximumFractionDigits: 2 })
+      : '—';
+  }
+
+  function getNavigatorDataHealth(summary){
+    let healthClass = 'ok';
+    let healthText = '資料健康';
+    try{
+      if(typeof buildDataHealthViewModel === 'function'){
+        const vm = buildDataHealthViewModel(summary);
+        healthClass = vm.statusClass || 'ok';
+        healthText = vm.statusText === '健康' ? '資料健康' : vm.statusText;
+      }
+    }catch(e){ console.warn('[action-panel] navigator data health failed', e); }
+
+    const latestQuoteIso = (summary.quoteTimes || [])
+      .filter(Boolean)
+      .slice()
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .at(-1) || '';
+    const quoteDate = navigatorTaipeiDate(latestQuoteIso);
+    const snapshotDate = navigatorLatestDate((DB.snapshots || []).map(row => row?.date));
+    const archiveDate = navigatorLatestDate(Object.keys(DB.meta?.dailyArchive || {}));
+    const hasAllDates = !!(quoteDate && snapshotDate && archiveDate);
+    const datesAligned = hasAllDates && quoteDate === snapshotDate && snapshotDate === archiveDate;
+
+    let status = 'OK';
+    let statusLabel = 'OK';
+    let note = `報價、快照與封存對齊 ${quoteDate || '—'}`;
+    if(healthClass === 'error'){
+      status = 'BLOCKED';
+      statusLabel = 'BLOCKED';
+      note = `${healthText}，先處理資料問題再判讀`;
+    }else if(healthClass === 'warn' || !datesAligned){
+      status = 'WAIT';
+      statusLabel = 'WAIT';
+      note = hasAllDates
+        ? `日期未對齊：報價 ${quoteDate}／快照 ${snapshotDate}／封存 ${archiveDate}`
+        : '報價、快照或封存日期不足';
+    }
+
+    return { status, statusLabel, note, quoteDate, snapshotDate, archiveDate };
+  }
+
+  function getNavigatorJournalPlan(){
+    const store = DB.meta?.tradeJournals;
+    const today = localDateStr();
+    if(!store || typeof store !== 'object' || Array.isArray(store)){
+      return { date: today, rows: [], isFuture: false };
+    }
+    const todayRows = Array.isArray(store[today]) ? store[today] : [];
+    if(todayRows.length) return { date: today, rows: todayRows, isFuture: false };
+
+    const futureDate = Object.keys(store)
+      .filter(date => date > today && Array.isArray(store[date]) && store[date].some(row => row?.status === 'planned'))
+      .sort()[0];
+    return futureDate
+      ? { date: futureDate, rows: store[futureDate], isFuture: true }
+      : { date: today, rows: [], isFuture: false };
+  }
+
+  function getNavigatorPhase(alloc, targets, health){
+    if(health.status !== 'OK'){
+      return {
+        code: 'data-wait',
+        label: '資料待確認',
+        summary: '資料未對齊前暫停產生新動作',
+        nextAction: '先完成資料更新與對帳；資料恢復 OK 前維持 WAIT。'
+      };
+    }
+    if(alloc.cashPct + 0.05 < targets.cash){
+      return {
+        code: 'cash-rebuild',
+        label: '階段一：建立現金',
+        summary: `現金 ${alloc.cashPct.toFixed(1)}%／${targets.cash}%`,
+        nextAction: `所有減碼款先留在現金池；現金達 ${targets.cash}% 前，不新增其他核心或衛星買單。`
+      };
+    }
+    if(alloc.satellitePct > targets.satellite + 0.05 || alloc.flexPct > targets.flex + 0.05){
+      return {
+        code: 'reduce-noncore',
+        label: '階段二：降低非核心',
+        summary: '現金已達安全線，處理衛星與偵查超額',
+        nextAction: '依信念與不可取代性分批處理超額部位，不因跌深直接補回。'
+      };
+    }
+    if(alloc.corePct + 0.05 < targets.core){
+      return {
+        code: 'build-core',
+        label: '階段三：補足核心',
+        summary: `核心 ${alloc.corePct.toFixed(1)}%／${targets.core}%`,
+        nextAction: `只動用超過 ${targets.cash}% 現金安全線的資金，分批補足核心。`
+      };
+    }
+    return {
+      code: 'maintain',
+      label: '配置到位：維持',
+      summary: '四區配置已接近目標',
+      nextAction: '維持配置；沒有符合條件的交易就 WAIT。'
+    };
+  }
+
+  function renderNavigatorAllocationRows(alloc, targets){
+    const rows = [
+      { key: 'core', label: '核心', actualPct: alloc.corePct, actualMv: alloc.coreMv },
+      { key: 'satellite', label: '衛星', actualPct: alloc.satellitePct, actualMv: alloc.satelliteMv },
+      { key: 'flex', label: '偵查／策略外', actualPct: alloc.flexPct, actualMv: alloc.flexMv },
+      { key: 'cash', label: '現金', actualPct: alloc.cashPct, actualMv: alloc.cashMv }
+    ];
+    return rows.map(row => {
+      const targetPct = parseN(targets[row.key]);
+      const gapAmount = (alloc.total * targetPct / 100) - row.actualMv;
+      const gapText = Math.abs(gapAmount) < 1
+        ? '已到位'
+        : `${gapAmount > 0 ? '待增加' : '待降低'} ${fmtInt.format(Math.round(Math.abs(gapAmount)))} 元`;
+      const tone = Math.abs(row.actualPct - targetPct) <= 0.1 ? 'ok' : (gapAmount > 0 ? 'under' : 'over');
+      const width = Math.min(100, targetPct > 0 ? row.actualPct / targetPct * 100 : 100);
+      return `<div class="navigator-alloc-row ${tone}">
+        <div class="navigator-alloc-head">
+          <span class="navigator-alloc-label">${row.label}</span>
+          <span class="navigator-alloc-values"><strong>${row.actualPct.toFixed(1)}%</strong><span>／目標 ${targetPct}%</span></span>
+        </div>
+        <div class="navigator-progress"><span style="width:${width.toFixed(1)}%"></span></div>
+        <div class="navigator-gap">${gapText}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderNavigatorOrders(plan){
+    const statusMap = {
+      planned: ['預約中', 'planned'], filled: ['成交', 'filled'],
+      cancelled: ['取消', 'cancelled'], expired: ['未成交', 'expired']
+    };
+    if(!plan.rows.length){
+      return '<div class="navigator-empty">目前沒有今日或下一交易日預約單；沒有條件就 WAIT。</div>';
+    }
+    return `<div class="navigator-orders" data-goto="#view-trade-journal" role="button" tabindex="0">
+      ${plan.rows.map(row => {
+        const status = statusMap[row.status] || statusMap.planned;
+        const sideLabel = row.side === 'sell' ? '賣出' : '買進';
+        const qty = Number.isFinite(Number(row.plannedQty)) ? `${fmtInt.format(Number(row.plannedQty))} 股` : '—';
+        const price = Number.isFinite(Number(row.plannedPrice)) ? `${navigatorFormatPrice(row.plannedPrice)} 元` : '—';
+        return `<div class="navigator-order-row">
+          <span class="navigator-order-side ${row.side === 'sell' ? 'sell' : 'buy'}">${sideLabel}</span>
+          <strong>${navigatorEscapeHtml(row.symbol || '—')}</strong>
+          <span>${navigatorEscapeHtml(row.name || '')}</span>
+          <span>${qty}＠${price}</span>
+          <span class="navigator-order-condition">${navigatorEscapeHtml(row.condition || '')}</span>
+          <span class="navigator-order-status ${status[1]}">${status[0]}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function buildNavigatorModel(summary){
+    const targets = getTierTargets() || TIER_TARGET_PRESET;
+    const alloc = getTierAllocation(summary);
+    const health = getNavigatorDataHealth(summary);
+    const plan = getNavigatorJournalPlan();
+    const phase = getNavigatorPhase(alloc, targets, health);
+    const plannedRows = plan.rows.filter(row => row?.status === 'planned');
+    const guardrails = [];
+    if(health.status !== 'OK') guardrails.push('資料恢復 OK 前不新增決策，維持 WAIT');
+    if(alloc.cashPct + 0.05 < targets.cash) guardrails.push('減碼款先留現金，不新增其他買單');
+    if(alloc.flexPct > targets.flex + 0.05) guardrails.push('偵查／策略外超標，不再新增非核心部位');
+    if(plannedRows.some(row => String(row.symbol) === '6510')) guardrails.push('既有 6510 條件單依原條件，不追價、不追加');
+    if(!guardrails.length) guardrails.push('遵守既定配置；沒有符合條件的交易就 WAIT');
+    return { targets, alloc, health, plan, phase, plannedRows, guardrails };
+  }
+
   function collectActionAlerts(summary = calculatePortfolioSummary()){
     const alerts = [];
 
@@ -103,6 +295,7 @@
       [...host.querySelectorAll('details.action-group[open]')].map(d => d.dataset.kind)
     );
 
+    const navigator = buildNavigatorModel(summary);
     const alerts = collectActionAlerts(summary);
     const order = { red: 0, orange: 1, info: 2 };
 
@@ -119,8 +312,48 @@
 
     const headerHtml = `
       <div class="action-panel-head">
-        <div class="action-panel-title">今日行動</div>
+        <div>
+          <div class="action-panel-title">投資導航</div>
+          <div class="navigator-data-note">資料日 ${navigator.health.quoteDate || '—'}｜快照 ${navigator.health.snapshotDate || '—'}｜封存 ${navigator.health.archiveDate || '—'}</div>
+        </div>
+        <span class="navigator-health navigator-health-${navigator.health.status.toLowerCase()}">${navigator.health.statusLabel}</span>
       </div>`;
+
+    const phaseHtml = `<div class="navigator-phase navigator-phase-${navigator.phase.code}">
+      <div>
+        <div class="navigator-phase-label">${navigator.phase.label}</div>
+        <div class="navigator-phase-summary">${navigator.phase.summary}</div>
+      </div>
+      <div class="navigator-phase-next"><span>下一步</span>${navigatorEscapeHtml(navigator.phase.nextAction)}</div>
+    </div>`;
+
+    const allocationHtml = `<div class="navigator-section">
+      <div class="navigator-section-title">配置進度</div>
+      <div class="navigator-allocation-grid">${renderNavigatorAllocationRows(navigator.alloc, navigator.targets)}</div>
+    </div>`;
+
+    const planLabel = navigator.plan.isFuture ? `下一交易日 ${navigator.plan.date}` : `今日行動 ${navigator.plan.date}`;
+    const ordersHtml = `<div class="navigator-section">
+      <div class="navigator-section-head">
+        <div class="navigator-section-title">${planLabel}</div>
+        <button class="navigator-link" type="button" data-goto="#view-trade-journal">開啟交易日誌 →</button>
+      </div>
+      ${renderNavigatorOrders(navigator.plan)}
+    </div>`;
+
+    const reviewText = navigator.plannedRows.length
+      ? `收盤後回填 ${navigator.plannedRows.length} 筆成交結果，確認現金比例與配置差距；未成交不追價。`
+      : '目前沒有待回填的預約單；收盤後只需確認配置與資料日期。';
+    const disciplineHtml = `<div class="navigator-two-col">
+      <div class="navigator-discipline">
+        <div class="navigator-section-title">今天不要做</div>
+        <ul>${navigator.guardrails.map(item => `<li>${navigatorEscapeHtml(item)}</li>`).join('')}</ul>
+      </div>
+      <div class="navigator-review">
+        <div class="navigator-section-title">收盤檢討</div>
+        <p>${navigatorEscapeHtml(reviewText)}</p>
+      </div>
+    </div>`;
 
     const groupHtml = grouped.map(g => `
       <details class="action-group action-${g.level}" data-kind="${g.kind}"${openKinds.has(g.kind) ? ' open' : ''}>
@@ -155,7 +388,12 @@
       ? groupHtml + restHtml
       : `<div class="action-empty">今日無待辦警示，按既定計畫執行。</div>`;
 
-    host.innerHTML = headerHtml + bodyHtml;
+    const alertsHtml = `<div class="navigator-alerts">
+      <div class="navigator-section-title">今日警示</div>
+      ${bodyHtml}
+    </div>`;
+
+    host.innerHTML = headerHtml + phaseHtml + allocationHtml + ordersHtml + disciplineHtml + alertsHtml;
 
     host.querySelectorAll('[data-goto]').forEach(item => {
       const go = () => { const t = item.dataset.goto; if(t) gotoView(t); };

@@ -1748,6 +1748,76 @@
   color:var(--tint-ok-text);font-size:13px;
 }
 
+/* ── 投資導航：目標、階段、每日行動與檢討 ── */
+.navigator-data-note{font-size:11px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
+.navigator-health{
+  display:inline-flex;align-items:center;justify-content:center;min-width:66px;
+  padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;
+}
+.navigator-health-ok{background:var(--tint-ok-bg);color:var(--tint-ok-text);border:1px solid var(--tint-ok-line)}
+.navigator-health-wait{background:var(--tint-warn-bg);color:var(--tint-warn-text);border:1px solid var(--tint-warn-line)}
+.navigator-health-blocked{background:var(--tint-err-bg);color:var(--tint-err-text);border:1px solid var(--tint-err-line)}
+.navigator-phase{
+  display:grid;grid-template-columns:minmax(190px,.8fr) minmax(260px,1.2fr);gap:18px;align-items:center;
+  padding:14px 16px;margin:12px 0;border:1px solid var(--line);border-left:4px solid #0F766E;
+  border-radius:10px;background:var(--card-2);
+}
+.navigator-phase-data-wait{border-left-color:var(--orange)}
+.navigator-phase-label{font-size:17px;font-weight:800;color:var(--ink)}
+.navigator-phase-summary{font-size:12px;color:var(--sub);margin-top:4px}
+.navigator-phase-next{font-size:13px;line-height:1.55;color:var(--ink)}
+.navigator-phase-next span{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--sub);margin-bottom:2px}
+.navigator-section{padding:12px 0;border-top:1px solid var(--line)}
+.navigator-section-title{font-size:12px;font-weight:800;color:var(--ink);letter-spacing:.03em;margin-bottom:8px}
+.navigator-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.navigator-link{border:0;background:transparent;color:var(--blue);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0}
+.navigator-link:hover{text-decoration:underline}
+.navigator-allocation-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.navigator-alloc-row{padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.navigator-alloc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.navigator-alloc-label{font-size:12px;font-weight:800;color:var(--ink)}
+.navigator-alloc-values{display:flex;flex-direction:column;align-items:flex-end;font-size:10px;color:var(--sub);font-variant-numeric:tabular-nums}
+.navigator-alloc-values strong{font-size:15px;color:var(--ink)}
+.navigator-progress{height:6px;margin:8px 0 6px;border-radius:999px;background:var(--card-2);overflow:hidden}
+.navigator-progress span{display:block;height:100%;border-radius:inherit;background:#0F766E}
+.navigator-alloc-row.over .navigator-progress span{background:#D97706}
+.navigator-alloc-row.under .navigator-progress span{background:#2563EB}
+.navigator-gap{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.navigator-alloc-row.over .navigator-gap{color:var(--tint-warn-text)}
+.navigator-orders{display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.navigator-order-row{
+  display:grid;grid-template-columns:52px 52px minmax(56px,.7fr) minmax(130px,1fr) minmax(170px,1.5fr) 62px;
+  align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:12px;
+}
+.navigator-order-row:hover{background:var(--row-hover)}
+.navigator-order-side,.navigator-order-status{display:inline-flex;justify-content:center;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:800}
+.navigator-order-side.sell{background:var(--tint-warn-bg);color:var(--tint-warn-text)}
+.navigator-order-side.buy{background:var(--tint-info-bg);color:var(--tint-info-text)}
+.navigator-order-condition{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navigator-order-status.planned{background:var(--tint-info-bg);color:var(--tint-info-text)}
+.navigator-order-status.filled{background:var(--tint-ok-bg);color:var(--tint-ok-text)}
+.navigator-order-status.cancelled,.navigator-order-status.expired{background:var(--card-2);color:var(--sub)}
+.navigator-empty{padding:10px 12px;border:1px dashed var(--line);border-radius:8px;color:var(--sub);font-size:12px}
+.navigator-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.navigator-discipline,.navigator-review{padding:11px 12px;border-radius:9px;background:var(--card-2);border:1px solid var(--line)}
+.navigator-discipline ul{margin:0;padding-left:18px;font-size:12px;line-height:1.65;color:var(--ink)}
+.navigator-review p{margin:0;font-size:12px;line-height:1.65;color:var(--ink)}
+.navigator-alerts{padding-top:12px;border-top:1px solid var(--line)}
+
+@media (max-width:900px){
+  .navigator-allocation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .navigator-order-row{grid-template-columns:48px 48px minmax(0,1fr) 62px}
+  .navigator-order-row > span:nth-child(3){display:none}
+  .navigator-order-condition{grid-column:2 / -1}
+}
+@media (max-width:620px){
+  .navigator-phase,.navigator-two-col{grid-template-columns:1fr}
+  .navigator-allocation-grid{grid-template-columns:1fr 1fr}
+  .navigator-order-row{grid-template-columns:48px 48px minmax(0,1fr) 58px;gap:6px}
+  .navigator-order-row > span:nth-child(4){font-size:11px}
+  .navigator-section-head{align-items:flex-start}
+}
+
 /* ── KPI 三組分群 ── */
 .overview-kpi-row{display:flex;flex-wrap:wrap;gap:12px}
 .overview-kpi-group{
