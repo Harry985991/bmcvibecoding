@@ -95,14 +95,15 @@
       return { date: today, rows: [], isFuture: false };
     }
     const todayRows = Array.isArray(store[today]) ? store[today] : [];
-    if(todayRows.length) return { date: today, rows: todayRows, isFuture: false };
+    const todayHasPending = todayRows.some(row => row?.status === 'planned');
+    if(todayHasPending) return { date: today, rows: todayRows, isFuture: false };
 
     const futureDate = Object.keys(store)
       .filter(date => date > today && Array.isArray(store[date]) && store[date].some(row => row?.status === 'planned'))
       .sort()[0];
-    return futureDate
-      ? { date: futureDate, rows: store[futureDate], isFuture: true }
-      : { date: today, rows: [], isFuture: false };
+    if(futureDate) return { date: futureDate, rows: store[futureDate], isFuture: true };
+    if(todayRows.length) return { date: today, rows: todayRows, isFuture: false };
+    return { date: today, rows: [], isFuture: false };
   }
 
   function getNavigatorPhase(alloc, targets, health){
@@ -184,13 +185,18 @@
       ${plan.rows.map(row => {
         const status = statusMap[row.status] || statusMap.planned;
         const sideLabel = row.side === 'sell' ? '賣出' : '買進';
-        const qty = Number.isFinite(Number(row.plannedQty)) ? `${fmtInt.format(Number(row.plannedQty))} 股` : '—';
-        const price = Number.isFinite(Number(row.plannedPrice)) ? `${navigatorFormatPrice(row.plannedPrice)} 元` : '—';
+        const isFilled = row.status === 'filled';
+        const hasValue = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+        const displayQty = isFilled && hasValue(row.actualQty) ? row.actualQty : row.plannedQty;
+        const displayPrice = isFilled && hasValue(row.actualPrice) ? row.actualPrice : row.plannedPrice;
+        const qty = hasValue(displayQty) ? `${fmtInt.format(Number(displayQty))} 股` : '—';
+        const price = hasValue(displayPrice) ? `${navigatorFormatPrice(displayPrice)} 元` : '—';
+        const priceKind = isFilled ? '成交' : '計畫';
         return `<div class="navigator-order-row">
           <span class="navigator-order-side ${row.side === 'sell' ? 'sell' : 'buy'}">${sideLabel}</span>
           <strong>${navigatorEscapeHtml(row.symbol || '—')}</strong>
           <span>${navigatorEscapeHtml(row.name || '')}</span>
-          <span>${qty}＠${price}</span>
+          <span>${qty}＠${price}（${priceKind}）</span>
           <span class="navigator-order-condition">${navigatorEscapeHtml(row.condition || '')}</span>
           <span class="navigator-order-status ${status[1]}">${status[0]}</span>
         </div>`;
