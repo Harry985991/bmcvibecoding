@@ -678,6 +678,7 @@
     }
     if(overview && summary){
       runRefreshStep('renderOverview', ()=>renderOverview(summary));
+      runRefreshStep('renderCapitalPools', ()=>{ if(typeof renderCapitalPools === 'function') renderCapitalPools(summary); });
       runRefreshStep('renderActionPanel', ()=>{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); });
       runRefreshStep('renderAllocation', ()=>renderAllocation(summary));
     }
@@ -735,6 +736,7 @@
     switch(target){
       case '#view-snapshots':
         step('renderOverview', ()=>renderOverview(summary));
+        step('renderCapitalPools', ()=>{ if(typeof renderCapitalPools === 'function') renderCapitalPools(summary); });
         step('renderActionPanel', ()=>{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); });
         step('renderAllocation', ()=>renderAllocation(summary));
         break;
@@ -773,6 +775,7 @@
     setInitDebugStatus('fullRender:start');
     const summary = calculatePortfolioSummary();
     renderOverview(summary);
+    try{ if(typeof renderCapitalPools === 'function') renderCapitalPools(summary); }catch(err){ console.error('[fullRender] renderCapitalPools failed', err); }
     try{ if(typeof renderActionPanel === 'function') renderActionPanel(summary); }catch(err){ console.error('[fullRender] renderActionPanel failed', err); }
     updateSearchDropdown();
     refreshKPI(summary);
