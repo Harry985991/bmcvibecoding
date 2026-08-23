@@ -61,6 +61,38 @@ function mergeTradeJournalsForSave(incoming, existing) {
   return incoming;
 }
 
+function mergeCapitalPoolMetaForSave(incoming, existing) {
+  if (!incoming || !existing || typeof incoming !== 'object' || typeof existing !== 'object') return incoming;
+  if (!incoming.meta || typeof incoming.meta !== 'object') incoming.meta = {};
+  const existingMeta = existing.meta && typeof existing.meta === 'object' ? existing.meta : {};
+
+  // 舊版瀏覽器不認識資金分艙欄位時，不得把伺服器上的設定與轉帳紀錄洗掉。
+  if (!incoming.meta.capitalPools && existingMeta.capitalPools) {
+    incoming.meta.capitalPools = existingMeta.capitalPools;
+  }
+  if (!Array.isArray(incoming.meta.capitalPoolTransfers) && Array.isArray(existingMeta.capitalPoolTransfers)) {
+    incoming.meta.capitalPoolTransfers = existingMeta.capitalPoolTransfers;
+  }
+  // 舊分頁仍帶著 75/15/5/5 或 5%/7% 現金口徑時，以新版 allocationPolicy 擋下回寫。
+  if (!incoming.meta.allocationPolicy && existingMeta.allocationPolicy) {
+    incoming.meta.allocationPolicy = existingMeta.allocationPolicy;
+    incoming.meta.tierTargets = existingMeta.allocationPolicy.targets || existingMeta.tierTargets;
+    incoming.meta.cashFloorPct = existingMeta.allocationPolicy.freeCashFloorPct ?? existingMeta.cashFloorPct;
+  }
+
+  const incomingMap = ensureTransactionCapitalPoolsMeta(incoming);
+  const existingMap = existingMeta.transactionCapitalPools && typeof existingMeta.transactionCapitalPools === 'object'
+    ? existingMeta.transactionCapitalPools
+    : {};
+  const incomingTxnIds = new Set((Array.isArray(incoming.txns) ? incoming.txns : []).map((txn) => txn?.id).filter(Boolean));
+  for (const [txnId, poolKey] of Object.entries(existingMap)) {
+    if (incomingTxnIds.has(txnId) && !Object.prototype.hasOwnProperty.call(incomingMap, txnId)) {
+      incomingMap[txnId] = poolKey;
+    }
+  }
+  return incoming;
+}
+
 function localDateKey(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -125,6 +157,7 @@ app.post('/api/save-db', (req, res) => {
     }
 
     mergeTradeJournalsForSave(data, existing);
+    mergeCapitalPoolMetaForSave(data, existing);
     removePremarketTodayPerformanceRecords(data);
     if (req.get('X-Allow-Performance-Delete') !== '1') {
       preservePerformanceHistoryForSave(data, existing);
@@ -168,6 +201,18 @@ function ensureTradeJournalsMeta(data) {
     data.meta.tradeJournals = {};
   }
   return data.meta.tradeJournals;
+}
+
+function ensureTransactionCapitalPoolsMeta(data) {
+  if (!data.meta || typeof data.meta !== 'object') data.meta = {};
+  if (!data.meta.transactionCapitalPools || typeof data.meta.transactionCapitalPools !== 'object' || Array.isArray(data.meta.transactionCapitalPools)) {
+    data.meta.transactionCapitalPools = {};
+  }
+  return data.meta.transactionCapitalPools;
+}
+
+function normalizeCapitalPoolServer(value) {
+  return String(value || '').trim() === 'experimentB' ? 'experimentB' : 'portfolio';
 }
 
 function tradeJournalId() {
@@ -232,6 +277,7 @@ function normalizeTradeJournalOrderServer(raw = {}, defaults = {}, data = {}) {
     sourceText: String(raw.sourceText || defaults.sourceText || '').trim().slice(0, 3000),
     resultNote: String(raw.resultNote || raw.note || '').trim().slice(0, 500),
     account: String(raw.account || defaults.account || 'ctbc').trim(),
+    capitalPool: normalizeCapitalPoolServer(raw.capitalPool || raw.pool || defaults.capitalPool),
     decisionScore: score,
     linkedTxnId: raw.linkedTxnId || null,
     linkedAt: raw.linkedAt || null,
@@ -286,6 +332,9 @@ function syncTradeJournalOrderToTxnServer(data, order) {
     journalNote: String(order.strategyNote || order.sourceText || '').slice(0, 200)
   };
   data.txns.push(txn);
+  const txnPools = ensureTransactionCapitalPoolsMeta(data);
+  if (normalizeCapitalPoolServer(order.capitalPool) === 'experimentB') txnPools[txn.id] = 'experimentB';
+  else delete txnPools[txn.id];
   order.linkedTxnId = txn.id;
   order.linkedAt = new Date().toISOString();
   order.updatedAt = order.linkedAt;
@@ -318,6 +367,7 @@ app.post('/api/trade-journals/import', (req, res) => {
       source: payload.source || 'codex',
       sourceText: payload.sourceText || '',
       strategyNote: payload.strategyNote || '',
+      capitalPool: payload.capitalPool || 'portfolio',
       account: payload.account || 'ctbc'
     };
     const imported = [];

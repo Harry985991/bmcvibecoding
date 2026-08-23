@@ -637,7 +637,7 @@
     const stats = `
       <div class="item"><div class="label">總投資標的</div><div class="value">${sortedStocks.length} 檔</div></div>
       <div class="item"><div class="label">持有市值</div><div class="value">${fmtInt.format(Math.round(total))}</div></div>
-      <div class="item"><div class="label">可用現金</div><div class="value">${fmtInt.format(Math.round(cash))}</div></div>
+      <div class="item"><div class="label">券商現金</div><div class="value">${fmtInt.format(Math.round(cash))}</div></div>
       <div class="item"><div class="label">總資產</div><div class="value">${fmtInt.format(Math.round(totalAssets))}</div></div>
       <div class="item"><div class="label">現金占比</div><div class="value">${cashPct.toFixed(1)}%</div></div>
     `;

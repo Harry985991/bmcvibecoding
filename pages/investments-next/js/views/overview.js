@@ -158,7 +158,7 @@
       { key: 'PassiveETF', label: '被動式ETF', color: '#3b82f6' },
       { key: 'ActiveETF',  label: '主動式ETF', color: '#8b5cf6' },
       { key: 'BondETF',    label: '債券ETF',   color: '#f59e0b' },
-      { key: 'Cash',       label: '現金',      color: '#64748b' },
+      { key: 'Cash',       label: '券商現金',  color: '#64748b' },
     ];
     const ovByClass = {};
     ovClassDef.forEach(c => ovByClass[c.key] = 0);
@@ -182,7 +182,7 @@
     donutWrapEl.insertBefore(buildSvgDonut(ovSlices), donutWrapEl.firstChild);
     donutLeg.innerHTML = buildDonutLegend(ovSlices);
 
-    // 分層比例：核心 / 衛星 / 偵察 / 現金（SVG donut，從大到小）
+    // 五區比例：核心 / 衛星 / 實驗 B / 偵查策略外 / 自由現金
     const catWrapEl = $('#overview-cat-wrap');
     const catLegEl = $('#overview-cat-legend');
     if(catWrapEl && catLegEl && typeof getTierAllocation === 'function'){
@@ -190,15 +190,16 @@
       const tierSlicesDef = [
         { label: '核心', value: ta.coreMv,      color: '#0F766E' },
         { label: '衛星', value: ta.satelliteMv, color: '#2563EB' },
-        { label: '偵察', value: ta.flexMv,      color: '#D97706' },
-        { label: '現金', value: ta.cashMv,      color: '#64748b' },
+        { label: '實驗 B', value: ta.experimentMv, color: '#7C3AED' },
+        { label: '偵查／策略外', value: ta.flexMv, color: '#D97706' },
+        { label: '自由現金', value: ta.cashMv, color: '#64748b' },
       ];
       const tierTotal = ta.total || 1;
       const catSlices = tierSlicesDef
         .map(s => ({ ...s, pct: s.value > 0 ? s.value / tierTotal : 0 }))
         .filter(s => s.value > 0)
         .sort((a, b) => b.value - a.value);
-      catWrapEl.innerHTML = '<div class="overview-donut-center-label">分層比例</div>';
+      catWrapEl.innerHTML = '<div class="overview-donut-center-label">五區比例</div>';
       catWrapEl.insertBefore(buildSvgDonut(catSlices), catWrapEl.firstChild);
       catLegEl.innerHTML = buildDonutLegend(catSlices);
     }
@@ -237,8 +238,9 @@
         renderTierBullet(tierBulletEl, [
           { key: 'core',      label: '核心', actualPct: tierAlloc.corePct,      targetPct: targets?.core ?? null,      color: '#0F766E' },
           { key: 'satellite', label: '衛星', actualPct: tierAlloc.satellitePct, targetPct: targets?.satellite ?? null, color: '#2563EB' },
-          { key: 'flex',      label: '偵查', actualPct: tierAlloc.flexPct,      targetPct: targets?.flex ?? null,      color: '#D97706' },
-          { key: 'cash',      label: '現金', actualPct: tierAlloc.cashPct,      targetPct: targets?.cash ?? null,      color: '#64748b' },
+          { key: 'experimentB', label: '實驗 B', actualPct: tierAlloc.experimentPct, targetPct: targets?.experimentB ?? null, color: '#7C3AED' },
+          { key: 'flex',      label: '偵查／策略外', actualPct: tierAlloc.flexPct, targetPct: targets?.flex ?? null, color: '#D97706' },
+          { key: 'cash',      label: '自由現金', actualPct: tierAlloc.cashPct, targetPct: targets?.cash ?? null, color: '#64748b' },
         ], targets?.tolerance);
       }catch(e){ console.warn('[overview] tier bullet failed', e); }
     }

@@ -74,6 +74,39 @@
 
     const gov = computeCashGovernance(summary);
 
+    let capitalPools = null;
+    try{
+      if(typeof computeCapitalPools === 'function'){
+        const cp = computeCapitalPools(summary);
+        capitalPools = {
+          initialCapital: Math.round(cp.initialCapital),
+          compoundCap: Math.round(cp.compoundCap),
+          experimentInvestedCost: Math.round(cp.experimentCost),
+          experimentHoldingsMv: Math.round(cp.experimentMarketValue),
+          experimentCash: Math.round(cp.experimentCash),
+          experimentNav: Math.round(cp.experimentNav),
+          experimentRealizedPnl: Math.round(cp.experimentRealizedPnl),
+          experimentUnrealizedPnl: Math.round(cp.experimentUnrealizedPnl),
+          lifetimePnl: Math.round(cp.lifetimePnl),
+          freeCash: Math.round(cp.freeCash),
+          freeCashFloorPct: cp.freeCashFloorPct,
+          freeCashReserveTarget: Math.round(cp.freeCashReserveTarget),
+          freeCashRetained: Math.round(cp.freeCashRetainedAfterReservations),
+          freeCashReserveGap: Math.round(cp.freeCashReserveGap),
+          grossInvestableFreeCash: Math.round(cp.grossInvestableFreeCash),
+          pendingFreeBuys: Math.round(cp.pendingFreeBuys),
+          availableExperimentCash: Math.round(cp.availableExperimentCash),
+          availableFreeCash: Math.round(cp.availableFreeCash),
+          activeSeats: cp.activeSeats,
+          openSeats: cp.openSeats,
+          excessAboveCap: Math.round(cp.excessAboveCap),
+          cashSweepable: Math.round(cp.cashSweepable),
+          unrealizedExcess: Math.round(cp.unrealizedExcess),
+          reconciliationDiff: Math.round(cp.reconciliationDiff)
+        };
+      }
+    }catch(e){ /* capital pool snapshot unavailable */ }
+
     let dividendStats = { received: null, projected: null, monthly: null };
     try{
       const stats = calcAnnualDividendStats(summary);
@@ -104,6 +137,7 @@
       tierAlloc: {
         core: round2(tierAlloc.corePct),
         satellite: round2(tierAlloc.satellitePct),
+        experimentB: round2(tierAlloc.experimentPct),
         flex: round2(tierAlloc.flexPct),
         cashPct: round2(tierAlloc.cashPct)
       },
@@ -113,8 +147,12 @@
         floorPct: gov.floorPct,
         reservationCount: gov.reservationCount,
         reservationBuyTotal: Math.round(gov.reservationBuyTotal || 0),
-        postFillCashPct: round2(gov.postFillCashPct)
+        postFillCashPct: round2(gov.postFillCashPct),
+        reserveTarget: Math.round(gov.reserveTarget || 0),
+        grossInvestableCash: Math.round(gov.grossInvestableCash || 0),
+        investableCash: Math.round(gov.investableCash || 0)
       },
+      capitalPools,
       dividend: dividendStats,
       txnStats: {
         totalCount: DB.txns.length,

@@ -191,6 +191,51 @@
     .chart-legend .label{flex:1; font-size:12px}
     .chart-legend .value{font-size:12px; font-weight:600}
 
+    /* ===== 資金分艙 / 實驗 B ===== */
+    .capital-pools-panel{padding:16px}
+    .capital-pools-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+    .capital-pools-recon{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .capital-pools-recon.ok{color:var(--tint-ok-text);background:var(--tint-ok-bg);border:1px solid var(--tint-ok-line)}
+    .capital-pools-recon.error{color:var(--tint-err-text);background:var(--tint-err-bg);border:1px solid var(--tint-err-line)}
+    .capital-pools-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
+    .capital-pool-kpi{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card-2)}
+    .capital-pool-kpi>span{display:block;color:var(--sub);font-size:12px;margin-bottom:3px}
+    .capital-pool-kpi>strong{display:block;font:700 20px/1.25 var(--font-num);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+    .capital-pool-kpi>small{display:block;color:var(--sub);font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .capital-pool-kpi.ok{background:var(--tint-ok-bg);border-color:var(--tint-ok-line)}
+    .capital-pool-kpi.warn{background:var(--tint-warn-bg);border-color:var(--tint-warn-line)}
+    .capital-pool-progress-wrap{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+    .capital-pool-progress-label,.capital-pool-progress-meta{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .capital-pool-progress-label{font-size:12px;margin-bottom:6px}
+    .capital-pool-progress{height:10px;border-radius:999px;background:var(--muted);overflow:hidden}
+    .capital-pool-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--brand-strong),var(--accent));transition:width .2s ease}
+    .capital-pool-progress-meta{font-size:11px;color:var(--sub);margin-top:6px;flex-wrap:wrap}
+    .capital-pools-detail{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+    .capital-pools-detail>summary{cursor:pointer;font-weight:700;color:var(--brand);padding:4px 0 8px}
+    .capital-pools-table{min-width:760px}
+    .capital-pools-table td.text-start,.capital-pools-table th.text-start{text-align:left!important}
+    .capital-pool-group-row td{background:var(--card-2);font-weight:800;text-align:left;border-top:1px solid var(--line)}
+    .capital-pool-empty-row td{color:var(--sub);font-size:12px;text-align:left}
+    .capital-pools-table tfoot td{padding:8px;border-top:1px solid var(--line);font-weight:700}
+    .capital-pools-total-row td{background:var(--tint-info-bg);color:var(--tint-info-text)}
+    .capital-pool-tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+    .capital-pool-tag.pool-core{color:var(--tint-ok-text);background:var(--tint-ok-bg);border-color:var(--tint-ok-line)}
+    .capital-pool-tag.pool-satellite{color:var(--tint-info-text);background:var(--tint-info-bg);border-color:var(--tint-info-line)}
+    .capital-pool-tag.pool-tactical{color:var(--tint-warn-text);background:var(--tint-warn-bg);border-color:var(--tint-warn-line)}
+    .capital-pool-tag.pool-experimentB{color:var(--tint-err-text);background:var(--tint-err-bg);border-color:var(--tint-err-line)}
+    .capital-pool-tag.pool-preciousMetals{color:var(--orange);background:var(--tint-warn-bg);border-color:var(--tint-warn-line)}
+    .capital-pool-tag.pool-portfolio{color:var(--sub);background:var(--card-2)}
+
+    @media (max-width:1100px){
+      .capital-pools-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:720px){
+      .capital-pools-head{display:block}
+      .capital-pools-recon{margin-top:8px;white-space:normal}
+      .capital-pools-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .capital-pool-progress-meta{display:grid;grid-template-columns:1fr}
+    }
+
     /* KPI 指標列：自適應欄寬 */
     .kpi{
       display:flex;
@@ -1772,7 +1817,7 @@
 .navigator-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .navigator-link{border:0;background:transparent;color:var(--blue);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0}
 .navigator-link:hover{text-decoration:underline}
-.navigator-allocation-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.navigator-allocation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .navigator-alloc-row{padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
 .navigator-alloc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .navigator-alloc-label{font-size:12px;font-weight:800;color:var(--ink)}

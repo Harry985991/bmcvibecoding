@@ -22,19 +22,24 @@
 舊版 `db.js` 存檔時會**丟棄未知的頂層欄位**、但放行整個 `meta` 物件。
 因此新版所有新欄位一律放在 `meta.*` 底下，新舊版交替使用也不會遺失：
 
-- `meta.tierTargets` — 分層配置目標（core/satellite/flex/cash/tolerance）
-- `meta.cashFloorPct` — 現金安全線（% 總資產）
+- `meta.tierTargets` — 五區配置目標（core/satellite/satelliteMax/experimentB/flex/cash/tolerance）
+- `meta.cashFloorPct` — 自由現金保留線（% 總資產；實驗現金不計入）
+- `meta.allocationPolicy` — 新版配置政策與版本標記；伺服器用它防止舊分頁把 1% 自由現金規則覆寫回舊值
 - `meta.decisionPackages` — 每日 Buffett 決策資料包（date → {markdown, sources, createdAt}）
 - `meta.tradeJournals` — 每日預約單與成交結果（date → order[]），成交後單向連到 `txns` 的 `linkedTxnId`
 - `meta.dailyArchive` — 每日全頁封存（date → {kpi, holdings, tierAlloc, cashGov, dividend, txnStats}）
+- `meta.capitalPools` — 資金池政策（實驗 B 起始 40 萬、50 萬複利／抽回門檻）
+- `meta.transactionCapitalPools` — 交易 ID → 資金池歸屬；不以股票代號猜測歷史交易
+- `meta.capitalPoolTransfers` — 資金池間已確認轉撥紀錄
 
 **日後在新版加任何欄位，都必須放 meta.* 底下。**
 
 ## 新增功能總覽
 
-- **首頁**：投資導航（資料健康、80/10/5/5 配置進度、階段判定、今日／下一交易日預約單、紀律提醒與收盤檢討）及
+- **首頁**：投資導航（資料健康、核心 70%／衛星 14%–17%／實驗 B／策略外 0%／自由現金 1% 配置進度、階段判定、今日／下一交易日預約單、紀律提醒與收盤檢討）及
   今日警示（停損停利/月線/配置偏差/現金安全線，可點擊跳轉）、KPI 三組分群（資產/報酬/風險含最大回撤）、
-  分層配置子彈圖（vs 目標 80/10/5/5，警示容忍值沿用 ±5%）、現金水位計（安全線 5%）
+  五區配置子彈圖、自由現金水位計（保留線 1%）
+- **資金分艙（2026-08-23）**：首頁拆分實驗 B 現金與自由現金，顯示投入成本、持股市值、未實現獲利率、艙值、40→50 萬複利進度、席位與可抽回超額；自由現金再拆為需保留、預約占用與淨可投資金額。正式交易與交易日誌皆可指定資金池，並將結果寫入每日封存。
 - **重點看盤（2026-07-23）**：六個隔夜核心訊號、加權指數與全部實際持股、必要／輔助指標、六道風險閘門；
   分頁停留期間每 10 秒更新，切離或瀏覽器進入背景即停止輪詢。行情由本機 proxy 的 `/api/market-monitor` 聚合，個別來源失敗時保留其他可用數據。
   看盤區採 1180px 緊湊固定版面，六張行情卡與下方三欄不換行；較窄視窗改用區域水平捲動。

@@ -18,9 +18,6 @@
     const fmtPct1v = (v) => Number.isFinite(v) ? `${v.toFixed(1)}%` : '—';
 
     const floorAmount = floorPct != null && Number.isFinite(d.totalAssets) ? d.totalAssets * floorPct / 100 : null;
-    const headroom = Number.isFinite(d.postFillCashAmount) && Number.isFinite(floorAmount)
-      ? d.postFillCashAmount - floorAmount : null;
-
     container.innerHTML = `
       <div class="cash-gauge ${stateClass}">
         <div class="cash-gauge-bar" title="現金比例 = 可用現金 ÷ 總資產 = ${fmtAmt(d.cashAmount)} ÷ ${fmtAmt(d.totalAssets)} = ${fmtPct1v(cashPct)}">
@@ -32,20 +29,17 @@
           <div class="cash-gauge-axis mini muted"><span>${scaleMax}%</span><span>0%</span></div>
         </div>
         <div class="cash-gauge-stats">
-          <div class="cash-stat"><span class="lbl">可用現金</span><span class="val">${fmtAmt(d.cashAmount)}</span></div>
-          <div class="cash-stat"><span class="lbl">現金比例</span><span class="val ${belowFloorNow ? 'neg-text' : ''}">${fmtPct1v(cashPct)}</span></div>
-          <div class="cash-stat"><span class="lbl">安全線</span><span class="val">${floorPct != null ? `${floorPct}%` : '未設定'}${Number.isFinite(floorAmount) ? `（${fmtAmt(floorAmount)}）` : ''}</span></div>
-          <div class="cash-stat" title="工具頁筆記中「觀察中／今日關注」買進計畫的 Σ(計畫價 × 張數 × 1000)，依 V2.1 全成交假設">
-            <span class="lbl">預約單需現金</span>
+          <div class="cash-stat"><span class="lbl">自由現金總額</span><span class="val">${fmtAmt(d.cashAmount)}</span></div>
+          <div class="cash-stat"><span class="lbl">自由現金比例</span><span class="val ${belowFloorNow ? 'neg-text' : ''}">${fmtPct1v(cashPct)}</span></div>
+          <div class="cash-stat"><span class="lbl">需保留</span><span class="val">${floorPct != null ? `${floorPct}%` : '未設定'}${Number.isFinite(floorAmount) ? `（${fmtAmt(floorAmount)}）` : ''}</span></div>
+          <div class="cash-stat"><span class="lbl">保留後可投資</span><span class="val">${fmtAmt(d.grossInvestableCash)}</span></div>
+          <div class="cash-stat" title="工具頁筆記中有效買進計畫的全成交金額">
+            <span class="lbl">預約單占用</span>
             <span class="val">${d.reservationCount > 0 ? `${fmtAmt(d.reservationBuyTotal)}（${d.reservationCount} 筆）` : '無買進預約'}</span>
           </div>
-          <div class="cash-stat" title="可用現金 − 預約單需現金 = 全成交後現金">
-            <span class="lbl">全成交後現金</span>
-            <span class="val ${belowFloorPost ? 'neg-text' : ''}">${fmtAmt(d.postFillCashAmount)}（${fmtPct1v(postPct)}）</span>
-          </div>
-          <div class="cash-stat" title="全成交後現金 − 安全線金額">
-            <span class="lbl">距安全線餘裕</span>
-            <span class="val ${Number.isFinite(headroom) && headroom < 0 ? 'neg-text' : ''}">${Number.isFinite(headroom) ? `${headroom >= 0 ? '+' : ''}${fmtAmt(Math.abs(headroom) * (headroom < 0 ? -1 : 1))}` : '—'}</span>
+          <div class="cash-stat" title="自由現金 − 保留額 − 預約單占用">
+            <span class="lbl">淨可投資金額</span>
+            <span class="val ${belowFloorPost ? 'neg-text' : ''}">${fmtAmt(d.investableCash)}</span>
           </div>
         </div>
       </div>`;

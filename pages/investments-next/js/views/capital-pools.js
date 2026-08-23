@@ -79,9 +79,9 @@
   function setTxnCapitalPool(txnId, poolKey){
     if(!txnId) return;
     const { txnMap } = ensureCapitalPoolMeta();
-    const normalized = normalizeCapitalPoolKey(poolKey);
-    if(normalized === PORTFOLIO_POOL_KEY) delete txnMap[txnId];
-    else txnMap[txnId] = normalized;
+    // 明確保留 portfolio 值，作為伺服器合併時的覆寫訊號；
+    // 否則舊的 experimentB 標記可能在併發存檔時被補回。
+    txnMap[txnId] = normalizeCapitalPoolKey(poolKey);
   }
 
   function deleteTxnCapitalPool(txnId){
@@ -214,7 +214,20 @@
     const pendingBuys = getTradeJournalPendingBuys();
     const freeCash = summary.cashAvailable - experimentCash;
     const availableExperimentCash = experimentCash - pendingBuys.experimentB;
-    const availableFreeCash = freeCash - pendingBuys.portfolio;
+    const reservation = typeof getReservationSummary === 'function'
+      ? getReservationSummary()
+      : { buyTotal: 0, buyCount: 0 };
+    // Watchlist 與交易日誌可能記錄同一張預約單，取較高值避免重複扣款。
+    const pendingFreeBuys = Math.max(pendingBuys.portfolio, parseN(reservation.buyTotal));
+    const freeCashFloorPct = getCashFloorPct() ?? 1;
+    const freeCashReserveTarget = Math.max(0, summary.totalAssets * freeCashFloorPct / 100);
+    const freeCashRetained = Math.max(0, Math.min(freeCash, freeCashReserveTarget));
+    const freeCashReserveGap = Math.max(0, freeCashReserveTarget - freeCash);
+    const grossInvestableFreeCash = Math.max(0, freeCash - freeCashReserveTarget);
+    const availableFreeCash = Math.max(0, grossInvestableFreeCash - pendingFreeBuys);
+    const freeCashAfterReservations = freeCash - pendingFreeBuys;
+    const freeCashRetainedAfterReservations = Math.max(0, Math.min(freeCashAfterReservations, freeCashReserveTarget));
+    const reservationOverage = Math.max(0, pendingFreeBuys - grossInvestableFreeCash);
 
     const positionRows = [];
     const bucketTotals = { core: 0, satellite: 0, tactical: 0, preciousMetals: 0 };
@@ -247,6 +260,7 @@
         costBasis,
         marketValue,
         unrealized,
+        unrealizedPct: costBasis > 0 ? unrealized / costBasis * 100 : null,
         allocationPct: summary.totalAssets > 0 ? marketValue / summary.totalAssets * 100 : 0
       });
     }
@@ -279,9 +293,18 @@
       unrealizedExcess,
       freeCash,
       pendingExperimentBuys: pendingBuys.experimentB,
-      pendingFreeBuys: pendingBuys.portfolio,
+      pendingFreeBuys,
+      pendingFreeBuyCount: parseN(reservation.buyCount),
       availableExperimentCash,
       availableFreeCash,
+      freeCashFloorPct,
+      freeCashReserveTarget,
+      freeCashRetained,
+      freeCashReserveGap,
+      grossInvestableFreeCash,
+      freeCashAfterReservations,
+      freeCashRetainedAfterReservations,
+      reservationOverage,
       activeSeats,
       openSeats,
       maxSeats,
@@ -333,18 +356,22 @@
 
     const detailRows = bucketOrder.map(pool => {
       const rows = rowsByPool[pool];
-      const groupRow = `<tr class="capital-pool-group-row"><td colspan="3">${cpEscape(capitalPoolLabel(pool))}</td><td class="num">${formatMoney(bucketMv[pool])}</td><td colspan="2"></td></tr>`;
+      const groupRow = `<tr class="capital-pool-group-row"><td colspan="3">${cpEscape(capitalPoolLabel(pool))}</td><td class="num">${formatMoney(bucketMv[pool])}</td><td colspan="3"></td></tr>`;
       if(!rows.length){
-        return `${groupRow}<tr class="capital-pool-empty-row"><td></td><td colspan="5">目前沒有${cpEscape(capitalPoolLabel(pool))}部位</td></tr>`;
+        return `${groupRow}<tr class="capital-pool-empty-row"><td></td><td colspan="6">目前沒有${cpEscape(capitalPoolLabel(pool))}部位</td></tr>`;
       }
       return groupRow + rows.map(row => {
         const pnlClass = row.unrealized > 0 ? 'pos' : (row.unrealized < 0 ? 'neg' : '');
+        const pnlPct = Number.isFinite(row.unrealizedPct)
+          ? `${row.unrealizedPct > 0 ? '+' : ''}${row.unrealizedPct.toFixed(1)}%`
+          : '—';
         return `<tr>
           <td><span class="capital-pool-tag pool-${cpEscape(pool)}">${cpEscape(capitalPoolLabel(pool))}</span></td>
           <td class="text-start"><strong>${cpEscape(row.symbol)}</strong> <span class="muted">${cpEscape(row.name)}</span></td>
           <td class="num">${formatMoney(row.costBasis)}</td>
           <td class="num">${formatMoney(row.marketValue)}</td>
           <td class="num ${pnlClass}">${formatSignedMoney(row.unrealized)}</td>
+          <td class="num ${pnlClass}">${pnlPct}</td>
           <td class="num">${row.allocationPct.toFixed(2)}%</td>
         </tr>`;
       }).join('');
@@ -361,7 +388,9 @@
       <div class="capital-pools-kpis">
         <div class="capital-pool-kpi"><span>目前使用成本</span><strong>${formatMoney(vm.experimentCost)}</strong><small>實驗持股市值 ${formatMoney(vm.experimentMarketValue)}</small></div>
         <div class="capital-pool-kpi"><span>實驗可用現金</span><strong>${formatMoney(vm.availableExperimentCash)}</strong><small>${vm.pendingExperimentBuys > 0 ? `已扣預約單 ${formatMoney(vm.pendingExperimentBuys)}` : `帳面 ${formatMoney(vm.experimentCash)}`}</small></div>
-        <div class="capital-pool-kpi"><span>自由可用現金</span><strong>${formatMoney(vm.availableFreeCash)}</strong><small>${vm.pendingFreeBuys > 0 ? `已扣預約單 ${formatMoney(vm.pendingFreeBuys)}` : `帳面 ${formatMoney(vm.freeCash)}`}</small></div>
+        <div class="capital-pool-kpi"><span>自由現金總額</span><strong>${formatMoney(vm.freeCash)}</strong><small>${(vm.freeCash / summary.totalAssets * 100).toFixed(2)}% 總資產</small></div>
+        <div class="capital-pool-kpi"><span>需保留自由現金</span><strong>${formatMoney(vm.freeCashReserveTarget)}</strong><small>保留底線 ${vm.freeCashFloorPct}%</small></div>
+        <div class="capital-pool-kpi ${vm.reservationOverage > 0 ? 'warn' : 'ok'}"><span>淨可投資金額</span><strong>${formatMoney(vm.availableFreeCash)}</strong><small>${vm.pendingFreeBuys > 0 ? `已扣預約單 ${formatMoney(vm.pendingFreeBuys)}` : `保留 ${vm.freeCashFloorPct}% 後`}</small></div>
         <div class="capital-pool-kpi ${statusClass}"><span>實驗艙總值</span><strong>${formatMoney(vm.experimentNav)}</strong><small>累計 ${formatSignedMoney(vm.lifetimePnl)}</small></div>
         <div class="capital-pool-kpi ${vm.cashSweepable > 0 ? 'warn' : ''}"><span>可轉出自由現金</span><strong>${formatMoney(vm.cashSweepable)}</strong><small>${vm.unrealizedExcess > 0 ? `另有待實現 ${formatMoney(vm.unrealizedExcess)}` : '超過 50 萬才啟動'}</small></div>
       </div>
@@ -378,12 +407,14 @@
         <summary>查看每一個部位與金額</summary>
         <div class="table-wrap">
           <table class="capital-pools-table">
-            <thead><tr><th>資金池</th><th class="text-start">標的</th><th class="num">投入成本</th><th class="num">目前市值</th><th class="num">未實現損益</th><th class="num">總資產占比</th></tr></thead>
+            <thead><tr><th>資金池</th><th class="text-start">標的</th><th class="num">投入成本</th><th class="num">目前市值</th><th class="num">未實現損益</th><th class="num">未實現獲利率</th><th class="num">總資產占比</th></tr></thead>
             <tbody>${detailRows}</tbody>
             <tfoot>
-              <tr><td colspan="3">實驗艙現金</td><td class="num">${formatMoney(vm.experimentCash)}</td><td colspan="2"></td></tr>
-              <tr><td colspan="3">自由現金</td><td class="num">${formatMoney(vm.freeCash)}</td><td colspan="2"></td></tr>
-              <tr class="capital-pools-total-row"><td colspan="3">資產合計</td><td class="num">${formatMoney(vm.allocatedTotal)}</td><td colspan="2"></td></tr>
+              <tr><td colspan="3">實驗艙現金</td><td class="num">${formatMoney(vm.experimentCash)}</td><td colspan="3"></td></tr>
+              <tr><td colspan="3">自由現金（已保留）</td><td class="num">${formatMoney(vm.freeCashRetainedAfterReservations)}</td><td colspan="3"></td></tr>
+              <tr><td colspan="3">自由現金（預約占用）</td><td class="num">${formatMoney(vm.pendingFreeBuys)}</td><td colspan="3"></td></tr>
+              <tr><td colspan="3">自由現金（淨可投資）</td><td class="num">${formatMoney(vm.availableFreeCash)}</td><td colspan="3"></td></tr>
+              <tr class="capital-pools-total-row"><td colspan="3">資產合計</td><td class="num">${formatMoney(vm.allocatedTotal)}</td><td colspan="3"></td></tr>
             </tfoot>
           </table>
         </div>

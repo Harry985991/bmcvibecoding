@@ -117,6 +117,9 @@
       sourceText: String(raw.sourceText || defaults.sourceText || '').trim().slice(0, 3000),
       resultNote: String(raw.resultNote || raw.note || '').trim().slice(0, 500),
       account: String(raw.account || defaults.account || 'ctbc').trim(),
+      capitalPool: typeof normalizeCapitalPoolKey === 'function'
+        ? normalizeCapitalPoolKey(raw.capitalPool || raw.pool || defaults.capitalPool)
+        : (String(raw.capitalPool || raw.pool || defaults.capitalPool || '') === 'experimentB' ? 'experimentB' : 'portfolio'),
       decisionScore: raw.decisionScore != null && Number.isFinite(Number(raw.decisionScore))
         ? Math.max(-5, Math.min(5, Number.parseInt(raw.decisionScore, 10)))
         : null,
@@ -154,7 +157,8 @@
       date: payload?.date || options.date || getTradeJournalDate(),
       source: payload?.source || options.source || 'codex',
       sourceText: payload?.sourceText || '',
-      strategyNote: payload?.strategyNote || ''
+      strategyNote: payload?.strategyNote || '',
+      capitalPool: payload?.capitalPool || 'portfolio'
     };
     const imported = [];
     const skipped = [];
@@ -211,6 +215,7 @@
     };
 
     DB.txns.push(txn);
+    if(typeof setTxnCapitalPool === 'function') setTxnCapitalPool(txn.id, order.capitalPool || 'portfolio');
     order.linkedTxnId = txn.id;
     order.linkedAt = new Date().toISOString();
     order.updatedAt = order.linkedAt;
@@ -402,7 +407,7 @@
               return `<tr>
                 ${showAll ? `<td class="mini muted">${tjEscapeHtml(item.date || '—')}</td>` : ''}
                 <td>${tradeJournalStatusBadge(item.status)}</td>
-                <td><div class="txn-symbol-inline"><span class="sym">${tjEscapeHtml(item.symbol || '—')}</span><span class="mini muted">${tjEscapeHtml(item.name || '')}</span></div></td>
+                <td><div class="txn-symbol-inline"><span class="sym">${tjEscapeHtml(item.symbol || '—')}</span><span class="mini muted">${tjEscapeHtml(item.name || '')}</span></div><span class="capital-pool-tag pool-${tjEscapeAttr(item.capitalPool || 'portfolio')}">${tjEscapeHtml(typeof capitalPoolLabel === 'function' ? capitalPoolLabel(item.capitalPool || 'portfolio') : (item.capitalPool === 'experimentB' ? '實驗 B' : '一般投資'))}</span></td>
                 <td><span class="type-badge ${item.side === 'sell' ? 'type-sell' : 'type-buy'}">${sideLabel}</span></td>
                 <td class="num">${planned}</td>
                 <td class="num">${actual}</td>
@@ -435,6 +440,7 @@
     document.getElementById('tj-source').value = order?.source || 'manual';
     document.getElementById('tj-side').value = order?.side || 'buy';
     document.getElementById('tj-status').value = order?.status || 'planned';
+    document.getElementById('tj-capital-pool').value = order?.capitalPool || 'portfolio';
     document.getElementById('tj-symbol').value = order?.symbol || '';
     document.getElementById('tj-name').value = order?.name || '';
     document.getElementById('tj-planned-price').value = order?.plannedPrice || '';
@@ -461,6 +467,7 @@
       source: document.getElementById('tj-source').value,
       side: document.getElementById('tj-side').value,
       status: document.getElementById('tj-status').value,
+      capitalPool: document.getElementById('tj-capital-pool').value,
       symbol: document.getElementById('tj-symbol').value,
       name: document.getElementById('tj-name').value,
       plannedPrice: document.getElementById('tj-planned-price').value,

@@ -4,21 +4,27 @@
   function computeCashGovernance(summary = calculatePortfolioSummary()){
     const reservation = (typeof getReservationSummary === 'function') ? getReservationSummary() : { count: 0, buyTotal: 0, items: [] };
     const totalAssets = summary.totalAssets || 0;
-    const cashAmount = summary.cashAvailable || 0;
+    const pools = typeof computeCapitalPools === 'function' ? computeCapitalPools(summary) : null;
+    const cashAmount = pools ? pools.freeCash : (summary.cashAvailable || 0);
     const cashPct = totalAssets > 0 ? cashAmount / totalAssets * 100 : 0;
-    const floorPct = getCashFloorPct();
-    const postFillCashAmount = cashAmount - (reservation.buyTotal || 0);
+    const floorPct = pools?.freeCashFloorPct ?? getCashFloorPct();
+    const reservationBuyTotal = pools ? pools.pendingFreeBuys : (reservation.buyTotal || 0);
+    const postFillCashAmount = cashAmount - reservationBuyTotal;
     const postFillCashPct = totalAssets > 0 ? postFillCashAmount / totalAssets * 100 : 0;
     return {
       totalAssets,
       cashAmount,
       cashPct,
       floorPct,
-      reservationCount: reservation.count || 0,
-      reservationBuyTotal: reservation.buyTotal || 0,
+      reservationCount: reservation.buyCount || 0,
+      reservationBuyTotal,
       reservationItems: reservation.items || [],
       postFillCashAmount,
-      postFillCashPct
+      postFillCashPct,
+      reserveTarget: pools?.freeCashReserveTarget ?? (totalAssets * (floorPct || 0) / 100),
+      reserveGap: pools?.freeCashReserveGap ?? 0,
+      grossInvestableCash: pools?.grossInvestableFreeCash ?? Math.max(0, cashAmount - totalAssets * (floorPct || 0) / 100),
+      investableCash: pools?.availableFreeCash ?? Math.max(0, postFillCashAmount - totalAssets * (floorPct || 0) / 100)
     };
   }
 
@@ -119,15 +125,15 @@
       return {
         code: 'cash-rebuild',
         label: '階段一：建立現金',
-        summary: `現金 ${alloc.cashPct.toFixed(1)}%／${targets.cash}%`,
-        nextAction: `所有減碼款先留在現金池；現金達 ${targets.cash}% 前，不新增其他核心或衛星買單。`
+        summary: `自由現金 ${alloc.cashPct.toFixed(1)}%／保留底線 ${targets.cash}%`,
+        nextAction: `所有減碼款先補自由現金；達 ${targets.cash}% 前，不新增核心或衛星買單。`
       };
     }
-    if(alloc.satellitePct > targets.satellite + 0.05 || alloc.flexPct > targets.flex + 0.05){
+    if(alloc.satellitePct > targets.satelliteMax + 0.05 || alloc.flexPct > targets.flex + 0.05){
       return {
         code: 'reduce-noncore',
         label: '階段二：降低非核心',
-        summary: '現金已達安全線，處理衛星與偵查超額',
+        summary: '自由現金已達安全線，處理策略外或衛星超額',
         nextAction: '依信念與不可取代性分批處理超額部位，不因跌深直接補回。'
       };
     }
@@ -136,39 +142,66 @@
         code: 'build-core',
         label: '階段三：補足核心',
         summary: `核心 ${alloc.corePct.toFixed(1)}%／${targets.core}%`,
-        nextAction: `只動用超過 ${targets.cash}% 現金安全線的資金，分批補足核心。`
+        nextAction: `只動用超過 ${targets.cash}% 自由現金保留線的資金，分批補足核心。`
       };
     }
     return {
       code: 'maintain',
       label: '配置到位：維持',
-      summary: '四區配置已接近目標',
+      summary: '五區配置已接近目標',
       nextAction: '維持配置；沒有符合條件的交易就 WAIT。'
     };
   }
 
   function renderNavigatorAllocationRows(alloc, targets){
+    const pools = alloc.capitalPools;
+    const money = value => fmtInt.format(Math.round(Math.max(0, parseN(value))));
+    const coreGap = alloc.coreMv - alloc.total * targets.core / 100;
+    const satelliteGap = alloc.total * targets.satellite / 100 - alloc.satelliteMv;
+    const satelliteMaxRoom = alloc.total * targets.satelliteMax / 100 - alloc.satelliteMv;
     const rows = [
-      { key: 'core', label: '核心', actualPct: alloc.corePct, actualMv: alloc.coreMv },
-      { key: 'satellite', label: '衛星', actualPct: alloc.satellitePct, actualMv: alloc.satelliteMv },
-      { key: 'flex', label: '偵查／策略外', actualPct: alloc.flexPct, actualMv: alloc.flexMv },
-      { key: 'cash', label: '現金', actualPct: alloc.cashPct, actualMv: alloc.cashMv }
+      {
+        label: '核心', actualPct: alloc.corePct, targetPct: targets.core,
+        gapText: coreGap > 0 ? `高於目標 ${money(coreGap)} 元（不強制賣）` : `距目標 ${money(-coreGap)} 元`,
+        tone: coreGap > 0 ? 'over' : 'under'
+      },
+      {
+        label: '衛星', actualPct: alloc.satellitePct, targetPct: targets.satellite,
+        targetText: `基準 ${targets.satellite}%／上限 ${targets.satelliteMax}%`,
+        gapText: satelliteGap > 0
+          ? `距基準 ${money(satelliteGap)} 元；上限餘 ${money(satelliteMaxRoom)} 元`
+          : `已達基準；上限餘 ${money(satelliteMaxRoom)} 元`,
+        tone: satelliteMaxRoom < 0 ? 'over' : (satelliteGap > 0 ? 'under' : 'ok')
+      },
+      {
+        label: '實驗 B', actualPct: alloc.experimentPct, targetPct: targets.experimentB,
+        targetText: '40 萬起始／50 萬上限',
+        gapText: pools ? `艙值 ${money(pools.experimentNav)} 元；${pools.experimentNav < pools.initialCapital ? `距起始 ${money(pools.initialCapital - pools.experimentNav)} 元` : '制度內運作'}` : '待載入資金池',
+        tone: pools && pools.experimentNav > pools.compoundCap ? 'over' : 'ok'
+      },
+      {
+        label: '偵查／策略外', actualPct: alloc.flexPct, targetPct: targets.flex,
+        gapText: alloc.flexMv > 0 ? `待逐步退出 ${money(alloc.flexMv)} 元` : '已到位',
+        tone: alloc.flexMv > 0 ? 'over' : 'ok'
+      },
+      {
+        label: '自由現金', actualPct: alloc.cashPct, targetPct: targets.cash,
+        gapText: pools
+          ? `需保留 ${money(pools.freeCashReserveTarget)} 元；淨可投資 ${money(pools.availableFreeCash)} 元`
+          : '待載入資金池',
+        tone: pools && pools.freeCashReserveGap > 0 ? 'under' : 'ok'
+      }
     ];
     return rows.map(row => {
-      const targetPct = parseN(targets[row.key]);
-      const gapAmount = (alloc.total * targetPct / 100) - row.actualMv;
-      const gapText = Math.abs(gapAmount) < 1
-        ? '已到位'
-        : `${gapAmount > 0 ? '待增加' : '待降低'} ${fmtInt.format(Math.round(Math.abs(gapAmount)))} 元`;
-      const tone = Math.abs(row.actualPct - targetPct) <= 0.1 ? 'ok' : (gapAmount > 0 ? 'under' : 'over');
-      const width = Math.min(100, targetPct > 0 ? row.actualPct / targetPct * 100 : 100);
-      return `<div class="navigator-alloc-row ${tone}">
+      const targetPct = parseN(row.targetPct);
+      const width = Math.min(100, targetPct > 0 ? row.actualPct / targetPct * 100 : (row.actualPct > 0 ? 100 : 0));
+      return `<div class="navigator-alloc-row ${row.tone}">
         <div class="navigator-alloc-head">
           <span class="navigator-alloc-label">${row.label}</span>
-          <span class="navigator-alloc-values"><strong>${row.actualPct.toFixed(1)}%</strong><span>／目標 ${targetPct}%</span></span>
+          <span class="navigator-alloc-values"><strong>${row.actualPct.toFixed(1)}%</strong><span>／${row.targetText || `目標 ${targetPct}%`}</span></span>
         </div>
         <div class="navigator-progress"><span style="width:${width.toFixed(1)}%"></span></div>
-        <div class="navigator-gap">${gapText}</div>
+        <div class="navigator-gap">${row.gapText}</div>
       </div>`;
     }).join('');
   }
@@ -215,6 +248,7 @@
     if(health.status !== 'OK') guardrails.push('資料恢復 OK 前不新增決策，維持 WAIT');
     if(alloc.cashPct + 0.05 < targets.cash) guardrails.push('減碼款先留現金，不新增其他買單');
     if(alloc.flexPct > targets.flex + 0.05) guardrails.push('偵查／策略外超標，不再新增非核心部位');
+    if(alloc.capitalPools?.reservationOverage > 0) guardrails.push('預約買單已侵入 1% 保留現金，需先刪減買單');
     if(plannedRows.some(row => String(row.symbol) === '6510')) guardrails.push('既有 6510 條件單依原條件，不追價、不追加');
     if(!guardrails.length) guardrails.push('遵守既定配置；沒有符合條件的交易就 WAIT');
     return { targets, alloc, health, plan, phase, plannedRows, guardrails };
@@ -234,19 +268,17 @@
       const targets = getTierTargets();
       if(targets){
         const alloc = getTierAllocation(summary);
-        const pairs = [
-          ['core', '核心', alloc.corePct], ['satellite', '衛星', alloc.satellitePct],
-          ['flex', '偵查', alloc.flexPct], ['cash', '現金', alloc.cashPct]
-        ];
-        for(const [key, label, actual] of pairs){
-          const diff = actual - targets[key];
-          if(Math.abs(diff) > targets.tolerance){
-            alerts.push({
-              level: 'orange',
-              text: `${label}層偏離目標 ${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%（實際 ${actual.toFixed(1)}% / 目標 ${targets[key]}%，容忍 ±${targets.tolerance}%）`,
-              target: '#view-snapshots'
-            });
-          }
+        if(alloc.corePct + targets.tolerance < targets.core){
+          alerts.push({ level: 'orange', text: `核心低於 ${targets.core}% 目標（目前 ${alloc.corePct.toFixed(1)}%）`, target: '#view-snapshots' });
+        }
+        if(alloc.satellitePct > targets.satelliteMax + targets.tolerance){
+          alerts.push({ level: 'orange', text: `衛星超過 ${targets.satelliteMax}% 上限（目前 ${alloc.satellitePct.toFixed(1)}%）`, target: '#view-snapshots' });
+        }
+        if(alloc.flexPct > targets.flex + 0.05){
+          alerts.push({ level: 'orange', text: `偵查／策略外仍有 ${alloc.flexPct.toFixed(1)}%，目標為 0%`, target: '#view-snapshots' });
+        }
+        if(alloc.capitalPools?.experimentNav > alloc.capitalPools?.compoundCap){
+          alerts.push({ level: 'orange', text: `實驗 B 已超過 50 萬上限，可轉出超額 ${fmtInt.format(Math.round(alloc.capitalPools.excessAboveCap))} 元`, target: '#view-snapshots' });
         }
       }
     }catch(e){ console.warn('[action-panel] tier drift failed', e); }
@@ -258,13 +290,13 @@
         if(gov.cashPct < gov.floorPct){
           alerts.push({
             level: 'red',
-            text: `現金比例 ${gov.cashPct.toFixed(1)}% 已低於安全線 ${gov.floorPct}%，請優先補回現金水位`,
+            text: `自由現金比例 ${gov.cashPct.toFixed(1)}% 已低於保留線 ${gov.floorPct}%，請優先補回`,
             target: '#view-snapshots'
           });
         }else if(gov.reservationBuyTotal > 0 && gov.postFillCashPct < gov.floorPct){
           alerts.push({
             level: 'red',
-            text: `預約單全成交後現金比例將降至 ${gov.postFillCashPct.toFixed(1)}%，跌破安全線 ${gov.floorPct}%（需現金 ${fmtInt.format(Math.round(gov.reservationBuyTotal))}）`,
+            text: `預約單全成交後自由現金將降至 ${gov.postFillCashPct.toFixed(1)}%，跌破保留線 ${gov.floorPct}%（占用 ${fmtInt.format(Math.round(gov.reservationBuyTotal))}）`,
             target: '#view-watchlist'
           });
         }
@@ -416,6 +448,8 @@
     const floor = getCashFloorPct() ?? CASH_FLOOR_PRESET_PCT;
     document.getElementById('tier-target-core').value = t.core;
     document.getElementById('tier-target-satellite').value = t.satellite;
+    document.getElementById('tier-target-satellite-max').value = t.satelliteMax;
+    document.getElementById('tier-target-experiment').value = t.experimentB;
     document.getElementById('tier-target-flex').value = t.flex;
     document.getElementById('tier-target-cash').value = t.cash;
     document.getElementById('tier-target-tolerance').value = t.tolerance;
@@ -430,17 +464,23 @@
       if(dlg.returnValue !== 'ok') return;
       const core = parseN(document.getElementById('tier-target-core').value);
       const satellite = parseN(document.getElementById('tier-target-satellite').value);
+      const satelliteMax = parseN(document.getElementById('tier-target-satellite-max').value);
+      const experimentB = parseN(document.getElementById('tier-target-experiment').value);
       const flex = parseN(document.getElementById('tier-target-flex').value);
       const cash = parseN(document.getElementById('tier-target-cash').value);
       const tolerance = parseN(document.getElementById('tier-target-tolerance').value);
       const floor = parseN(document.getElementById('tier-target-cash-floor').value);
-      const total = core + satellite + flex + cash;
-      if(Math.abs(total - 100) > 0.01){
-        alert(`四項比例加總需為 100%（目前 ${total}%）`);
+      if(satelliteMax < satellite){
+        alert(`衛星上限不可低於基準（目前基準 ${satellite}%／上限 ${satelliteMax}%）`);
         setTimeout(openTierTargetDialog, 0);
         return;
       }
-      await saveTierTargets({ core, satellite, flex, cash, tolerance }, floor);
+      if(Math.abs(cash - floor) > 0.01){
+        alert(`自由現金目標與安全線需一致（目前目標 ${cash}%／安全線 ${floor}%）`);
+        setTimeout(openTierTargetDialog, 0);
+        return;
+      }
+      await saveTierTargets({ core, satellite, satelliteMax, experimentB, flex, cash, tolerance }, floor);
       const summary = calculatePortfolioSummary();
       if(typeof renderOverview === 'function') renderOverview(summary);
       showBackupStatus('分層目標已儲存 ✓');

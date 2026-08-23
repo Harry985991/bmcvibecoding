@@ -145,6 +145,18 @@
     return sortedStocks;
   }
 
+  function suggestTxnCapitalPool(stockId){
+    if(typeof computeCapitalPools !== 'function') return 'portfolio';
+    try{
+      const stock = (DB.stocks || []).find(item => item.id === stockId);
+      const symbol = String(stock?.symbol || '').trim().toUpperCase();
+      const pools = computeCapitalPools(calculatePortfolioSummary());
+      return pools.experimentSymbols.has(symbol) ? 'experimentB' : 'portfolio';
+    }catch(e){
+      return 'portfolio';
+    }
+  }
+
   const openTxnDialog = (txn) =>{
     const dlg = $('#dlg-txn');
     document.querySelectorAll('.txn-score-preload-hint').forEach(el => el.remove());
@@ -159,6 +171,9 @@
     if(!$('#txn-stock').value && sortedStocks[0]) $('#txn-stock').value = sortedStocks[0].id;
     $('#txn-account').value = txn?.account || 'ctbc';
     $('#txn-type').value = txn?.type || 'buy';
+    $('#txn-capital-pool').value = txn && typeof getTxnCapitalPool === 'function'
+      ? getTxnCapitalPool(txn.id)
+      : suggestTxnCapitalPool($('#txn-stock').value);
     $('#txn-price').value = Number.isFinite(parseN(txn?.price))? parseN(txn?.price).toFixed(2): '';
     $('#txn-qty').value = Number.isFinite(parseN(txn?.qty))? parseN(txn?.qty).toFixed(2): '';
     $('#txn-amount').value = Number.isFinite(parseN(txn?.amount))? Math.round(parseN(txn?.amount)) : '';
@@ -213,6 +228,9 @@
     $('#txn-price').oninput = recalc;
     $('#txn-qty').oninput = recalc;
     $('#txn-type').onchange = onTypeChange;
+    $('#txn-stock').onchange = ()=>{
+      if(!txn) $('#txn-capital-pool').value = suggestTxnCapitalPool($('#txn-stock').value);
+    };
     updateTxnDecisionFieldsVisibility();
 
     dlg.returnValue=''; dlg.showModal();
@@ -250,6 +268,9 @@
       };
       if(txn){ Object.assign(txn, t); }
       else{ DB.txns.push(t); }
+      if(typeof setTxnCapitalPool === 'function'){
+        setTxnCapitalPool(t.id, $('#txn-capital-pool').value);
+      }
       // 若此交易來自投資筆記的「轉為交易」
       const fromWatchId = txn?._fromWatchId ?? null;
       if(!txn && fromWatchId){
@@ -283,6 +304,7 @@
     if(action==='del-txn'){
       if(confirm('確定刪除此筆異動？')){
         DB.txns = DB.txns.filter(x=>x.id!==id);
+        if(typeof deleteTxnCapitalPool === 'function') deleteTxnCapitalPool(id);
         persistAndRefresh({
           chrome: true,
           overview: true,

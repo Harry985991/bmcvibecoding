@@ -543,16 +543,26 @@
   }
 
   // ========= 分層配置目標 / 現金安全線（存於 meta.*，新舊版並存安全）=========
-  const TIER_TARGET_PRESET = { core: 80, satellite: 10, flex: 5, cash: 5, tolerance: 5 };
-  const CASH_FLOOR_PRESET_PCT = 5;
+  const TIER_TARGET_PRESET = {
+    core: 70,
+    satellite: 14,
+    satelliteMax: 17,
+    experimentB: 7,
+    flex: 0,
+    cash: 1,
+    tolerance: 1
+  };
+  const CASH_FLOOR_PRESET_PCT = 1;
 
   function getTierTargets(){
-    const t = DB.meta?.tierTargets;
+    const t = DB.meta?.allocationPolicy?.targets || DB.meta?.tierTargets;
     if(!t || typeof t !== 'object') return null;
     const core = parseN(t.core), satellite = parseN(t.satellite), flex = parseN(t.flex), cash = parseN(t.cash);
     if(!(core + satellite + flex + cash > 0)) return null;
     return {
       core, satellite, flex, cash,
+      satelliteMax: parseN(t.satelliteMax) > 0 ? parseN(t.satelliteMax) : Math.max(satellite, TIER_TARGET_PRESET.satelliteMax),
+      experimentB: parseN(t.experimentB) > 0 ? parseN(t.experimentB) : TIER_TARGET_PRESET.experimentB,
       tolerance: Number.isFinite(parseN(t.tolerance)) && parseN(t.tolerance) > 0 ? parseN(t.tolerance) : TIER_TARGET_PRESET.tolerance
     };
   }
@@ -562,9 +572,17 @@
     DB.meta.tierTargets = {
       core: parseN(targets.core),
       satellite: parseN(targets.satellite),
+      satelliteMax: parseN(targets.satelliteMax),
+      experimentB: parseN(targets.experimentB),
       flex: parseN(targets.flex),
       cash: parseN(targets.cash),
       tolerance: parseN(targets.tolerance) || TIER_TARGET_PRESET.tolerance
+    };
+    DB.meta.allocationPolicy = {
+      version: '2026-08-23-freecash-1pct',
+      targets: { ...DB.meta.tierTargets },
+      freeCashFloorPct: parseN(cashFloorPct),
+      experimentGovernance: 'fixed-amount-400k-to-500k'
     };
     if(Number.isFinite(parseN(cashFloorPct))){
       DB.meta.cashFloorPct = parseN(cashFloorPct);
@@ -573,12 +591,31 @@
   }
 
   function getCashFloorPct(){
-    const v = parseN(DB.meta?.cashFloorPct);
+    const v = parseN(DB.meta?.allocationPolicy?.freeCashFloorPct ?? DB.meta?.cashFloorPct);
     return Number.isFinite(v) && v > 0 ? v : (getTierTargets() ? CASH_FLOOR_PRESET_PCT : null);
   }
 
   // 分層實際配置（分母 = 總資產，含現金）
   function getTierAllocation(summary = calculatePortfolioSummary()){
+    if(typeof computeCapitalPools === 'function'){
+      const cp = computeCapitalPools(summary);
+      const total = summary.totalAssets || 0;
+      const pct = (v) => total > 0 ? (v / total * 100) : 0;
+      return {
+        total,
+        coreMv: cp.bucketTotals.core,
+        satelliteMv: cp.bucketTotals.satellite,
+        flexMv: cp.bucketTotals.tactical + cp.bucketTotals.preciousMetals,
+        experimentMv: cp.experimentNav,
+        cashMv: cp.freeCash,
+        corePct: pct(cp.bucketTotals.core),
+        satellitePct: pct(cp.bucketTotals.satellite),
+        flexPct: pct(cp.bucketTotals.tactical + cp.bucketTotals.preciousMetals),
+        experimentPct: pct(cp.experimentNav),
+        cashPct: pct(cp.freeCash),
+        capitalPools: cp
+      };
+    }
     const buckets = { core: 0, satellite: 0, flex: 0 };
     for(const row of summary.heldRows){
       const mv = parseN(row.marketValue);
@@ -591,10 +628,12 @@
     return {
       total,
       coreMv: buckets.core, satelliteMv: buckets.satellite, flexMv: buckets.flex,
+      experimentMv: 0,
       cashMv: summary.cashAvailable,
       corePct: pct(buckets.core),
       satellitePct: pct(buckets.satellite),
       flexPct: pct(buckets.flex),
+      experimentPct: 0,
       cashPct: pct(summary.cashAvailable)
     };
   }
