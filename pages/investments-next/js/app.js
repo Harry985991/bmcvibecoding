@@ -579,6 +579,29 @@
     }
   }
 
+  let officialCloseRefreshTimer = null;
+
+  function nextOfficialCloseRefreshAt(now = new Date()) {
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 35, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    while (target.getDay() === 0 || target.getDay() === 6) {
+      target.setDate(target.getDate() + 1);
+    }
+    return target;
+  }
+
+  function scheduleOfficialCloseRefresh() {
+    if (officialCloseRefreshTimer) clearTimeout(officialCloseRefreshTimer);
+    const target = nextOfficialCloseRefreshAt();
+    officialCloseRefreshTimer = setTimeout(async () => {
+      try {
+        await autoRefreshMarketPricesOnLoad();
+      } finally {
+        scheduleOfficialCloseRefresh();
+      }
+    }, Math.max(1000, target.getTime() - Date.now()));
+  }
+
   // 綁定按鈕事件
   const btnStartProxy = $('#btn-start-proxy');
   if (btnStartProxy) btnStartProxy.addEventListener('click', startProxyServer);
@@ -875,6 +898,7 @@
     });
 
     startAutoDailySnapshotWatcher();
+    scheduleOfficialCloseRefresh();
     setTimeout(() => refreshIndicatorsForAll(), 2500);
     // 開頁後自動更新市場實價：先確認代理可用，再執行一次靜默刷新。
     setTimeout(() => {
