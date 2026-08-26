@@ -7,9 +7,9 @@
     '00687B': { tier: 'core',      strategy: 'hold-for-dividend' },
     '00772B': { tier: 'core',      strategy: 'hold-for-dividend' },
   };
-  const holdingsTierOrder = { core: 1, satellite: 2, flex: 3 };
+  const holdingsTierOrder = { core: 1, satellite: 2, experimentB: 3, flex: 4 };
   const holdingsStrategyOrder = { 'hold-for-dividend': 1, tradeable: 2 };
-  const holdingsTierText = { core: '核心', satellite: '衛星', flex: '偵查' };
+  const holdingsTierText = { core: '核心', satellite: '衛星', experimentB: '實驗 B', flex: '偵查' };
   const RULE_A_RETURN_THRESHOLD = 0.10;
   const RULE_A_TEXT = 'Rule A：衛星獲利 >= +10% 後，連兩日跌破 MA5 賣 1/3；進一步跌破 MA10 再賣 1/3；剩餘 1/3 守月線；每次收割下限 3 萬元。';
   let activeTierFilter = 'all';
@@ -24,6 +24,11 @@
   function getTierDisplayText(raw){
     const tier = normalizeTierValue(raw);
     return holdingsTierText[tier] || tier;
+  }
+
+  function getExperimentSymbolSet(summary = calculatePortfolioSummary()){
+    if(typeof computeCapitalPools !== 'function') return new Set();
+    return computeCapitalPools(summary).experimentSymbols || new Set();
   }
 
   function ensureStockLabelsMeta(){
@@ -609,6 +614,12 @@
   }
 
   function buildGovernanceInfo(tierKey, retNow) {
+    if (tierKey === 'experimentB') {
+      const parts = [];
+      if (Number.isFinite(retNow)) parts.push(`現 ${(retNow * 100) >= 0 ? '+' : ''}${(retNow * 100).toFixed(1)}%`);
+      parts.push('-6%一般退出', '-8%緊急停損', '3/5日時間停損');
+      return parts.join('｜');
+    }
     const normalizedTier = normalizeTierValue(tierKey);
     const parts = [];
     if (Number.isFinite(retNow)) parts.push(`現 ${(retNow * 100) >= 0 ? '+' : ''}${(retNow * 100).toFixed(1)}%`);
@@ -729,7 +740,7 @@
     const totPnl = pos?.totalPnl;
     const totPct = costB > 0 && Number.isFinite(totPnl) ? (totPnl / costB * 100) : null;
     switch(key){
-      case 'tier': return holdingsTierOrder[label.tier] || 99;
+      case 'tier': return holdingsTierOrder[row._poolTier || label.tier] || 99;
       case 'symbol': return (row.stock.symbol || '').toString();
       case 'qty': return row.qty;
       case 'avgCost': return row.avgCost;
@@ -1524,17 +1535,20 @@
     renderHoldingsValidationTrigger(summary);
     renderHoldingsValidation(summary);
 
-    const tierLabelText = { core: '核心', satellite: '衛星', flex: '偵查' };
+    const tierLabelText = { core: '核心', satellite: '衛星', experimentB: '實驗 B', flex: '偵查' };
+    const experimentSymbols = getExperimentSymbolSet(summary);
 
     let dataset = computeStockMetrics(summary)
       .filter(row => row.qty > 0)
       .map(row => {
         const label = getStockLabel(row.stock.id);
-        return { ...row, _label: label };
+        const symbol = String(row.stock.symbol || '').trim().toUpperCase();
+        const poolTier = experimentSymbols.has(symbol) ? 'experimentB' : label.tier;
+        return { ...row, _label: label, _poolTier: poolTier };
       });
 
     if(activeTierFilter !== 'all'){
-      dataset = dataset.filter(row => row._label.tier === activeTierFilter);
+      dataset = dataset.filter(row => row._poolTier === activeTierFilter);
     }
 
     dataset.sort(compareHoldingsRows);
@@ -1586,7 +1600,7 @@
       if(stopHit) tr.classList.add('row-stop-hit');
       else if(profitHit) tr.classList.add('row-profit-hit');
 
-      const tierKey = normalizeTierValue(label.tier);
+      const tierKey = row._poolTier === 'experimentB' ? 'experimentB' : normalizeTierValue(label.tier);
       const tierShort = tierLabelText[tierKey] || tierKey;
 
       const qtyDisplay = formatHoldingQty(row.qty);
@@ -1693,6 +1707,7 @@
   // ========= 持股警示（供今日行動面板與封存使用）=========
   function getHoldingsAlerts(summary = calculatePortfolioSummary()){
     const alerts = [];
+    const experimentSymbols = getExperimentSymbolSet(summary);
     for(const row of summary.heldRows){
       const s = row.stock;
       const label = getStockLabel(s.id) || {};
@@ -1723,15 +1738,16 @@
       const sym = String(s.symbol || '').trim().toUpperCase();
       const tech = deriveTechnicalPosition(indicatorCache[sym]);
       const tierKey = normalizeTierValue(label.tier);
+      const isExperiment = experimentSymbols.has(sym);
       if(tech.label === '跌破月線'){
         const isCore = tierKey === 'core';
         const isSatellite = tierKey === 'satellite';
         alerts.push({
           level: isCore ? 'orange' : 'red',
-          kind: isCore ? 'below-month-core' : isSatellite ? 'below-month-satellite' : 'below-month-flex',
+          kind: isCore ? 'below-month-core' : isSatellite ? 'below-month-satellite' : isExperiment ? 'below-month-experiment' : 'below-month-flex',
           sym: s.symbol, name: s.name || '',
-          detail: `${tierLabelTextSafe(label.tier)}層`,
-          text: `${s.symbol} ${s.name || ''} 跌破月線（${tierLabelTextSafe(label.tier)}層）：${isCore ? '核心只列 Battle Plan 回測候選' : isSatellite ? '檢查 Rule A / 弱席位收割' : '偵查層 -5% 黃燈、-7% 硬停損與 10 日觀察'}`,
+          detail: `${isExperiment ? '實驗 B' : tierLabelTextSafe(label.tier)}層`,
+          text: `${s.symbol} ${s.name || ''} 跌破月線（${isExperiment ? '實驗 B' : tierLabelTextSafe(label.tier)}層）：${isCore ? '核心只列 Battle Plan 回測候選' : isSatellite ? '檢查 Rule A / 弱席位收割' : isExperiment ? '依實驗 B 的 -6%/-8% 與 3/5 日時間停損檢視' : '偵查層 -5% 黃燈、-7% 硬停損與 10 日觀察'}`,
           target: '#view-holdings'
         });
       }else if(tech.label === '跌破10日'){
@@ -1739,8 +1755,8 @@
           level: 'orange',
           kind: 'below-10d',
           sym: s.symbol, name: s.name || '',
-          detail: `${tierLabelTextSafe(label.tier)}層`,
-          text: `${s.symbol} ${s.name || ''} 跌破 10 日線，暫停追價；衛星檢查 Rule A，偵查放入 10 日觀察`,
+          detail: `${isExperiment ? '實驗 B' : tierLabelTextSafe(label.tier)}層`,
+          text: `${s.symbol} ${s.name || ''} 跌破 10 日線，暫停追價；${isExperiment ? '實驗 B 檢查突破點與 3/5 日時間停損' : '衛星檢查 Rule A，偵查放入 10 日觀察'}`,
           target: '#view-holdings'
         });
       }

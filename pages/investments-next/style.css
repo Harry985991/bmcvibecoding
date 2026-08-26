@@ -1195,6 +1195,7 @@
     }
     .tier-core{background:var(--tint-ok-bg);color:var(--green);border:1px solid #9ae6b4}
     .tier-satellite{background:var(--tint-info-bg);color:var(--blue);border:1px solid #90cdf4}
+    .tier-experimentB{background:var(--tint-err-bg);color:var(--tint-err-text);border:1px solid var(--tint-err-line)}
     .tier-flex{background:var(--tint-warn-bg);color:var(--orange);border:1px solid #fbd38d}
     .wk1-signal-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent;white-space:nowrap}
     .wk1-signal-add{background:var(--tint-ok-bg);color:var(--green);border-color:#6ee7b7}
