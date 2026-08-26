@@ -106,14 +106,19 @@
 
     // 1. 持倉現況
     const tierText = { core: '核心', satellite: '衛星', flex: '偵查' };
+    const experimentSymbols = typeof computeCapitalPools === 'function'
+      ? computeCapitalPools(summary).experimentSymbols
+      : new Set();
     const holdingLines = ['| 標的 | 分層 | 股數 | 均價 | 現價 | 持有損益% | 含息損益% | 佔比% |', '|---|---|---:|---:|---:|---:|---:|---:|'];
     const heldRows = summary.heldRows;
     const totalMv = summary.totalAssets || 1;
     for(const row of heldRows){
       const label = getStockLabel(row.stock.id) || {};
+      const symbol = String(row.stock.symbol || '').trim().toUpperCase();
+      const tier = experimentSymbols.has(symbol) ? '實驗 B' : (tierText[normalizeTierValue(label.tier)] || '偵查');
       const unrealPct = row.costBasis > 0 ? row.unrealized / row.costBasis * 100 : null;
       const totalPct = row.costBasis > 0 ? row.totalPnl / row.costBasis * 100 : null;
-      holdingLines.push(`| ${row.stock.symbol} ${row.stock.name || ''} | ${tierText[normalizeTierValue(label.tier)] || '偵查'} | ${formatHoldingQty(row.qty)} | ${fmtN(row.avgCost)} | ${fmtN(row.price)} | ${signed(unrealPct, 1)} | ${signed(totalPct, 1)} | ${(row.marketValue / totalMv * 100).toFixed(1)} |`);
+      holdingLines.push(`| ${row.stock.symbol} ${row.stock.name || ''} | ${tier} | ${formatHoldingQty(row.qty)} | ${fmtN(row.avgCost)} | ${fmtN(row.price)} | ${signed(unrealPct, 1)} | ${signed(totalPct, 1)} | ${(row.marketValue / totalMv * 100).toFixed(1)} |`);
     }
 
     // 2. 前一交易日（最近收盤）OHLCV：經 proxy /quote（TWSE MIS）
