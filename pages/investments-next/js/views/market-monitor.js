@@ -14,8 +14,13 @@
     inFlight: false,
     lastQuotes: {},
     samples: new Map(),
-    lastHoldings: []
+    lastHoldings: [],
+    lastUpdatedAt: '',
+    lastErrors: [],
+    lastStale: false,
+    lastHoldingsError: false
   };
+  let copyFeedbackTimer = null;
 
   const byId = (id) => document.getElementById(id);
   const finite = (value) => value == null || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
@@ -73,6 +78,32 @@
     const delay = finite(quote?.delayMinutes);
     const delayed = delay != null && delay >= 30 ? ` · 延遲 ${delay} 分` : '';
     return `${time}${delayed}`;
+  }
+
+  function formatMonitorDateTime(value) {
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).format(date);
+  }
+
+  function markdownCell(value) {
+    return String(value ?? '—').replaceAll('|', '\\|').replace(/[\r\n]+/g, ' ').trim() || '—';
+  }
+
+  function quoteMarkdownRow(quote, prefix = []) {
+    return [
+      ...prefix,
+      quote?.label || quote?.name || quote?.symbol || '—',
+      formatNumber(quote?.price),
+      `${moveArrow(quote?.change)} ${formatMove(quote?.change, { forceSign: true })}`,
+      formatMove(quote?.changePct, { percent: true, forceSign: true }),
+      sourceTimeText(quote),
+      quote?.source || quote?.via || '—'
+    ].map(markdownCell).join(' | ');
   }
 
   function addSample(key, quote) {
@@ -246,6 +277,17 @@
     ];
   }
 
+  function summarizeRiskGates(gates) {
+    const stopCount = gates.filter((gate) => gate.level === 'stop').length;
+    const warnCount = gates.filter((gate) => gate.level === 'warn').length;
+    return {
+      stopCount,
+      warnCount,
+      className: stopCount ? 'stop' : warnCount ? 'warn' : '',
+      text: stopCount ? `${stopCount} 項紅燈 · 暫停加碼` : warnCount ? `${warnCount} 項黃燈 · 縮手` : '綠燈 · 依計畫執行'
+    };
+  }
+
   function renderRiskGates(quotes) {
     const container = byId('market-monitor-risk-gates');
     if (!container) return;
@@ -257,10 +299,122 @@
     </article>`).join('');
     const summary = byId('market-monitor-risk-summary');
     if (!summary) return;
-    const stopCount = gates.filter((gate) => gate.level === 'stop').length;
-    const warnCount = gates.filter((gate) => gate.level === 'warn').length;
-    summary.className = `market-monitor-risk-summary ${stopCount ? 'stop' : warnCount ? 'warn' : ''}`;
-    summary.textContent = stopCount ? `${stopCount} 項紅燈 · 暫停加碼` : warnCount ? `${warnCount} 項黃燈 · 縮手` : '綠燈 · 依計畫執行';
+    const riskSummary = summarizeRiskGates(gates);
+    summary.className = `market-monitor-risk-summary ${riskSummary.className}`.trim();
+    summary.textContent = riskSummary.text;
+  }
+
+  function updateCopyButton() {
+    const button = byId('market-monitor-copy');
+    if (!button) return;
+    button.disabled = Object.keys(state.lastQuotes).length === 0;
+  }
+
+  function buildMarketMonitorCopyMarkdown() {
+    const quotes = state.lastQuotes;
+    if (!Object.keys(quotes).length) return '';
+
+    const gates = buildRiskGates(quotes);
+    const riskSummary = summarizeRiskGates(gates);
+    const missingLabels = [
+      ...state.lastErrors.map((item) => item?.label || item?.key).filter(Boolean),
+      ...(state.lastHoldingsError ? ['持股行情'] : [])
+    ];
+    const dataStatus = state.lastStale
+      ? '舊資料（最新更新失敗，顯示上次成功資料）'
+      : missingLabels.length ? `部分來源暫缺（${missingLabels.length} 項）` : '正常';
+    const levelText = { ok: '綠燈', warn: '黃燈', stop: '紅燈' };
+    const portfolioQuotes = [quotes.taiex, ...state.lastHoldings].filter(Boolean);
+    const lines = [
+      '# 重點看盤資料',
+      '',
+      `- 資料時間：${formatMonitorDateTime(state.lastUpdatedAt)}`,
+      `- 更新狀態：${dataStatus}`,
+      `- 持股數量：${state.lastHoldings.length} 檔`,
+      `- 風險摘要：${riskSummary.text}`,
+      `- 暫缺來源：${missingLabels.length ? missingLabels.join('、') : '無'}`,
+      '',
+      '## 1. 隔日重點訊號',
+      '',
+      '| 指標 | 最新價 | 漲跌 | 漲幅 | 行情時間 | 來源 |',
+      '|---|---:|---:|---:|---|---|',
+      ...TOP_KEYS.map((key) => `| ${quoteMarkdownRow(quotes[key] || { label: signalFallbackLabel(key) })} |`),
+      '',
+      '## 2. 加權指數與我的持股',
+      '',
+      '| 名稱 | 最新價 | 漲跌 | 漲幅 | 行情時間 | 來源 |',
+      '|---|---:|---:|---:|---|---|',
+      ...(portfolioQuotes.length
+        ? portfolioQuotes.map((quote) => `| ${quoteMarkdownRow(quote)} |`)
+        : ['| 目前沒有可顯示的持股行情 | — | — | — | — | — |']),
+      '',
+      '## 3. 完整觀察指標',
+      '',
+      '| 類型 | 指標 | 最新價 | 漲跌 | 漲幅 | 行情時間 | 來源 |',
+      '|---|---|---:|---:|---:|---|---|',
+      ...SIGNAL_KEYS.map((key) => {
+        const quote = quotes[key] || { label: signalFallbackLabel(key) };
+        const importance = REQUIRED_KEYS.has(key) ? '必要' : '輔助';
+        return `| ${quoteMarkdownRow(quote, [importance])} |`;
+      }),
+      '',
+      '## 4. 風險閘門',
+      '',
+      '| 狀態 | 閘門 | 數值 | 判斷規則 | 建議動作 |',
+      '|---|---|---|---|---|',
+      ...gates.map((gate) => `| ${[
+        levelText[gate.level] || gate.level,
+        gate.name,
+        gate.value,
+        gate.rule,
+        gate.action
+      ].map(markdownCell).join(' | ')} |`),
+      '',
+      '> 風險閘門用來決定隔日應「正常、縮手或暫停加碼」，不是單獨的買賣訊號。',
+      '',
+      '請根據以上資料，協助我判斷隔日台股風險環境、需要注意的持股，以及應採正常、縮手或 No Trade；請清楚區分資料事實、推論與仍需查證的資訊。'
+    ];
+    return lines.join('\n');
+  }
+
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'readonly');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      return true;
+    } catch (error) {
+      console.warn('[market-monitor] copy failed', error);
+      return false;
+    }
+  }
+
+  function showCopyFeedback(text) {
+    const button = byId('market-monitor-copy');
+    if (!button) return;
+    clearTimeout(copyFeedbackTimer);
+    button.textContent = text;
+    copyFeedbackTimer = window.setTimeout(() => {
+      button.textContent = '複製全部';
+      updateCopyButton();
+    }, 1600);
+  }
+
+  async function copyMarketMonitor() {
+    const markdown = buildMarketMonitorCopyMarkdown();
+    if (!markdown) return;
+    const copied = await copyTextToClipboard(markdown);
+    showCopyFeedback(copied ? '已複製 ✓' : '複製失敗');
   }
 
   function setStatus(kind, text) {
@@ -287,6 +441,10 @@
       if (monitorResult.status === 'rejected') throw monitorResult.reason;
       const payload = monitorResult.value;
       state.lastQuotes = { ...state.lastQuotes, ...(payload.quotes || {}) };
+      state.lastUpdatedAt = payload.updatedAt || new Date().toISOString();
+      state.lastErrors = Array.isArray(payload.errors) ? payload.errors : [];
+      state.lastStale = Boolean(payload.stale);
+      state.lastHoldingsError = holdingsResult.status === 'rejected';
       if (holdingsResult.status === 'fulfilled') state.lastHoldings = holdingsResult.value;
       renderTopCards(state.lastQuotes);
       renderHoldings(state.lastQuotes, state.lastHoldings);
@@ -302,6 +460,7 @@
     } catch (error) {
       console.error('[market-monitor] refresh failed', error);
       if (Object.keys(state.lastQuotes).length) {
+        state.lastStale = true;
         renderTopCards(state.lastQuotes);
         renderHoldings(state.lastQuotes, state.lastHoldings);
         renderSignals(state.lastQuotes);
@@ -312,6 +471,7 @@
       }
     } finally {
       state.inFlight = false;
+      updateCopyButton();
     }
   }
 
@@ -329,6 +489,7 @@
   }
 
   byId('market-monitor-refresh')?.addEventListener('click', () => refreshMarketMonitor({ manual: true }));
+  byId('market-monitor-copy')?.addEventListener('click', copyMarketMonitor);
   document.addEventListener('visibilitychange', () => {
     scheduleNextRefresh();
     if (state.active && !document.hidden) refreshMarketMonitor();
