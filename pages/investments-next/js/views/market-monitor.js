@@ -13,6 +13,7 @@
     timer: null,
     inFlight: false,
     lastQuotes: {},
+    lastInternalStructure: null,
     samples: new Map(),
     lastHoldings: [],
     lastUpdatedAt: '',
@@ -233,7 +234,37 @@
     })[key] || key;
   }
 
-  function buildRiskGates(quotes) {
+  function buildTaiwanInternalGate(internal = {}) {
+    const breadth = finite(internal?.breadthAboveMa20);
+    const foreignRatio = finite(internal?.foreignNetTurnoverPct);
+    const closeLocation = finite(internal?.closeLocationPct);
+    const turnoverChange = finite(internal?.turnoverChangePct);
+    const breadthWeak = breadth != null && breadth < 45;
+    const foreignWeak = foreignRatio != null && foreignRatio <= -3;
+    const closeWeak = closeLocation != null && closeLocation <= 25 && turnoverChange != null && turnoverChange > 0;
+    const warningCount = [breadthWeak, foreignWeak, closeWeak].filter(Boolean).length;
+    const hardStop = (breadth != null && breadth < 30) || (foreignRatio != null && foreignRatio <= -5);
+    const availableCount = [breadth, foreignRatio, closeLocation].filter((value) => value != null).length;
+    const level = !availableCount ? 'warn' : (hardStop || warningCount >= 2) ? 'stop' : warningCount ? 'warn' : 'ok';
+    const value = [
+      `廣度 ${breadth == null ? '—' : `${formatNumber(breadth, 1)}%`}`,
+      `外資 ${foreignRatio == null ? '—' : formatMove(foreignRatio, { percent: true, forceSign: true })}`,
+      `收盤位 ${closeLocation == null ? '—' : `${formatNumber(closeLocation, 1)}%`}`
+    ].join(' / ');
+    const action = !availableCount
+      ? '資料不足，預設縮手'
+      : level === 'stop' ? '防守／只留核心深價單'
+      : level === 'warn' ? '下修盤勢信心與成交上限' : '結構未觸發';
+    return {
+      name: '台股內部結構',
+      value,
+      level,
+      rule: '廣度<45%／外資占成交額≤-3%／收盤位≤25%且量增；任二轉防守',
+      action
+    };
+  }
+
+  function buildRiskGates(quotes, internalStructure = state.lastInternalStructure) {
     const vix = quotes.vix || {};
     const us10y = quotes.us10y || {};
     const usdtwd = quotes.usdtwd || {};
@@ -268,6 +299,7 @@
     const consensusLevel = validDirections.length < 4 ? 'warn' : negativeCount >= 5 ? 'stop' : negativeCount >= 3 ? 'warn' : 'ok';
 
     return [
+      buildTaiwanInternalGate(internalStructure),
       { name: 'VIX 安全閥', value: vixValue == null ? '—' : formatNumber(vixValue, 2), level: vixLevel, rule: '22–24 黃燈；≥ 24 觸發安全閥', action: vixLevel === 'stop' ? '暫停新增買單' : vixLevel === 'warn' ? '降低參與單與金額' : '未觸發' },
       { name: '半導體同步轉弱', value: `SOX ${formatMove(soxMove, { percent: true })} / ADR ${formatMove(tsmMove, { percent: true })}`, level: semiLevel, rule: 'SOX 與台積電 ADR 同弱；單日重挫視為紅燈', action: semiLevel === 'stop' ? '關閉衛星與追價單' : semiLevel === 'warn' ? '只留核心折價單' : '未觸發' },
       { name: '美債殖利率', value: `${formatNumber(yieldValue, 3)}%`, level: yieldLevel, rule: `≥ 4.70% 或 5 日 +15bp 黃燈；≥ 4.85% 或 +25bp 紅燈`, action: yieldLevel === 'stop' ? '停止擴張部位' : yieldLevel === 'warn' ? '縮小成交上限' : '未觸發' },
@@ -441,6 +473,7 @@
       if (monitorResult.status === 'rejected') throw monitorResult.reason;
       const payload = monitorResult.value;
       state.lastQuotes = { ...state.lastQuotes, ...(payload.quotes || {}) };
+      if (payload.internalStructure) state.lastInternalStructure = payload.internalStructure;
       state.lastUpdatedAt = payload.updatedAt || new Date().toISOString();
       state.lastErrors = Array.isArray(payload.errors) ? payload.errors : [];
       state.lastStale = Boolean(payload.stale);

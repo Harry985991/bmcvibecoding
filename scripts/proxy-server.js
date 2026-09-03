@@ -1923,8 +1923,11 @@ async function resolveQuoteCompact(symbol) {
 // 仍回傳其他成功項目，避免單一指標讓整個看盤頁中斷。
 const MARKET_MONITOR_TTL_MS = 8 * 1000;
 const MARKET_MONITOR_FTSE_SYMBOL_TTL_MS = 6 * 60 * 60 * 1000;
+const MARKET_INTERNAL_TTL_MS = 5 * 60 * 1000;
+const SECTOR_RADAR_COMPUTED_DIR = path.resolve(__dirname, '../../sector-radar/data/computed');
 let marketMonitorCache = { fetchedAt: 0, payload: null, inFlight: null };
 let ftseTaiwanSymbolCache = { fetchedAt: 0, symbol: '' };
+let marketInternalCache = { fetchedAt: 0, payload: null, inFlight: null };
 
 const MARKET_MONITOR_GLOBALS = [
   { key: 'taiex', label: '加權指數', symbol: '^TWII', group: 'reference' },
@@ -1945,6 +1948,153 @@ function monitorNumber(value) {
   if (value == null || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function readLatestSectorRadarMarket() {
+  if (!fs.existsSync(SECTOR_RADAR_COMPUTED_DIR)) return null;
+  const files = fs.readdirSync(SECTOR_RADAR_COMPUTED_DIR)
+    .filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name))
+    .sort()
+    .reverse();
+  for (const name of files) {
+    try {
+      const payload = JSON.parse(fs.readFileSync(path.join(SECTOR_RADAR_COMPUTED_DIR, name), 'utf8'));
+      if (!payload?.market) continue;
+      return {
+        date: payload.meta?.data_date || name.replace(/\.json$/, ''),
+        generatedAt: payload.meta?.generated_at || '',
+        marketMode: payload.market.mode || '',
+        breadthAboveMa20: monitorNumber(payload.market.breadth_above_ma20),
+        taiexClose: monitorNumber(payload.market.taiex_close),
+        source: 'sector-radar'
+      };
+    } catch (error) {
+      logError('market-internal', `sector radar read failed: ${name}`, error);
+    }
+  }
+  return null;
+}
+
+function findOfficialRowForDate(rows, isoDate) {
+  if (!Array.isArray(rows)) return null;
+  return rows.find((row) => Array.isArray(row) && rocToWestern(row[0]) === isoDate) || null;
+}
+
+async function fetchTaiwanOfficialInternal(isoDate) {
+  const compactDate = String(isoDate || '').replace(/-/g, '');
+  if (!/^\d{8}$/.test(compactDate)) throw new Error('台股內部結構缺少有效交易日');
+  const requestOptions = { headers: { 'User-Agent': TWSE_UA }, timeout: 9000 };
+  const [indexResult, turnoverResult, institutionResult] = await Promise.allSettled([
+    axios.get('https://www.twse.com.tw/indicesReport/MI_5MINS_HIST', {
+      ...requestOptions, params: { response: 'json', date: compactDate }
+    }),
+    axios.get('https://www.twse.com.tw/exchangeReport/FMTQIK', {
+      ...requestOptions, params: { response: 'json', date: compactDate }
+    }),
+    axios.get('https://www.twse.com.tw/fund/BFI82U', {
+      ...requestOptions, params: { response: 'json', dayDate: compactDate, type: 'day' }
+    })
+  ]);
+
+  const gaps = [];
+  const indexRows = indexResult.status === 'fulfilled' ? indexResult.value.data?.data : [];
+  const indexRow = findOfficialRowForDate(indexRows, isoDate);
+  if (!indexRow) gaps.push('taiex-ohlc');
+
+  const turnoverRows = turnoverResult.status === 'fulfilled' ? turnoverResult.value.data?.data : [];
+  const turnoverIndex = Array.isArray(turnoverRows)
+    ? turnoverRows.findIndex((row) => Array.isArray(row) && rocToWestern(row[0]) === isoDate)
+    : -1;
+  const turnoverRow = turnoverIndex >= 0 ? turnoverRows[turnoverIndex] : null;
+  const previousTurnoverRow = turnoverIndex > 0 ? turnoverRows[turnoverIndex - 1] : null;
+  if (!turnoverRow) gaps.push('turnover');
+
+  const institutionRows = institutionResult.status === 'fulfilled' ? institutionResult.value.data?.data : [];
+  const foreignRow = Array.isArray(institutionRows)
+    ? institutionRows.find((row) => String(row?.[0] || '').trim().startsWith('外資及陸資'))
+    : null;
+  const totalRow = Array.isArray(institutionRows)
+    ? institutionRows.find((row) => String(row?.[0] || '').trim() === '合計')
+    : null;
+  if (!foreignRow) gaps.push('foreign-net');
+
+  const open = parseTwNumeric(indexRow?.[1]);
+  const high = parseTwNumeric(indexRow?.[2]);
+  const low = parseTwNumeric(indexRow?.[3]);
+  const close = parseTwNumeric(indexRow?.[4]);
+  const closeLocationPct = high != null && low != null && close != null
+    ? (high === low ? 50 : ((close - low) / (high - low)) * 100)
+    : null;
+  const turnover = parseTwNumeric(turnoverRow?.[2]);
+  const previousTurnover = parseTwNumeric(previousTurnoverRow?.[2]);
+  const turnoverChangePct = turnover != null && previousTurnover
+    ? ((turnover - previousTurnover) / previousTurnover) * 100
+    : null;
+  const foreignNet = parseTwNumeric(foreignRow?.[3]);
+  const totalInstitutionNet = parseTwNumeric(totalRow?.[3]);
+  const foreignNetTurnoverPct = foreignNet != null && turnover
+    ? (foreignNet / turnover) * 100
+    : null;
+
+  return {
+    date: isoDate,
+    open,
+    high,
+    low,
+    close,
+    closeLocationPct,
+    turnover,
+    turnoverChangePct,
+    foreignNet,
+    totalInstitutionNet,
+    foreignNetTurnoverPct,
+    gaps,
+    source: 'TWSE official EOD'
+  };
+}
+
+async function buildTaiwanInternalStructure() {
+  const radar = readLatestSectorRadarMarket();
+  const date = radar?.date || fallbackTwTradeDate();
+  let official = null;
+  let officialError = '';
+  try {
+    official = await fetchTaiwanOfficialInternal(date);
+  } catch (error) {
+    officialError = error?.message || String(error);
+    logError('market-internal', 'TWSE internal structure fetch failed', error);
+  }
+  if (!radar && !official) throw new Error(officialError || '台股內部結構暫時無資料');
+  return {
+    date,
+    marketMode: radar?.marketMode || '',
+    breadthAboveMa20: radar?.breadthAboveMa20 ?? null,
+    radarGeneratedAt: radar?.generatedAt || '',
+    ...official,
+    date,
+    sources: [radar?.source, official?.source].filter(Boolean),
+    gaps: [...new Set([...(official?.gaps || []), ...(radar ? [] : ['technical-breadth'])])],
+    error: officialError
+  };
+}
+
+async function getTaiwanInternalStructure() {
+  const now = Date.now();
+  if (marketInternalCache.payload && now - marketInternalCache.fetchedAt < MARKET_INTERNAL_TTL_MS) {
+    return marketInternalCache.payload;
+  }
+  if (!marketInternalCache.inFlight) {
+    marketInternalCache.inFlight = buildTaiwanInternalStructure()
+      .then((payload) => {
+        marketInternalCache = { fetchedAt: Date.now(), payload, inFlight: null };
+        return payload;
+      })
+      .catch((error) => {
+        marketInternalCache.inFlight = null;
+        throw error;
+      });
+  }
+  return marketInternalCache.inFlight;
 }
 
 function normalizeMonitorQuote(definition, compact, overrides = {}) {
@@ -2106,11 +2256,19 @@ async function buildMarketMonitorPayload() {
   if (quotes.us10y && riskMoves[0].status === 'fulfilled') Object.assign(quotes.us10y, riskMoves[0].value);
   if (quotes.usdtwd && riskMoves[1].status === 'fulfilled') Object.assign(quotes.usdtwd, riskMoves[1].value);
 
+  let internalStructure = null;
+  try {
+    internalStructure = await getTaiwanInternalStructure();
+  } catch (error) {
+    errors.push({ key: 'tw_internal', label: '台股內部結構', message: error?.message || String(error) });
+  }
+
   return {
     ok: Object.keys(quotes).length > 0,
     updatedAt: new Date().toISOString(),
     refreshIntervalMs: 10000,
     quotes,
+    internalStructure,
     errors
   };
 }
