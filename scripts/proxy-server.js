@@ -17,6 +17,10 @@ const BIND_HOST = '127.0.0.1';
 const DB_PATH = path.join(__dirname, '../data/db.json');
 // 交易日誌自動匯入收件匣（Claude / Codex 寫入，前端開頁時 consume-on-read）
 const TJ_INBOX_PATH = path.join(__dirname, '../data/trade-journal-inbox.json');
+// 存檔前自動備份目錄。2026-09-04 曾因舊分頁整份覆蓋 db.json 而永久遺失三筆賣出紀錄，
+// 從此每次寫入前一定先把磁碟上的現況複製一份，備份失敗就不准寫。
+const AUTO_BACKUP_DIR = path.join(__dirname, '../data/backups/auto');
+const AUTO_BACKUP_KEEP = 50;
 
 // 確保目錄存在
 if (!fs.existsSync(path.dirname(DB_PATH))) {
@@ -157,6 +161,84 @@ function preservePerformanceHistoryForSave(incoming, existing) {
   return incoming;
 }
 
+// ── 存檔前自動備份 ────────────────────────────────────
+function autoBackupStamp(date = new Date()) {
+  // 2026-09-05T12:53:17.123Z -> 20260905T125317
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, '');
+}
+
+// 只保留最新 AUTO_BACKUP_KEEP 份，由舊到新刪除。檔名以時間戳排序即等於時間序。
+function pruneAutoBackups() {
+  const files = fs.readdirSync(AUTO_BACKUP_DIR)
+    .filter((name) => /^db-\d{8}T\d{6}(-\d+)?\.json$/.test(name))
+    .sort();
+  const excess = files.length - AUTO_BACKUP_KEEP;
+  for (let i = 0; i < excess; i += 1) {
+    fs.unlinkSync(path.join(AUTO_BACKUP_DIR, files[i]));
+  }
+  return excess > 0 ? excess : 0;
+}
+
+// 回傳 { ok, file?, skipped?, error? }。ok=false 時呼叫端必須拒絕本次寫入。
+function backupCurrentDBBeforeWrite() {
+  try {
+    if (!fs.existsSync(DB_PATH)) return { ok: true, skipped: true }; // 首次建檔，沒有東西可備份
+    fs.mkdirSync(AUTO_BACKUP_DIR, { recursive: true });
+    const stamp = autoBackupStamp();
+    let file = path.join(AUTO_BACKUP_DIR, `db-${stamp}.json`);
+    let seq = 1;
+    while (fs.existsSync(file)) {
+      file = path.join(AUTO_BACKUP_DIR, `db-${stamp}-${seq}.json`);
+      seq += 1;
+    }
+    fs.copyFileSync(DB_PATH, file);
+    try {
+      pruneAutoBackups();
+    } catch (pruneError) {
+      // 輪替失敗不影響資料安全（只是多留幾份），不阻擋寫入。
+      console.warn('[storage] 自動備份輪替失敗:', pruneError.message);
+    }
+    return { ok: true, file: path.basename(file) };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+// 交易日誌三個端點（import / PATCH / DELETE）的共用寫檔路徑。
+// 沿用 /api/save-db 的「寫入前先備份」規則：備份失敗就不寫，由呼叫端回 500。
+// 這三個端點是伺服器端受控的日誌操作，不是瀏覽器整份 DB 覆蓋，
+// 因此刻意不套用樂觀鎖與交易筆數安全閥，避免誤擋正常流程。
+function writeDBWithAutoBackup(data, tag) {
+  const backup = backupCurrentDBBeforeWrite();
+  if (!backup.ok) {
+    console.error(`[${tag}] 存檔前備份失敗，已拒絕本次寫入:`, backup.error);
+    return { ok: false, error: backup.error };
+  }
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  console.log(`[${tag}] 資料已儲存至: ${DB_PATH}${backup.file ? `（存檔前備份：${backup.file}）` : ''}`);
+  return { ok: true, file: backup.file || null };
+}
+
+// 備份失敗時三個端點共用的 500 回應。
+function backupFailureResponse(res, error) {
+  return res.status(500).json({
+    error: '存檔前備份失敗，為避免無備份地覆蓋資料，本次操作已被拒絕。',
+    message: error
+  });
+}
+
+// ── 回捲防護（樂觀鎖）────────────────────────────────
+// server 每次寫入都會把 meta._lastServerSave 蓋成當下時間，
+// 因此客戶端手上的值 = 它載入時的伺服器版本戳，可直接拿來比對。
+function toEpoch(value) {
+  const t = new Date(String(value || '')).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+function txnCount(data) {
+  return Array.isArray(data?.txns) ? data.txns.length : 0;
+}
+
 // 儲存資料庫到硬碟
 app.post('/api/save-db', (req, res) => {
   try {
@@ -174,6 +256,58 @@ app.post('/api/save-db', (req, res) => {
       return res.status(409).json({ error: '已拒絕空資料覆蓋完整存檔' });
     }
 
+    // ── 防護 2：拒絕回捲寫入（樂觀鎖）──────────────────
+    if (existing && req.get('X-Force-Save') !== '1') {
+      const serverVersion = existing.meta?._lastServerSave || null;
+      const clientVersion = data.meta?._lastServerSave || null;
+      const serverAt = toEpoch(serverVersion);
+
+      if (serverAt !== null && !clientVersion) {
+        console.warn('[storage] 已拒絕缺少版本戳的存檔（可能是離線快取或舊分頁）');
+        return res.status(409).json({
+          error: '這個分頁的資料沒有伺服器版本戳（可能來自離線快取或舊分頁），已擋下以免覆蓋現有紀錄。請重新整理頁面後再操作。',
+          serverVersion,
+          clientVersion: null
+        });
+      }
+
+      const clientAt = toEpoch(clientVersion);
+      if (serverAt !== null && clientAt !== null && clientAt < serverAt) {
+        console.warn(`[storage] 已拒絕回捲存檔：client=${clientVersion} < server=${serverVersion}`);
+        return res.status(409).json({
+          error: '這個分頁的資料比伺服器上的舊，已擋下以免覆蓋較新的紀錄。請重新整理頁面後再操作。',
+          serverVersion,
+          clientVersion
+        });
+      }
+    }
+
+    // ── 防護 3：交易筆數安全閥 ─────────────────────────
+    if (existing && req.get('X-Allow-Txn-Shrink') !== '1' && req.get('X-Force-Save') !== '1') {
+      const existingTxns = txnCount(existing);
+      const incomingTxns = txnCount(data);
+      if (incomingTxns < existingTxns) {
+        const missing = existingTxns - incomingTxns;
+        console.warn(`[storage] 已拒絕交易筆數縮減存檔：${existingTxns} -> ${incomingTxns}`);
+        return res.status(409).json({
+          error: `這次存檔會讓交易紀錄少 ${missing} 筆（${existingTxns} → ${incomingTxns}），已擋下。若確定要刪除交易，請從交易頁的刪除按鈕操作；否則請重新整理頁面。`,
+          serverTxnCount: existingTxns,
+          clientTxnCount: incomingTxns,
+          missing
+        });
+      }
+    }
+
+    // ── 防護 1：寫入前先備份磁碟上的現況（備份失敗就不准寫）──
+    const backup = backupCurrentDBBeforeWrite();
+    if (!backup.ok) {
+      console.error('[storage] 存檔前備份失敗，已拒絕本次寫入:', backup.error);
+      return res.status(500).json({
+        error: '存檔前備份失敗，為避免無備份地覆蓋資料，本次儲存已被拒絕。',
+        message: backup.error
+      });
+    }
+
     mergeTradeJournalsForSave(data, existing);
     mergeCapitalPoolMetaForSave(data, existing);
     removePremarketTodayPerformanceRecords(data);
@@ -189,8 +323,8 @@ app.post('/api/save-db', (req, res) => {
     data.meta._updatedAt = now;
 
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-    console.log(`[storage] 資料已儲存至: ${DB_PATH}`);
-    res.json({ success: true, timestamp: data.meta._lastServerSave });
+    console.log(`[storage] 資料已儲存至: ${DB_PATH}${backup.file ? `（存檔前備份：${backup.file}）` : ''}`);
+    res.json({ success: true, timestamp: data.meta._lastServerSave, backup: backup.file || null });
   } catch (error) {
     console.error('[storage] 儲存失敗:', error.message);
     res.status(500).json({ error: '伺服器儲存失敗', message: error.message });
@@ -407,13 +541,15 @@ app.post('/api/trade-journals/import', (req, res) => {
     const now = new Date().toISOString();
     data.meta._lastServerSave = now;
     data.meta._updatedAt = now;
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    const saved = writeDBWithAutoBackup(data, 'trade-journals:import');
+    if (!saved.ok) return backupFailureResponse(res, saved.error);
     res.json({
       success: true,
       imported: imported.length,
       skipped: skipped.length,
       syncResults,
-      timestamp: data.meta._lastServerSave
+      timestamp: data.meta._lastServerSave,
+      backup: saved.file
     });
   } catch (error) {
     console.error('[trade-journals] 匯入失敗:', error.message);
@@ -439,8 +575,9 @@ app.patch('/api/trade-journals/:id', (req, res) => {
     const now = new Date().toISOString();
     data.meta._lastServerSave = now;
     data.meta._updatedAt = now;
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-    res.json({ success: true, order: stored, syncResults, timestamp: now });
+    const saved = writeDBWithAutoBackup(data, 'trade-journals:patch');
+    if (!saved.ok) return backupFailureResponse(res, saved.error);
+    res.json({ success: true, order: stored, syncResults, timestamp: now, backup: saved.file });
   } catch (error) {
     console.error('[trade-journals] 更新失敗:', error.message);
     res.status(500).json({ error: '更新交易日誌失敗', message: error.message });
@@ -460,8 +597,9 @@ app.delete('/api/trade-journals/:id', (req, res) => {
     const now = new Date().toISOString();
     data.meta._lastServerSave = now;
     data.meta._updatedAt = now;
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-    res.json({ success: true, deleted, timestamp: now });
+    const saved = writeDBWithAutoBackup(data, 'trade-journals:delete');
+    if (!saved.ok) return backupFailureResponse(res, saved.error);
+    res.json({ success: true, deleted, timestamp: now, backup: saved.file });
   } catch (error) {
     console.error('[trade-journals] 刪除失敗:', error.message);
     res.status(500).json({ error: '刪除交易日誌失敗', message: error.message });

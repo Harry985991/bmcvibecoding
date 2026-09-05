@@ -7,6 +7,9 @@ jobmaster.html
 BMC-ATS.html
 job-master-tracker*.tsx
 
+# 投資儀表板（個人財務工具，2026-09-05 移出版控；repo 為公開）
+pages/investments-next/
+
 # pages/ 下的其他網頁（除了 bmc-workshop.html）
 pages/104-resume.html
 pages/aiarokr.html
