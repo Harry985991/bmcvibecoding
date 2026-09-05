@@ -66,3 +66,6 @@ Thumbs.db
 # README.md - 專案說明
 # CHANGELOG.md - 更新日誌
 # LICENSE - 授權文件
+
+# 指向 repo 外部的本機捷徑（Jekyll 會因找不到目標而建置失敗）
+sector-radar-dashboard
