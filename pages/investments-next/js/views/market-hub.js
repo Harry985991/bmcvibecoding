@@ -4,24 +4,10 @@
 
   const SEED_MARKET_LINKS = Object.freeze([
     {
-      key: 'score-swing',
-      title: '評分模型 Swing 版',
-      url: 'http://localhost:5052/',
-      note: '查看波段評分、交易摘要與當前決策訊號。',
-      type: 'local'
-    },
-    {
-      key: 'tw-five-level',
-      title: '台股五檔追蹤',
-      url: 'http://localhost:5002/',
-      note: '追蹤即時價格與買賣五檔深度，盤中觀察主力掛單節奏。',
-      type: 'local'
-    },
-    {
-      key: 'playbook-watchlist',
-      title: '投資心法及觀察名單',
-      url: 'http://localhost:5050/memo',
-      note: '快速回看交易日誌、投資心法、觀察名單與盤前 SOP。',
+      key: 'sector-radar',
+      title: '半導體族群雷達（原頁備援）',
+      url: 'http://localhost:5602/',
+      note: '完整原頁已嵌在重點看盤 → 族群；此連結只是另開備援。',
       type: 'local'
     },
     {

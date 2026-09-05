@@ -4,8 +4,14 @@ const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { createCfoRisk } = require('./lib/cfo-risk');
+const observatoryEngine = require('./lib/observatory-engine');
+const { createSectorRadar } = require('./lib/sector-radar');
+const { createDecisionFlow } = require('./lib/decision-flow');
 const app = express();
 const PORT = 3000;
+// 本機服務一律只綁 127.0.0.1：頁面含投資與持股資料，不得對區網或外部開放。
+const BIND_HOST = '127.0.0.1';
 
 // 資料儲存路徑
 const DB_PATH = path.join(__dirname, '../data/db.json');
@@ -20,6 +26,8 @@ if (!fs.existsSync(path.dirname(DB_PATH))) {
 const historyCache = new Map(); // key: `${symbol}_${days}` => { data, source, priceType, fetchedAt }
 const inflightHistory = new Map(); // key => Promise
 const HISTORY_TTL_MS = 60 * 60 * 1000; // 1 hour
+const ohlcvCache = new Map(); // key: symbol => { payload, fetchedAt }
+const inflightOhlcv = new Map();
 const HISTORY_SYMBOL_RE = /^(\^[A-Z]{2,6}|[0-9]{4,6}[A-Z]?)$/;
 const TWSE_UA = 'Mozilla/5.0 (compatible; PortfolioTracker/1.0)';
 const TWSE_MIS_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36';
@@ -31,6 +39,16 @@ let twseMisCookieFetchedAt = 0;
 // 啟用 CORS
 app.use(cors());
 app.use(express.json({ limit: '20mb' })); // 增加限制以容納較大的資料庫
+
+// 半導體雷達原儀表板（唯讀靜態檔）。族群分頁用 iframe 嵌同一份，不重畫。
+const SECTOR_RADAR_DASHBOARD_DIR = path.join(__dirname, '../../sector-radar/dashboard');
+app.use('/sector-radar-dashboard', express.static(SECTOR_RADAR_DASHBOARD_DIR, {
+  index: 'index.html',
+  fallthrough: false,
+  setHeaders(res) {
+    res.set('Cache-Control', 'no-store');
+  }
+}));
 
 // ── 資料存取 API ──────────────────────────────────────
 function hasUsefulPortfolioData(data) {
@@ -1170,6 +1188,188 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
+function ohlcBarFromOfficialRow(row) {
+  if (!Array.isArray(row) || row.length < 7) return null;
+  const date = rocToWestern(row[0]);
+  const open = parseCloseValue(row[3]);
+  const high = parseCloseValue(row[4]);
+  const low = parseCloseValue(row[5]);
+  const close = parseCloseValue(row[6]);
+  const volume = parseCloseValue(row[1]);
+  if (!date || close == null || open == null || high == null || low == null) return null;
+  return {
+    date,
+    open,
+    high,
+    low,
+    close,
+    volume: volume == null ? null : Math.round(volume)
+  };
+}
+
+function finalizeOhlcvBars(bars, source) {
+  const valid = (bars || []).filter((bar) => bar && bar.date && bar.close != null);
+  if (!valid.length) return null;
+  valid.sort((a, b) => a.date.localeCompare(b.date));
+  const last = valid[valid.length - 1];
+  const prev = valid.length >= 2 ? valid[valid.length - 2] : null;
+  const prevClose = prev?.close ?? null;
+  const changePct = (prevClose && last.close != null)
+    ? Math.round(((last.close - prevClose) / prevClose) * 1000) / 10
+    : null;
+  return {
+    prev_date: last.date,
+    open: last.open,
+    high: last.high,
+    low: last.low,
+    close: last.close,
+    volume: last.volume,
+    prev_close: prevClose,
+    change_pct: changePct,
+    source
+  };
+}
+
+async function fetchTwseOhlcvMonth(symbol, monthCode) {
+  const url = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${monthCode}&stockNo=${encodeURIComponent(symbol)}`;
+  const response = await axios.get(url, {
+    headers: { 'User-Agent': TWSE_UA, Accept: 'application/json' },
+    timeout: 12000,
+    validateStatus: (status) => status >= 200 && status < 500
+  });
+  if (response.status !== 200 || response.data?.stat !== 'OK' || !Array.isArray(response.data.data)) return [];
+  return response.data.data.map(ohlcBarFromOfficialRow).filter(Boolean);
+}
+
+async function fetchTpexOhlcvMonth(symbol, monthCode) {
+  const response = await axios.post(
+    'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock',
+    new URLSearchParams({ code: symbol, date: monthCode, response: 'json' }).toString(),
+    {
+      headers: {
+        'User-Agent': TWSE_UA,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        Accept: 'application/json'
+      },
+      timeout: 12000,
+      validateStatus: (status) => status >= 200 && status < 500
+    }
+  );
+  if (response.status !== 200 || response.data?.stat !== 'ok') return [];
+  const rows = response.data?.tables?.[0]?.data;
+  if (!Array.isArray(rows)) return [];
+  return rows.map(ohlcBarFromOfficialRow).filter(Boolean);
+}
+
+function parseYahooOhlcvCsv(csvText) {
+  const lines = String(csvText || '').trim().split(/\r?\n/);
+  const rows = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const cols = lines[i].split(',');
+    if (cols.length < 6) continue;
+    const date = cols[0].trim();
+    const open = parseCloseValue(cols[1]);
+    const high = parseCloseValue(cols[2]);
+    const low = parseCloseValue(cols[3]);
+    const close = parseCloseValue(cols[4]);
+    const volume = parseCloseValue(cols[6] || cols[5]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || close == null) continue;
+    rows.push({ date, open, high, low, close, volume: volume == null ? null : Math.round(volume) });
+  }
+  return rows;
+}
+
+async function fetchYahooOhlcv(symbol) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const period1 = nowSec - 21 * 24 * 60 * 60;
+  for (const ticker of buildCandidates(symbol)) {
+    const url = `https://query1.finance.yahoo.com/v7/finance/download/${encodeURIComponent(ticker)}?period1=${period1}&period2=${nowSec}&interval=1d&events=history`;
+    try {
+      const response = await axios.get(url, {
+        headers: { 'User-Agent': YAHOO_UA, Accept: 'text/csv,*/*' },
+        timeout: 12000,
+        validateStatus: (status) => status >= 200 && status < 500
+      });
+      if (response.status !== 200) continue;
+      const payload = finalizeOhlcvBars(parseYahooOhlcvCsv(response.data), 'yahoo');
+      if (payload) return payload;
+    } catch {
+      // 試下一個代號格式
+    }
+  }
+  return null;
+}
+
+async function fetchLatestHoldingOhlcv(symbol) {
+  const cached = ohlcvCache.get(symbol);
+  if (cached && (Date.now() - cached.fetchedAt) < HISTORY_TTL_MS) return cached.payload;
+  let pending = inflightOhlcv.get(symbol);
+  if (!pending) {
+    pending = (async () => {
+      const now = getTaipeiNow();
+      const months = [
+        toTwseMonthCode(now),
+        toTwseMonthCode(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+      ];
+      let bars = [];
+      for (const monthCode of months) {
+        try {
+          bars = bars.concat(await fetchTwseOhlcvMonth(symbol, monthCode));
+        } catch (error) {
+          logError('holding-ohlcv', `TWSE failed for ${symbol} ${monthCode}`, error);
+        }
+        if (bars.length >= 2) break;
+      }
+      let payload = finalizeOhlcvBars(bars, 'twse');
+      if (!payload) {
+        bars = [];
+        const tpexMonths = [
+          toTpexMonthCode(now),
+          toTpexMonthCode(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+        ];
+        for (const monthCode of tpexMonths) {
+          try {
+            bars = bars.concat(await fetchTpexOhlcvMonth(symbol, monthCode));
+          } catch (error) {
+            logError('holding-ohlcv', `TPEx failed for ${symbol} ${monthCode}`, error);
+          }
+          if (bars.length >= 2) break;
+        }
+        payload = finalizeOhlcvBars(bars, 'tpex');
+      }
+      if (!payload) payload = await fetchYahooOhlcv(symbol);
+      ohlcvCache.set(symbol, { payload, fetchedAt: Date.now() });
+      return payload;
+    })().finally(() => {
+      inflightOhlcv.delete(symbol);
+    });
+    inflightOhlcv.set(symbol, pending);
+  }
+  return pending;
+}
+
+app.get('/api/holding-ohlcv', async (req, res) => {
+  const symbols = String(req.query.symbols || '')
+    .split(',')
+    .map((item) => item.trim().toUpperCase())
+    .filter((item) => HISTORY_SYMBOL_RE.test(item))
+    .slice(0, 40);
+  const unique = [...new Set(symbols)];
+  if (!unique.length) return res.status(400).json({ ok: false, error: '缺少 symbols' });
+  const rows = await mapWithConcurrency(unique, 4, async (symbol) => {
+    try {
+      const payload = await fetchLatestHoldingOhlcv(symbol);
+      return [symbol, payload];
+    } catch (error) {
+      logError('holding-ohlcv', `failed for ${symbol}`, error);
+      return [symbol, null];
+    }
+  });
+  const items = {};
+  for (const [symbol, payload] of rows) items[symbol] = payload;
+  return res.json({ ok: true, items });
+});
+
 // ===== Yahoo helpers with robust fallbacks =====
 function buildCandidates(input) {
   const orig = String(input).trim().toUpperCase();
@@ -1925,6 +2125,39 @@ const MARKET_MONITOR_TTL_MS = 8 * 1000;
 const MARKET_MONITOR_FTSE_SYMBOL_TTL_MS = 6 * 60 * 60 * 1000;
 const MARKET_INTERNAL_TTL_MS = 5 * 60 * 1000;
 const SECTOR_RADAR_COMPUTED_DIR = path.resolve(__dirname, '../../sector-radar/data/computed');
+const sectorRadar = createSectorRadar({
+  computedDir: SECTOR_RADAR_COMPUTED_DIR,
+  logError
+});
+
+function rangeToHistoryDays(range) {
+  if (range === '6mo') return 180;
+  if (range === '3mo') return 90;
+  if (range === '1mo') return 40;
+  const parsed = Number.parseInt(String(range), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 90;
+}
+
+async function fetchDailyClosesForCfo(symbol, range) {
+  const days = rangeToHistoryDays(range);
+  const yahooSymbol = String(symbol || '').replace(/\.TW$/i, '');
+  const rows = await fetchFromYahoo(yahooSymbol, days);
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((row) => ({ date: row.date, value: Number(row.close) }))
+    .filter((row) => row.date && Number.isFinite(row.value));
+}
+
+const cfoRisk = createCfoRisk({
+  fetchDailyCloses: fetchDailyClosesForCfo,
+  logError
+});
+const decisionFlow = createDecisionFlow({
+  battlePlanDir: path.resolve(__dirname, '../../../outputs/reports/investment'),
+  workLogDir: path.resolve(__dirname, '../../../outputs/logs')
+});
+let observatoryCache = { fetchedAt: 0, payload: null, inFlight: null };
+const OBSERVATORY_TTL_MS = 60 * 1000;
 let marketMonitorCache = { fetchedAt: 0, payload: null, inFlight: null };
 let ftseTaiwanSymbolCache = { fetchedAt: 0, symbol: '' };
 let marketInternalCache = { fetchedAt: 0, payload: null, inFlight: null };
@@ -1950,29 +2183,15 @@ function monitorNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+// 讀取層集中在 lib/sector-radar.js（同一份快取與白名單），這裡只取內部結構閘門要用的切片，
+// 避免同一份 computed 快照在 proxy 內有兩套讀法。
 function readLatestSectorRadarMarket() {
-  if (!fs.existsSync(SECTOR_RADAR_COMPUTED_DIR)) return null;
-  const files = fs.readdirSync(SECTOR_RADAR_COMPUTED_DIR)
-    .filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name))
-    .sort()
-    .reverse();
-  for (const name of files) {
-    try {
-      const payload = JSON.parse(fs.readFileSync(path.join(SECTOR_RADAR_COMPUTED_DIR, name), 'utf8'));
-      if (!payload?.market) continue;
-      return {
-        date: payload.meta?.data_date || name.replace(/\.json$/, ''),
-        generatedAt: payload.meta?.generated_at || '',
-        marketMode: payload.market.mode || '',
-        breadthAboveMa20: monitorNumber(payload.market.breadth_above_ma20),
-        taiexClose: monitorNumber(payload.market.taiex_close),
-        source: 'sector-radar'
-      };
-    } catch (error) {
-      logError('market-internal', `sector radar read failed: ${name}`, error);
-    }
+  try {
+    return sectorRadar.getMarketInternalSlice();
+  } catch (error) {
+    logError('market-internal', 'sector radar read failed', error);
+    return null;
   }
-  return null;
 }
 
 function findOfficialRowForDate(rows, isoDate) {
@@ -2273,6 +2492,137 @@ async function buildMarketMonitorPayload() {
   };
 }
 
+function quoteChangePct(quote) {
+  if (!quote) return null;
+  if (Number.isFinite(Number(quote.changePct))) return Number(quote.changePct);
+  if (Number.isFinite(Number(quote.changePercent))) return Number(quote.changePercent);
+  if (Number.isFinite(Number(quote.price)) && Number.isFinite(Number(quote.prevClose)) && Number(quote.prevClose)) {
+    return ((Number(quote.price) - Number(quote.prevClose)) / Number(quote.prevClose)) * 100;
+  }
+  return null;
+}
+
+async function buildObservatorySnapshot() {
+  const [cfo, monitor] = await Promise.all([
+    cfoRisk.buildCfoRiskSnapshot(),
+    buildMarketMonitorPayload()
+  ]);
+  const quotes = monitor?.quotes || {};
+  let soxMa5DevPct = null;
+  try {
+    const soxHist = await fetchFromYahoo('^SOX', 12);
+    if (Array.isArray(soxHist) && soxHist.length >= 5) {
+      const closes = soxHist.map((row) => Number(row.close)).filter(Number.isFinite);
+      const last = closes[closes.length - 1];
+      const ma5 = closes.slice(-5).reduce((sum, value) => sum + value, 0) / 5;
+      if (last && ma5) soxMa5DevPct = Number((((last - ma5) / ma5) * 100).toFixed(2));
+    }
+  } catch (error) {
+    logError('observatory', 'SOX MA5 計算失敗', error);
+  }
+  let nvdaChangePct = null;
+  try {
+    const nvda = await resolveQuoteCompact('NVDA');
+    nvdaChangePct = quoteChangePct(nvda);
+  } catch (error) {
+    logError('observatory', 'NVDA 報價失敗', error);
+  }
+  const overheat = observatoryEngine.assessOverheat({
+    vix: quotes.vix?.price ?? null,
+    soxMa5DevPct,
+    soxChangePct: quoteChangePct(quotes.sox),
+    nvdaChangePct,
+    cfoRed: cfo.red_count,
+    cfoAmber: cfo.amber_count
+  });
+  const prediction = observatoryEngine.predictTwScenarios({
+    tsmChangePct: quoteChangePct(quotes.tsm_adr),
+    soxChangePct: quoteChangePct(quotes.sox),
+    nvdaChangePct,
+    spxChangePct: quoteChangePct(quotes.sp500)
+  });
+  return {
+    ok: true,
+    overheat,
+    prediction,
+    fill_window: observatoryEngine.fillWindow(prediction),
+    scenario_bias: observatoryEngine.scenarioBias(prediction),
+    cfo: {
+      overall_level: cfo.overall_level,
+      status_label: cfo.status_label,
+      red_count: cfo.red_count,
+      amber_count: cfo.amber_count,
+      missing_count: cfo.missing_count,
+      interpretation: cfo.interpretation,
+      warnings: cfo.warnings
+    },
+    updated_at: new Date().toISOString(),
+    source: 'proxy'
+  };
+}
+
+function sendCachedJson(cache, ttlMs, builder, res, staleLabel) {
+  const now = Date.now();
+  if (cache.payload && now - cache.fetchedAt < ttlMs) {
+    return Promise.resolve(res.json({ ...cache.payload, cached: true }));
+  }
+  if (!cache.inFlight) {
+    cache.inFlight = builder()
+      .then((payload) => {
+        cache.fetchedAt = Date.now();
+        cache.payload = payload;
+        cache.inFlight = null;
+        return payload;
+      })
+      .catch((error) => {
+        cache.inFlight = null;
+        throw error;
+      });
+  }
+  return cache.inFlight.then((payload) => res.json(payload)).catch((error) => {
+    if (cache.payload) {
+      return res.status(200).json({
+        ...cache.payload,
+        cached: true,
+        stale: true,
+        errors: [...(cache.payload.errors || []), { key: 'endpoint', label: staleLabel, message: error.message }]
+      });
+    }
+    return res.status(502).json({ ok: false, error: staleLabel, message: error.message });
+  });
+}
+
+app.get('/api/cfo-risk', async (req, res) => {
+  try {
+    return res.json(await cfoRisk.buildCfoRiskSnapshot());
+  } catch (error) {
+    logError('cfo-risk', 'snapshot failed', error);
+    return res.status(502).json({ ok: false, error: 'CFO 風險暫時無法計算', message: error.message });
+  }
+});
+
+app.get('/api/observatory/snapshot', async (req, res) => {
+  return sendCachedJson(observatoryCache, OBSERVATORY_TTL_MS, buildObservatorySnapshot, res, '觀測快照暫時無法取得');
+});
+
+app.get('/api/sector-radar/snapshot', (req, res) => {
+  try {
+    return res.json(sectorRadar.getSnapshot());
+  } catch (error) {
+    logError('sector-radar', 'snapshot failed', error);
+    return res.status(502).json({ ok: false, error: '半導體雷達快照讀取失敗', message: error.message });
+  }
+});
+
+app.get('/api/decision-flow', (req, res) => {
+  try {
+    return res.json(decisionFlow.getDecisionFlow());
+  } catch (error) {
+    logError('decision-flow', 'read failed', error);
+    return res.status(502).json({ ok: false, error: '決策流程摘要讀取失敗', message: error.message });
+  }
+});
+
 app.get('/api/market-monitor', async (req, res) => {
   const now = Date.now();
   if (marketMonitorCache.payload && now - marketMonitorCache.fetchedAt < MARKET_MONITOR_TTL_MS) {
@@ -2357,8 +2707,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`代理伺服器運行在 http://localhost:${PORT}`);
+app.listen(PORT, BIND_HOST, () => {
+  console.log(`代理伺服器運行在 http://${BIND_HOST}:${PORT}`);
   console.log(`WantGoo 代理端點: http://localhost:${PORT}/api/wantgoo/:symbol`);
   console.log(`ETF NAV 折溢價 (MoneyDJ): http://localhost:${PORT}/api/wantgoo-nav/:symbol`);
   console.log(`歷史股價端點: http://localhost:${PORT}/api/history?symbol=0050&days=260`);

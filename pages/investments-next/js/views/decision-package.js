@@ -5,7 +5,7 @@
 
   const DECISION_PACKAGE_LIMIT = 730;
   const DECISION_PROMPT_LINE = '以上為今日收盤與美股現況，請依策略 V2.1 給出明日預約單建議。';
-  const VNEXT_BASE = 'http://localhost:5050';
+  const PROXY_BASE = (window.API_BASE || 'http://localhost:3000').replace(/\/$/, '');
 
   function ensureDecisionPackagesMeta(){
     if(!DB.meta) DB.meta = {};
@@ -50,19 +50,19 @@
   }
 
   async function fetchVnextNumbers(){
-    const endpoints = ['/api/us-live-data', '/api/vnext-live-score'];
+    const endpoints = ['/api/observatory/snapshot', '/api/cfo-risk', '/api/market-monitor'];
     const out = { ok: false, raw: {} };
     for(const ep of endpoints){
       try{
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`${VNEXT_BASE}${ep}`, { cache: 'no-store', signal: controller.signal });
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`${PROXY_BASE}${ep}`, { cache: 'no-store', signal: controller.signal });
         clearTimeout(timer);
         if(res.ok){
           out.raw[ep] = await res.json();
           out.ok = true;
         }
-      }catch(e){ /* :5050 未啟動，保持 ok=false 或部分資料 */ }
+      }catch(e){ /* proxy 未啟動時保持 ok=false */ }
     }
     return out;
   }
@@ -79,11 +79,11 @@
     ];
     if(!vnext.ok){
       return [
-        '> :5050 trading-dashboard 未啟動，以下欄位請手動貼上 vnext「即時模型數字」：',
+        '> 本機代理未啟動，以下欄位請手動補上重點看盤／觀測數字：',
         ...templateLines
       ].join('\n');
     }
-    const lines = ['（以下為 vnext API 原始數據，欄位名稱以 trading-dashboard 為準）'];
+    const lines = ['（以下為本機 proxy 觀測與 CFO 風險數據，不再依賴決策儀表板）'];
     for(const [ep, data] of Object.entries(vnext.raw)){
       let text = '';
       try{ text = JSON.stringify(data, null, 1); }catch(e){ text = String(data); }
@@ -173,7 +173,7 @@
       '## 4. 預約單計畫（全成交假設）',
       ...planLines,
       '',
-      '## 5. 美股關鍵數字（vnext 即時模型數字）',
+      '## 5. 美股關鍵數字（本機觀測／CFO 風險）',
       vnextSection,
       '',
       '---',
@@ -218,7 +218,7 @@
     if(!dlg) return;
     document.getElementById('dlg-decision-package-title').textContent = `Buffett 決策資料包（${pkg.date}）`;
     document.getElementById('decision-package-meta').textContent =
-      `產生於 ${new Date(pkg.createdAt).toLocaleString('zh-TW', { hour12: false })}｜報價來源：${pkg.sources?.quotes || '—'}｜vnext：${pkg.sources?.vnext === 'vnext-api' ? '已自動帶入' : '未啟動（請手動補）'}`;
+      `產生於 ${new Date(pkg.createdAt).toLocaleString('zh-TW', { hour12: false })}｜報價來源：${pkg.sources?.quotes || '—'}｜觀測：${pkg.sources?.vnext === 'vnext-api' ? '已自動帶入' : '未啟動（請手動補）'}`;
     document.getElementById('decision-package-text').value = pkg.markdown;
     dlg.showModal();
   }

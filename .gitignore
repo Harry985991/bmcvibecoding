@@ -32,6 +32,8 @@ package-lock.json
 !scripts/
 scripts/*
 !scripts/check-investment-return-archive.js
+!scripts/lib/
+!scripts/lib/**
 
 # ===== 系統檔案 =====
 .DS_Store

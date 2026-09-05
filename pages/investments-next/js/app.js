@@ -43,6 +43,11 @@
       if(target === '#view-trade-journal' && typeof window.renderTradeJournal === 'function'){ window.renderTradeJournal(); }
       if(target === '#view-analysis' && typeof renderAnalysis === 'function'){ renderAnalysis(); }
       if(target === '#view-settings'){ renderAccounts(); }
+      if(target === '#view-observatory' && typeof window.renderObservatory === 'function'){ window.renderObservatory(); }
+      if(target === '#view-sector-radar' && typeof window.renderSectorRadar === 'function'){ window.renderSectorRadar(); }
+      if(typeof window.setMarketMonitorActive === 'function'){
+        window.setMarketMonitorActive(target === '#view-market-monitor-main');
+      }
     }catch(err){
       console.error(`[subtab] render ${target} failed`, err);
     }
@@ -119,8 +124,14 @@
 	      // 報酬 / 工具：依記憶的子頁籤渲染
 	      if(tab.dataset.target==='#view-returns-hub'){ activateSavedSubtab('returns'); }
       if(tab.dataset.target==='#view-tools'){ activateSavedSubtab('tools'); }
+      if(tab.dataset.target==='#view-market-monitor'){ activateSavedSubtab('market-monitor'); }
+      if(tab.dataset.target==='#view-observatory' && typeof window.renderObservatory === 'function'){
+        window.renderObservatory();
+      }
       if(typeof window.setMarketMonitorActive === 'function'){
-        window.setMarketMonitorActive(tab.dataset.target === '#view-market-monitor');
+        const monitorOn = tab.dataset.target === '#view-market-monitor'
+          && document.querySelector('#view-market-monitor-main')?.classList.contains('active');
+        window.setMarketMonitorActive(monitorOn);
       }
       if(tab.dataset.target==='#view-snapshots'){
         const summary = calculatePortfolioSummary();

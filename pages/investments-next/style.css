@@ -2243,3 +2243,77 @@
     html[data-theme="brutal"] .overview-panel-title,
     html[data-theme="brutal"] .action-panel-title{font-weight:800}
     html[data-theme="brutal"] .overview-kpi-group{border:3px solid #1A1A1A; border-radius:0; box-shadow:6px 6px 0 #1A1A1A}
+
+    /* 觀測／族群合併頁 */
+    .merge-panel{padding:18px 20px}
+    .merge-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+    .merge-toolbar h2{margin:4px 0}
+    .merge-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .merge-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    @media (max-width: 900px){.merge-grid{grid-template-columns:1fr}}
+    .merge-card{background:var(--card-2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+    .merge-kicker{font-size:11px;letter-spacing:.08em;color:var(--sub);margin-bottom:6px}
+    .merge-list{margin:8px 0 0;padding-left:18px}
+    .merge-wrap{white-space:normal;text-align:left}
+    .merge-log{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;max-height:160px;overflow:auto}
+    .merge-alert{background:var(--tint-warn-bg);border:1px solid var(--tint-warn-line);color:var(--tint-warn-text);border-radius:8px;padding:8px 10px;margin-bottom:10px}
+    .merge-level{font-weight:700}
+    .merge-level.red{color:var(--danger)}
+    .merge-level.amber{color:var(--warn)}
+    .merge-level.green{color:var(--ok)}
+    .merge-level.missing{color:var(--sub)}
+    html[data-theme="brutal"] .merge-card{border:2px solid #1A1A1A;border-radius:0}
+
+    /* 族群分頁：嵌原半導體儀表板整頁 */
+    body:has(#view-sector-radar.active){
+      overflow:hidden;
+    }
+    body:has(#view-sector-radar.active) main{
+      max-width:none;
+      width:100%;
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+    }
+    body:has(#view-sector-radar.active) .tab-views{
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      padding-bottom:0;
+      flex:1;
+      min-height:0;
+    }
+    body:has(#view-sector-radar.active) #view-market-monitor.active{
+      display:flex;
+      flex-direction:column;
+      flex:1;
+      min-height:0;
+    }
+    #view-sector-radar.active{
+      display:flex;
+      flex-direction:column;
+      flex:1;
+      min-height:0;
+    }
+    .sector-radar-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:8px;
+    }
+    .sector-radar-embed{
+      flex:1;
+      min-height:0;
+      border:1px solid var(--line);
+      border-radius:10px;
+      overflow:hidden;
+      background:var(--bg);
+    }
+    #sector-radar-frame{
+      width:100%;
+      height:100%;
+      border:0;
+      display:block;
+      background:var(--bg);
+    }
